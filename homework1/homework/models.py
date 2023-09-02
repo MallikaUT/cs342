@@ -16,6 +16,7 @@ class ClassificationLoss(torch.nn.Module):
 
         Hint: Don't be too fancy, this is a one-liner
         """
+        return -torch.mean(torch.log(F.softmax(input, dim=1)[range(input.size(0)), target]))
         raise NotImplementedError('ClassificationLoss.forward')
 
 
@@ -26,6 +27,9 @@ class LinearClassifier(torch.nn.Module):
         """
         Your code here
         """
+        super().__init__()
+        self.fc = torch.nn.Linear(3 * 64 * 64, 6)  # Input size: 3 * 64 * 64, Output size: 6
+
         raise NotImplementedError('LinearClassifier.__init__')
 
     def forward(self, x):
@@ -35,6 +39,8 @@ class LinearClassifier(torch.nn.Module):
         @x: torch.Tensor((B,3,64,64))
         @return: torch.Tensor((B,6))
         """
+        x = x.view(x.size(0), -1)  # Flatten the input
+        return self.fc(x)
         raise NotImplementedError('LinearClassifier.forward')
 
 
@@ -45,6 +51,10 @@ class MLPClassifier(torch.nn.Module):
         """
         Your code here
         """
+        super().__init__()
+        self.fc1 = torch.nn.Linear(3 * 64 * 64, 128)
+        self.fc2 = torch.nn.Linear(128, 64)
+        self.fc3 = torch.nn.Linear(64, 6)  # Output size: 6
         raise NotImplementedError('MLPClassifier.__init__')
 
     def forward(self, x):
@@ -54,6 +64,10 @@ class MLPClassifier(torch.nn.Module):
         @x: torch.Tensor((B,3,64,64))
         @return: torch.Tensor((B,6))
         """
+        x = x.view(x.size(0), -1)  # Flatten the input
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        return self.fc3(x)
         raise NotImplementedError('MLPClassifier.forward')
 
 

@@ -30,7 +30,7 @@ class LinearClassifier(torch.nn.Module):
         super().__init__()
         self.fc = torch.nn.Linear(3 * 64 * 64, 6)  # Input size: 3 * 64 * 64, Output size: 6
 
-        raise NotImplementedError('LinearClassifier.__init__')
+        #raise NotImplementedError('LinearClassifier.__init__')
 
     def forward(self, x):
         """

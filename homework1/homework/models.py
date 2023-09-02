@@ -17,7 +17,10 @@ class ClassificationLoss(torch.nn.Module):
         Hint: Don't be too fancy, this is a one-liner
         """
         return -torch.mean(torch.log(F.softmax(input, dim=1)[range(input.size(0)), target]))
+        loss = F.cross_entropy(input, target)
+        return loss
         raise NotImplementedError('ClassificationLoss.forward')
+
 
 
 class LinearClassifier(torch.nn.Module):

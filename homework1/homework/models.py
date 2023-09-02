@@ -64,7 +64,9 @@ class MLPClassifier(torch.nn.Module):
         # Define the layers of the MLP
         self.fc1 = nn.Linear(3 * 64 * 64, 128)  # First hidden layer (input size to 128)
         self.relu1 = nn.ReLU()  # ReLU activation for the first hidden layer
-        self.fc2 = nn.Linear(128, 6)  # Output layer (128 to 6, one for each class)
+        self.fc2 = nn.Linear(128, 64)  # Second hidden layer (128 to 64)
+        self.relu2 = nn.ReLU()  # ReLU activation for the second hidden layer
+        self.fc3 = nn.Linear(64, 6)  # Output layer (64 to 6, one for each class)
 
         
         
@@ -85,6 +87,8 @@ class MLPClassifier(torch.nn.Module):
         x = self.fc1(x)
         x = self.relu1(x)
         x = self.fc2(x)
+        x = self.relu2(x)
+        x = self.fc3(x)
 
         return x
         raise NotImplementedError('MLPClassifier.forward')

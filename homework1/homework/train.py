@@ -49,7 +49,7 @@ def train(args):
 
     # Print validation accuracy
     print(f"Validation Accuracy: {100 * correct / total}%")
-    raise NotImplementedError('train')
+    #raise NotImplementedError('train')
 
     save_model(model)
 

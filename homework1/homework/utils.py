@@ -19,16 +19,36 @@ class SuperTuxDataset(Dataset):
         """
         self.dataset_path = dataset_path
         self.data = []
-        
+
+        # Define a dictionary to map class names to labels
+        label_map = {
+            'background': 0,
+            'kart': 1,
+            'pickup': 2,
+            'nitro': 3,
+            'bomb': 4,
+            'projectile': 5
+        }
+
+# Define a dictionary to map class names to labels
+        label_map = {
+            'background': 0,
+            'kart': 1,
+            'pickup': 2,
+            'nitro': 3,
+            'bomb': 4,
+            'projectile': 5
+        }
+
         with open(os.path.join(dataset_path, 'labels.csv'), 'r') as file:
             csv_reader = csv.reader(file)
             next(csv_reader)  # Skip header row
             for row in csv_reader:
                 image_path = os.path.join(dataset_path, row[0])
-                label = int(row[1])
-                self.data.append((image_path, label))
+                label = label_map.get(row[1], -1)  # Assign -1 if label not found
+                if label != -1:
+                    self.data.append((image_path, label))
 
-        self.transform = transform
 
 
         raise NotImplementedError('SuperTuxDataset.__init__')
@@ -49,6 +69,10 @@ class SuperTuxDataset(Dataset):
         image = Image.open(image_path).convert('RGB')  # Open the image using PIL
         if self.transform:
             image = self.transform(image)
+
+        # Convert image to torch.Tensor and normalize to [0, 1]
+        image = torch.Tensor(image) / 255.0
+
         return image, label
         raise NotImplementedError('SuperTuxDataset.__getitem__')
 

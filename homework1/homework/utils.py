@@ -50,7 +50,7 @@ class SuperTuxDataset(Dataset):
                     self.data.append((image_path, label))
 
         self.transform = transform
-        raise NotImplementedError('SuperTuxDataset.__init__')
+        #raise NotImplementedError('SuperTuxDataset.__init__')
 
     def __len__(self):
         """

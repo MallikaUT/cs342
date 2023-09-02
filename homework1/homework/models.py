@@ -68,7 +68,7 @@ class MLPClassifier(torch.nn.Module):
 
         
         
-        raise NotImplementedError('MLPClassifier.__init__')
+        #raise NotImplementedError('MLPClassifier.__init__')
 
     def forward(self, x):
         """

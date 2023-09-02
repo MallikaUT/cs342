@@ -49,8 +49,7 @@ class SuperTuxDataset(Dataset):
                 if label != -1:
                     self.data.append((image_path, label))
 
-
-
+        self.transform = transform
         raise NotImplementedError('SuperTuxDataset.__init__')
 
     def __len__(self):

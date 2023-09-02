@@ -67,10 +67,10 @@ class SuperTuxDataset(Dataset):
         image_path, label = self.data[idx]
         image = Image.open(image_path).convert('RGB')  # Open the image using PIL
         if self.transform:
-            image = self.transform(image)
-
-        # Convert image to torch.Tensor and normalize to [0, 1]
-        image = torch.Tensor(image) / 255.0
+            image = self.transform(image)  # Apply the transformation
+        else:
+            # If no transformation is specified, convert to tensor
+            image = transforms.ToTensor()(image)
 
         return image, label
         raise NotImplementedError('SuperTuxDataset.__getitem__')

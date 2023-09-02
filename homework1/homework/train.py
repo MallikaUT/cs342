@@ -1,5 +1,7 @@
 from .models import ClassificationLoss, model_factory, save_model
 from .utils import accuracy, load_data
+import torch.optim as optim
+import torch
 
 
 def train(args):

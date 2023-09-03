@@ -52,7 +52,10 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
+    
     parser.add_argument('-m', '--model', choices=['linear', 'mlp'], default='linear')
+    # Put custom arguments here
+
     parser.add_argument('--lr', type=float, default=0.01)  
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--batch_size', type=int, default=128)

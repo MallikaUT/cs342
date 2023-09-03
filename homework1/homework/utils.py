@@ -28,7 +28,7 @@ class SuperTuxDataset(Dataset):
             'bomb': 4,
             'projectile': 5
         }
-
+        """
         label_map = {
             'background': 0,
             'kart': 1,
@@ -36,7 +36,7 @@ class SuperTuxDataset(Dataset):
             'nitro': 3,
             'bomb': 4,
             'projectile': 5
-        }
+        }"""
 
         with open(os.path.join(dataset_path, 'labels.csv'), 'r') as file:
             csv_reader = csv.reader(file)

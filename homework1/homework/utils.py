@@ -20,7 +20,6 @@ class SuperTuxDataset(Dataset):
         self.dataset_path = dataset_path
         self.data = []
 
-        # Define a dictionary to map class names to labels
         label_map = {
             'background': 0,
             'kart': 1,
@@ -30,7 +29,6 @@ class SuperTuxDataset(Dataset):
             'projectile': 5
         }
 
-# Define a dictionary to map class names to labels
         label_map = {
             'background': 0,
             'kart': 1,
@@ -42,10 +40,10 @@ class SuperTuxDataset(Dataset):
 
         with open(os.path.join(dataset_path, 'labels.csv'), 'r') as file:
             csv_reader = csv.reader(file)
-            next(csv_reader)  # Skip header row
+            next(csv_reader)  
             for row in csv_reader:
                 image_path = os.path.join(dataset_path, row[0])
-                label = label_map.get(row[1], -1)  # Assign -1 if label not found
+                label = label_map.get(row[1], -1) 
                 if label != -1:
                     self.data.append((image_path, label))
 
@@ -65,11 +63,10 @@ class SuperTuxDataset(Dataset):
         return a tuple: img, label
         """
         image_path, label = self.data[idx]
-        image = Image.open(image_path).convert('RGB')  # Open the image using PIL
+        image = Image.open(image_path).convert('RGB') 
         if self.transform:
-            image = self.transform(image)  # Apply the transformation
+            image = self.transform(image)  
         else:
-            # If no transformation is specified, convert to tensor
             image = transforms.ToTensor()(image)
 
         return image, label

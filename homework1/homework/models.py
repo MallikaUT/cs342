@@ -32,7 +32,7 @@ class LinearClassifier(torch.nn.Module):
         Your code here
         """
         super().__init__()
-        self.fc = torch.nn.Linear(3 * 64 * 64, 6)  # Input size: 3 * 64 * 64, Output size: 6
+        self.fc = torch.nn.Linear(3 * 64 * 64, 6)
 
         #raise NotImplementedError('LinearClassifier.__init__')
 
@@ -43,7 +43,7 @@ class LinearClassifier(torch.nn.Module):
         @x: torch.Tensor((B,3,64,64))
         @return: torch.Tensor((B,6))
         """
-        x = x.view(x.size(0), -1)  # Flatten the input
+        x = x.view(x.size(0), -1)
         return self.fc(x)
         raise NotImplementedError('LinearClassifier.forward')
 
@@ -56,20 +56,16 @@ class MLPClassifier(torch.nn.Module):
         Your code here
         """
         super(MLPClassifier, self).__init__()
-        #super().__init__()
         self.fc1 = torch.nn.Linear(3 * 64 * 64, 128)
         self.fc2 = torch.nn.Linear(128, 64)
-        self.fc3 = torch.nn.Linear(64, 6)  # Output size: 6
-        
-        # Define the layers of the MLP
-        self.fc1 = nn.Linear(3 * 64 * 64, 128)  # First hidden layer (input size to 128)
-        self.relu1 = nn.ReLU()  # ReLU activation for the first hidden layer
-        self.fc2 = nn.Linear(128, 64)  # Second hidden layer (128 to 64)
-        self.relu2 = nn.ReLU()  # ReLU activation for the second hidden layer
-        self.fc3 = nn.Linear(64, 6)  # Output layer (64 to 6, one for each class)
-
-        
-        
+        self.fc3 = torch.nn.Linear(64, 6)  
+         
+        # Layers of the MLP 
+        self.fc1 = nn.Linear(3 * 64 * 64, 128)  
+        self.relu1 = nn.ReLU()  
+        self.fc2 = nn.Linear(128, 64)  
+        self.relu2 = nn.ReLU()  
+        self.fc3 = nn.Linear(64, 6)  
         #raise NotImplementedError('MLPClassifier.__init__')
 
     def forward(self, x):
@@ -79,7 +75,7 @@ class MLPClassifier(torch.nn.Module):
         @x: torch.Tensor((B,3,64,64))
         @return: torch.Tensor((B,6))
         """
-        x = x.view(x.size(0), -1)  # Flatten the input
+        x = x.view(x.size(0), -1)  
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
         return self.fc3(x)
@@ -89,16 +85,10 @@ class MLPClassifier(torch.nn.Module):
         x = self.fc2(x)
         x = self.relu2(x)
         x = self.fc3(x)
-
         return x
         raise NotImplementedError('MLPClassifier.forward')
 
-
-model_factory = {
-    'linear': LinearClassifier,
-    'mlp': MLPClassifier,
-}
-
+model_factory = {'linear': LinearClassifier,'mlp': MLPClassifier,}
 
 def save_model(model):
     from torch import save

@@ -12,7 +12,7 @@ def test_logging(train_logger, valid_logger):
     Make sure to set global_step correctly, for epoch=0, iteration=0: global_step=0
     Call the loss 'loss', and accuracy 'accuracy' (no slash or other namespace)
     """
-    global_step = 0  # Initialize global step counter
+    global_step = 0 
 
     # This is a strongly simplified training loop
     for epoch in range(10):
@@ -23,7 +23,7 @@ def test_logging(train_logger, valid_logger):
             global_step += 1
             dummy_train_accuracy = epoch/10. + torch.randn(10)
         avg_train_accuracy = dummy_train_accuracy.mean().item()
-        #train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=epoch)
+      
         train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=epoch)
 
        #raise NotImplementedError('Log the training loss')
@@ -32,12 +32,12 @@ def test_logging(train_logger, valid_logger):
         for iteration in range(10):
             dummy_validation_accuracy = epoch / 10. + torch.randn(10)
         avg_validation_accuracy = dummy_validation_accuracy.mean().item()
-        #valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
+        
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
 
-        if epoch == 0:
-            train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
-            valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)
+        #if epoch == 0:
+           # train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
+           # valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)
         #raise NotImplementedError('Log the validation accuracy')
 
 

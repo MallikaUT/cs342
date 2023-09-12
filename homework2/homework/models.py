@@ -22,7 +22,7 @@ class CNNClassifier(torch.nn.Module):
         self.relu3 = nn.ReLU()
         self.fc2 = nn.Linear(in_features=64, out_features=6)  # Output has 6 classes
 
-        raise NotImplementedError('CNNClassifier.__init__')
+       # raise NotImplementedError('CNNClassifier.__init__')
 
     def forward(self, x):
         """
@@ -49,7 +49,7 @@ class CNNClassifier(torch.nn.Module):
 
         return x
 
-        raise NotImplementedError('CNNClassifier.forward')
+        #raise NotImplementedError('CNNClassifier.forward')
 
 
 def save_model(model):

@@ -25,6 +25,8 @@ def test_logging(train_logger, valid_logger):
         avg_train_accuracy = dummy_train_accuracy.mean().item()
       
         train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=epoch)
+    if epoch == 0:
+        train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)  # Unique name for epoch 0 accuracy
 
        #raise NotImplementedError('Log the training loss')
        # raise NotImplementedError('Log the training accuracy')
@@ -34,7 +36,9 @@ def test_logging(train_logger, valid_logger):
         avg_validation_accuracy = dummy_validation_accuracy.mean().item()
         
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
-
+    
+    if epoch == 0:
+        valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch) 
         #if epoch == 0:
            # train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
            # valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)

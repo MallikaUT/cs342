@@ -7,7 +7,7 @@ import torch.optim as optim
 
 def train(args):
     from os import path
-    model = CNNClassifier[args.model]()
+    model = CNNClassifier()
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)

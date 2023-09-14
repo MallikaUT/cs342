@@ -7,15 +7,14 @@ import torch.optim as optim
 
 def train(args):
     from os import path
-    model = CNNClassifier()
+    model = CNNClassifier[args.model]()
 
-    # Define your dataset and dataloaders here using load_data() or your own dataset setup
-    #train_loader, valid_loader = load_data(...)  # You need to implement load_data()
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+
     train_loader = load_data(args.train_data, batch_size=args.batch_size)
     valid_loader = load_data(args.valid_data, batch_size=args.batch_size)
-    # Define loss function and optimizer
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+   
 
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
@@ -81,7 +80,7 @@ def train(args):
         valid_logger.add_scalar('valid/accuracy', valid_accuracy, global_step=epoch)
 
 
-    save_model(model,'cnn.th')
+    save_model(model)
 
 
 if __name__ == '__main__':

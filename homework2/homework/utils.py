@@ -2,6 +2,9 @@ from PIL import Image
 
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+import csv
+import torch
+import os
 
 LABEL_NAMES = ['background', 'kart', 'pickup', 'nitro', 'bomb', 'projectile']
 
@@ -9,13 +12,33 @@ class SuperTuxDataset(Dataset):
     """
     WARNING: Do not perform data normalization here. 
     """
-    def __init__(self, dataset_path):
+    def __init__(self, dataset_path,transform=None):
         """
         Your code here
         Hint: Use your solution (or the master solution) to HW1
         """
         self.dataset_path = dataset_path
         self.data = [] 
+
+        label_map = {
+            'background': 0,
+            'kart': 1,
+            'pickup': 2,
+            'nitro': 3,
+            'bomb': 4,
+            'projectile': 5
+         }
+ 
+        with open(os.path.join(dataset_path, 'labels.csv'), 'r') as file:
+            csv_reader = csv.reader(file)
+            next(csv_reader)  
+            for row in csv_reader:
+                image_path = os.path.join(dataset_path, row[0])
+                label = label_map.get(row[1], -1) 
+                if label != -1:
+                    self.data.append((image_path, label))
+
+        self.transform = transform
         #raise NotImplementedError('SuperTuxDataset.__init__')
 
     def __len__(self):

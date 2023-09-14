@@ -17,30 +17,28 @@ def test_logging(train_logger, valid_logger):
         torch.manual_seed(epoch)
         for iteration in range(20):
             dummy_train_loss = 0.9**(epoch+iteration/20.)
+
             train_logger.add_scalar('loss', dummy_train_loss, global_step=global_step)
             global_step += 1
+
             dummy_train_accuracy = epoch/10. + torch.randn(10)
+
         avg_train_accuracy = dummy_train_accuracy.mean().item()
-      
         train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=epoch)
     if epoch == 0:
         train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch) 
        #raise NotImplementedError('Log the training loss')
        # raise NotImplementedError('Log the training accuracy')
+
         torch.manual_seed(epoch)
         for iteration in range(10):
             dummy_validation_accuracy = epoch / 10. + torch.randn(10)
-        avg_validation_accuracy = dummy_validation_accuracy.mean().item()
-        
-        valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
-    
+
+            avg_validation_accuracy = dummy_validation_accuracy.mean().item()
+            valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch) 
     if epoch == 0:
         valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch) 
-        #if epoch == 0:
-           # train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
-           # valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)
         #raise NotImplementedError('Log the validation accuracy')
-
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

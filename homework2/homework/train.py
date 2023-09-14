@@ -91,5 +91,12 @@ if __name__ == '__main__':
     parser.add_argument('--log_dir')
     # Put custom arguments here
 
+    parser.add_argument('--lr', type=float, default=0.01)  
+    parser.add_argument('--momentum', type=float, default=0.9)
+    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--train_data', default='data/train')  
+    parser.add_argument('--valid_data', default='data/valid') 
+
     args = parser.parse_args()
     train(args)

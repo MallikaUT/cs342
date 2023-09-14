@@ -10,8 +10,9 @@ def train(args):
     model = CNNClassifier()
 
     # Define your dataset and dataloaders here using load_data() or your own dataset setup
-    train_loader, valid_loader = load_data(...)  # You need to implement load_data()
-
+    #train_loader, valid_loader = load_data(...)  # You need to implement load_data()
+    train_loader = load_data(args.train_data, batch_size=args.batch_size)
+    valid_loader = load_data(args.valid_data, batch_size=args.batch_size)
     # Define loss function and optimizer
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)

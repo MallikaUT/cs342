@@ -81,7 +81,7 @@ def train(args):
         valid_logger.add_scalar('valid/accuracy', valid_accuracy, global_step=epoch)
 
 
-    save_model(model)
+    save_model(model,'cnn.th')
 
 
 if __name__ == '__main__':

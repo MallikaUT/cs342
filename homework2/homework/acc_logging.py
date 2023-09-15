@@ -65,18 +65,21 @@ def test_logging(train_logger, valid_logger):
             train_logger.add_scalar('loss', dummy_train_loss, global_step=global_step)
             global_step += 1
 
-            dummy_train_accuracy = epoch/10. + torch.randn(10)
-
-        avg_train_accuracy = dummy_train_accuracy.mean().item()
-
+            #dummy_train_accuracy = epoch/10. + torch.randn(10)
+            dummy_train_accuracy = [0.85, 0.88, 0.90, 0.91, 0.86, 0.82, 0.89, 0.91, 0.87, 0.84]
+       
+       # avg_train_accuracy = dummy_train_accuracy.mean().item()
+        avg_train_accuracy = sum(dummy_train_accuracy) / len(dummy_train_accuracy)
         # Log training accuracy after each epoch
         train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=global_step)
 
         torch.manual_seed(epoch)
         for iteration in range(10):
-            dummy_validation_accuracy = epoch / 10. + torch.randn(10)
+            #dummy_validation_accuracy = epoch / 10. + torch.randn(10)
+            dummy_validation_accuracy = [0.78, 0.81, 0.79, 0.83, 0.77, 0.80, 0.82, 0.79, 0.84, 0.81]  # Fixed values for validation accuracy
 
-        avg_validation_accuracy = dummy_validation_accuracy.mean().item()
+        #avg_validation_accuracy = dummy_validation_accuracy.mean().item()
+        avg_validation_accuracy = sum(dummy_validation_accuracy) / len(dummy_validation_accuracy)
 
         # Log validation accuracy after each epoch
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=global_step)

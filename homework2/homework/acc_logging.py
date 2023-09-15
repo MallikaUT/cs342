@@ -57,6 +57,7 @@ def test_logging(train_logger, valid_logger):
     global_step = 0
     for epoch in range(10):
         torch.manual_seed(epoch)
+        accuracy_list = []  # Create an empty list to store individual accuracy values
         for iteration in range(20):
             dummy_train_loss = 0.9**(epoch+iteration/20.)
 
@@ -65,17 +66,20 @@ def test_logging(train_logger, valid_logger):
             global_step += 1
 
             dummy_train_accuracy = epoch/10. + torch.randn(10)
+            accuracy_list.append(dummy_train_accuracy.mean().item())  # Append individual accuracy to the list
 
-        avg_train_accuracy = dummy_train_accuracy.mean().item()
+        avg_train_accuracy = sum(accuracy_list) / len(accuracy_list)  # Calculate average accuracy
 
         # Log training accuracy after each epoch
         train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=global_step)
 
         torch.manual_seed(epoch)
+        accuracy_list = []  # Reset the list for validation accuracy
         for iteration in range(10):
             dummy_validation_accuracy = epoch / 10. + torch.randn(10)
+            accuracy_list.append(dummy_validation_accuracy.mean().item())  # Append individual accuracy to the list
 
-        avg_validation_accuracy = dummy_validation_accuracy.mean().item()
+        avg_validation_accuracy = sum(accuracy_list) / len(accuracy_list)  # Calculate average accuracy
 
         # Log validation accuracy after each epoch
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=global_step)

@@ -1,11 +1,11 @@
-from os import path
+"""from os import path
 import torch
 import torch.utils.tensorboard as tb
 
 
 def test_logging(train_logger, valid_logger):
 
-    """
+   
     Your code here.
     Finish logging the dummy loss and accuracy
     Log the loss every iteration, the accuracy only after each epoch
@@ -37,32 +37,6 @@ def test_logging(train_logger, valid_logger):
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch) 
 
        #raise NotImplementedError('Log the validation accuracy')
-"""
-    global_step = 0
-    for epoch in range(10):
-        torch.manual_seed(epoch)
-        for iteration in range(20):
-            dummy_train_loss = 0.9**(epoch+iteration/20.)
-
-            # Log training loss at every iteration
-            train_logger.add_scalar('loss', dummy_train_loss, global_step=global_step)
-            global_step += 1
-
-            dummy_train_accuracy = epoch/10. + torch.randn(10)
-
-        avg_train_accuracy = dummy_train_accuracy.mean().item()
-
-        # Log training accuracy after each epoch, including epoch 0
-        train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=epoch)
-
-        torch.manual_seed(epoch)
-        for iteration in range(10):
-            dummy_validation_accuracy = epoch / 10. + torch.randn(10)
-
-        avg_validation_accuracy = dummy_validation_accuracy.mean().item()
-
-        # Log validation accuracy after each epoch, including epoch 0
-        valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
 
 
 if __name__ == "__main__":
@@ -74,3 +48,59 @@ if __name__ == "__main__":
     train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
     valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'test'))
     test_logging(train_logger, valid_logger)
+"""
+
+from os import path
+import torch
+import torch.utils.tensorboard as tb
+
+def test_logging(train_logger, valid_logger):
+    global_step = 0
+    for epoch in range(10):
+        torch.manual_seed(epoch)
+
+        # Initialize lists to store accuracies for training and validation
+        train_accuracies = []
+        valid_accuracies = []
+
+        for iteration in range(20):
+            dummy_train_loss = 0.9**(epoch+iteration/20.)
+
+            # Log training loss at every iteration
+            train_logger.add_scalar('loss', dummy_train_loss, global_step=global_step)
+            global_step += 1
+
+            dummy_train_accuracy = epoch/10. + torch.randn(10)
+            train_accuracies.extend(dummy_train_accuracy.tolist())
+
+        avg_train_accuracy = sum(train_accuracies) / len(train_accuracies)
+
+        # Log training accuracy after each epoch
+        train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=epoch)
+
+        torch.manual_seed(epoch)
+
+        for iteration in range(10):
+            dummy_validation_accuracy = epoch / 10. + torch.randn(10)
+            valid_accuracies.extend(dummy_validation_accuracy.tolist())
+
+        avg_validation_accuracy = sum(valid_accuracies) / len(valid_accuracies)
+
+        # Log validation accuracy after each epoch
+        valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
+
+        if epoch == 0:
+            # Log accuracy for epoch 0
+            train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
+            valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument('log_dir')
+    args = parser.parse_args()
+    train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
+    valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'test'))
+    test_logging(train_logger, valid_logger)
+

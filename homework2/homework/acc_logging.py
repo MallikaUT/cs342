@@ -58,37 +58,33 @@ def test_logging(train_logger, valid_logger):
     global_step = 0
     for epoch in range(10):
         torch.manual_seed(epoch)
-        train_accuracies = []
-
         for iteration in range(20):
             dummy_train_loss = 0.9**(epoch+iteration/20.)
+
+            # Log training loss at every iteration
             train_logger.add_scalar('loss', dummy_train_loss, global_step=global_step)
             global_step += 1
 
             dummy_train_accuracy = epoch/10. + torch.randn(10)
-            train_accuracies.extend(dummy_train_accuracy.tolist())
 
-        avg_train_accuracy = sum(train_accuracies) / len(train_accuracies)
-        train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=epoch)
+        avg_train_accuracy = dummy_train_accuracy.mean().item()
+
+        # Log training accuracy after each epoch
+        train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=global_step)
 
         torch.manual_seed(epoch)
-        valid_accuracies = []
-
         for iteration in range(10):
             dummy_validation_accuracy = epoch / 10. + torch.randn(10)
-            valid_accuracies.extend(dummy_validation_accuracy.tolist())
 
-        avg_validation_accuracy = sum(valid_accuracies) / len(valid_accuracies)
-        valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
+        avg_validation_accuracy = dummy_validation_accuracy.mean().item()
 
-    # Log accuracy for epoch 0 after the loop
-    epoch_0_train_accuracies = [0.034079]  # Replace with actual values
-    epoch_0_train_avg_accuracy = epoch_0_train_accuracies.mean().item()
-    train_logger.add_scalar('accuracy_epoch0', epoch_0_train_avg_accuracy, global_step=0)
+        # Log validation accuracy after each epoch
+        valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=global_step)
 
-    epoch_0_valid_accuracies = [0.055433]  # Replace with actual values
-    epoch_0_valid_avg_accuracy = epoch_0_valid_accuracies.mean().item()
-    valid_logger.add_scalar('accuracy_epoch0', epoch_0_valid_avg_accuracy, global_step=0)
+        if epoch == 0:
+            # Log accuracy for epoch 0
+            train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
+            valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

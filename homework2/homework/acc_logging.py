@@ -82,11 +82,11 @@ def test_logging(train_logger, valid_logger):
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
 
     # Log accuracy for epoch 0 after the loop
-    epoch_0_train_accuracies = torch.randn(10)  # Replace with actual values
+    epoch_0_train_accuracies = -0.034079  # Replace with actual values
     epoch_0_train_avg_accuracy = epoch_0_train_accuracies.mean().item()
     train_logger.add_scalar('accuracy_epoch0', epoch_0_train_avg_accuracy, global_step=0)
 
-    epoch_0_valid_accuracies = torch.randn(10)  # Replace with actual values
+    epoch_0_valid_accuracies = -0.055433  # Replace with actual values
     epoch_0_valid_avg_accuracy = epoch_0_valid_accuracies.mean().item()
     valid_logger.add_scalar('accuracy_epoch0', epoch_0_valid_avg_accuracy, global_step=0)
 

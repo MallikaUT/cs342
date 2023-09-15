@@ -81,10 +81,14 @@ def test_logging(train_logger, valid_logger):
         avg_validation_accuracy = sum(valid_accuracies) / len(valid_accuracies)
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
 
-        # Log accuracy for epoch 0
-        if epoch == 0:
-            train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
-            valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)
+    # Log accuracy for epoch 0 after the loop
+    epoch_0_train_accuracies = torch.randn(10)  # Replace with actual values
+    epoch_0_train_avg_accuracy = epoch_0_train_accuracies.mean().item()
+    train_logger.add_scalar('accuracy_epoch0', epoch_0_train_avg_accuracy, global_step=0)
+
+    epoch_0_valid_accuracies = torch.randn(10)  # Replace with actual values
+    epoch_0_valid_avg_accuracy = epoch_0_valid_accuracies.mean().item()
+    valid_logger.add_scalar('accuracy_epoch0', epoch_0_valid_avg_accuracy, global_step=0)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

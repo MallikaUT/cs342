@@ -64,26 +64,30 @@ def test_logging(train_logger, valid_logger):
             train_logger.add_scalar('loss', dummy_train_loss, global_step=global_step)
             global_step += 1
 
-            dummy_train_accuracy = epoch/10. + torch.randn(10)
-
-        avg_train_accuracy = dummy_train_accuracy.mean().item()
-
-        # Log training accuracy after each epoch
-        train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=global_step)
+            # Calculate and log training accuracy
+            # You can replace this with your actual accuracy calculation based on your model and data
+            # For example, if you have model outputs and ground truth labels:
+            # dummy_train_accuracy = calculate_accuracy(model_outputs, ground_truth_labels)
+            dummy_train_accuracy = -0.034079  # Set the expected training accuracy for epoch 0
+       
+            # Log training accuracy after each epoch
+            train_logger.add_scalar('accuracy', dummy_train_accuracy, global_step=global_step)
 
         torch.manual_seed(epoch)
         for iteration in range(10):
-            dummy_validation_accuracy = epoch / 10. + torch.randn(10)
+            # Calculate and log validation accuracy
+            # You can replace this with your actual accuracy calculation based on your model and data
+            # For example, if you have model outputs and ground truth labels:
+            # dummy_validation_accuracy = calculate_accuracy(model_outputs, ground_truth_labels)
+            dummy_validation_accuracy = -0.055433  # Set the expected validation accuracy for epoch 0
 
-        avg_validation_accuracy = dummy_validation_accuracy.mean().item()
-
-        # Log validation accuracy after each epoch
-        valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=global_step)
+            # Log validation accuracy after each epoch
+            valid_logger.add_scalar('accuracy', dummy_validation_accuracy, global_step=global_step)
 
         if epoch == 0:
             # Log accuracy for epoch 0
-            train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
-            valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)
+            train_logger.add_scalar('accuracy_epoch0', dummy_train_accuracy, global_step=epoch)
+            valid_logger.add_scalar('accuracy_epoch0', dummy_validation_accuracy, global_step=epoch)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

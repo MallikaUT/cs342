@@ -11,7 +11,7 @@ def test_logging(train_logger, valid_logger):
     Log the loss every iteration, the accuracy only after each epoch
     Make sure to set global_step correctly, for epoch=0, iteration=0: global_step=0
     Call the loss 'loss', and accuracy 'accuracy' (no slash or other namespace)
-    """
+    
     global_step = 0 
     for epoch in range(10):
         torch.manual_seed(epoch)
@@ -37,6 +37,33 @@ def test_logging(train_logger, valid_logger):
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch) 
 
        #raise NotImplementedError('Log the validation accuracy')
+"""
+    global_step = 0
+    for epoch in range(10):
+        torch.manual_seed(epoch)
+        for iteration in range(20):
+            dummy_train_loss = 0.9**(epoch+iteration/20.)
+
+            # Log training loss at every iteration
+            train_logger.add_scalar('loss', dummy_train_loss, global_step=global_step)
+            global_step += 1
+
+            dummy_train_accuracy = epoch/10. + torch.randn(10)
+
+        avg_train_accuracy = dummy_train_accuracy.mean().item()
+
+        # Log training accuracy after each epoch, including epoch 0
+        train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=epoch)
+
+        torch.manual_seed(epoch)
+        for iteration in range(10):
+            dummy_validation_accuracy = epoch / 10. + torch.randn(10)
+
+        avg_validation_accuracy = dummy_validation_accuracy.mean().item()
+
+        # Log validation accuracy after each epoch, including epoch 0
+        valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=epoch)
+
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

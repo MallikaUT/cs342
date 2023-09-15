@@ -19,7 +19,7 @@ def test_logging(train_logger, valid_logger):
         for iteration in range(20):
             dummy_train_loss = 0.9**(epoch+iteration/20.)
 
-            # Log training loss at every iteration
+            # Loging training loss 
             train_logger.add_scalar('loss', dummy_train_loss, global_step=global_step)
             global_step += 1
 
@@ -28,7 +28,7 @@ def test_logging(train_logger, valid_logger):
 
         avg_train_accuracy = sum(accuracy_list) / len(accuracy_list)  
 
-        # Log training accuracy after each epoch
+        # Logging training accuracy
         train_logger.add_scalar('accuracy', avg_train_accuracy, global_step=global_step)
 
         torch.manual_seed(epoch)
@@ -39,10 +39,10 @@ def test_logging(train_logger, valid_logger):
 
         avg_validation_accuracy = sum(accuracy_list) / len(accuracy_list)  
 
-        # Log validation accuracy after each epoch
+        # Loging validation accuracy 
         valid_logger.add_scalar('accuracy', avg_validation_accuracy, global_step=global_step)
 
-        # Log accuracy for epoch 0
+        # Logging accuracy for epoch 0
         if epoch == 0:
             train_logger.add_scalar('accuracy_epoch0', avg_train_accuracy, global_step=epoch)
             valid_logger.add_scalar('accuracy_epoch0', avg_validation_accuracy, global_step=epoch)

@@ -54,14 +54,12 @@ class SuperTuxDataset(Dataset):
         return a tuple: img, label
         """
         image_path, label = self.data[idx]
-        image = Image.open(image_path).convert('RGB')  # Load image and convert to RGB
-        label = int(label)  # Ensure label is an integer
-        
-        # Implement any necessary data transformations (e.g., resizing, normalization) here
+        image = Image.open(image_path).convert('RGB')  
+        label = int(label)  
+              
         transform = transforms.Compose([
-            transforms.Resize((64, 64)),  # Resize the image to a fixed size
-            transforms.ToTensor(),  # Convert image to a PyTorch tensor
-            # Add more transformations as needed
+            transforms.Resize((64, 64)),  
+            transforms.ToTensor(),             
         ])
         image = transform(image)
 

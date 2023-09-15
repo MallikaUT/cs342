@@ -26,7 +26,7 @@ def train(args):
     
     """
 
-    # Training loop
+    # For training loop
     num_epochs = 10
     global_step = 0
 
@@ -37,14 +37,8 @@ def train(args):
 
         for batch_data, batch_labels in train_loader:
             optimizer.zero_grad()
-
-            # Forward pass
             outputs = model(batch_data)
-
-            # Compute loss
             loss = criterion(outputs, batch_labels)
-
-            # Backward pass and optimization
             loss.backward()
             optimizer.step()
 
@@ -53,35 +47,30 @@ def train(args):
             total_correct += (predicted == batch_labels).sum().item()
             total_samples += batch_labels.size(0)
 
-            # Log training loss
+            # Logging training loss
             train_logger.add_scalar('train/loss', loss.item(), global_step=global_step)
             global_step += 1
 
-        # Calculate training accuracy and log
+        # Training accuracy and log calculation
         train_accuracy = total_correct / total_samples
         train_logger.add_scalar('train/accuracy', train_accuracy, global_step=epoch)
 
-        # Validation loop
+        # For validation loop
         model.eval()
         total_correct = 0
         total_samples = 0
 
         for batch_data, batch_labels in valid_loader:
-            # Forward pass
             outputs = model(batch_data)
 
-            # Compute validation accuracy
             _, predicted = torch.max(outputs, 1)
             total_correct += (predicted == batch_labels).sum().item()
             total_samples += batch_labels.size(0)
 
-        # Calculate validation accuracy and log
         valid_accuracy = total_correct / total_samples
         valid_logger.add_scalar('valid/accuracy', valid_accuracy, global_step=epoch)
 
-
     save_model(model)
-
 
 if __name__ == '__main__':
     import argparse

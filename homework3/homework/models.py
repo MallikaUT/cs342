@@ -10,7 +10,16 @@ class CNNClassifier(torch.nn.Module):
         Hint: Base this on yours or HW2 master solution if you'd like.
         Hint: Overall model can be similar to HW2, but you likely need some architecture changes (e.g. ResNets)
         """
-        raise NotImplementedError('CNNClassifier.__init__')
+
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.fc1 = nn.Linear(in_features=16 * 32 * 32, out_features=128)  # Adjust the input size
+        self.relu2 = nn.ReLU()
+        self.fc2 = nn.Linear(in_features=128, out_features=6)  # Adjust the output size
+
+        """raise NotImplementedError('CNNClassifier.__init__')"""
 
     def forward(self, x):
         """
@@ -19,7 +28,19 @@ class CNNClassifier(torch.nn.Module):
         @return: torch.Tensor((B,6))
         Hint: Apply input normalization inside the network, to make sure it is applied in the grader
         """
-        raise NotImplementedError('CNNClassifier.forward')
+        x = self.conv1(x)
+        x = self.relu1(x)
+        x = self.pool1(x)
+        # Add more convolutional layers, pooling, and activation functions as needed
+        
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        x = self.relu2(x)
+        x = self.fc2(x)
+
+        return x
+
+       """ raise NotImplementedError('CNNClassifier.forward')"""
 
 
 class FCN(torch.nn.Module):
@@ -33,7 +54,18 @@ class FCN(torch.nn.Module):
         Hint: Use residual connections
         Hint: Always pad by kernel_size / 2, use an odd kernel_size
         """
-        raise NotImplementedError('FCN.__init__')
+
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        # Add more convolutional layers, up-convolutions, skip connections, or residual blocks as needed
+
+        self.upconv1 = nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=4, stride=2, padding=1)
+        self.relu2 = nn.ReLU()
+        self.upconv2 = nn.ConvTranspose2d(in_channels=16, out_channels=5, kernel_size=4, stride=2, padding=1)
+        # Adjust the number of output channels based on your segmentation task
+
+       """ raise NotImplementedError('FCN.__init__')"""
 
     def forward(self, x):
         """
@@ -45,7 +77,17 @@ class FCN(torch.nn.Module):
               if required (use z = z[:, :, :H, :W], where H and W are the height and width of a corresponding strided
               convolution
         """
-        raise NotImplementedError('FCN.forward')
+        # Implement the forward pass here
+        x = self.conv1(x)
+        x = self.relu1(x)
+        x = self.pool1(x)
+        # Add more convolutional layers, pooling, and activation functions as needed
+
+        x = self.upconv1(x)
+        x = self.relu2(x)
+        x = self.upconv2(x)
+        return x
+       """ raise NotImplementedError('FCN.forward')"""
 
 
 model_factory = {

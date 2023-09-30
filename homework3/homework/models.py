@@ -19,7 +19,7 @@ class CNNClassifier(torch.nn.Module):
         self.relu2 = nn.ReLU()
         self.fc2 = nn.Linear(in_features=128, out_features=6)  # Adjust the output size
 
-        """raise NotImplementedError('CNNClassifier.__init__')"""
+        raise NotImplementedError('CNNClassifier.__init__')
 
     def forward(self, x):
         """
@@ -40,7 +40,7 @@ class CNNClassifier(torch.nn.Module):
 
         return x
 
-       """ raise NotImplementedError('CNNClassifier.forward')"""
+       raise NotImplementedError('CNNClassifier.forward')
 
 
 class FCN(torch.nn.Module):
@@ -65,7 +65,7 @@ class FCN(torch.nn.Module):
         self.upconv2 = nn.ConvTranspose2d(in_channels=16, out_channels=5, kernel_size=4, stride=2, padding=1)
         # Adjust the number of output channels based on your segmentation task
 
-       """ raise NotImplementedError('FCN.__init__')"""
+        raise NotImplementedError('FCN.__init__')
 
     def forward(self, x):
         """
@@ -87,7 +87,7 @@ class FCN(torch.nn.Module):
         x = self.relu2(x)
         x = self.upconv2(x)
         return x
-       """ raise NotImplementedError('FCN.forward')"""
+        raise NotImplementedError('FCN.forward')
 
 
 model_factory = {

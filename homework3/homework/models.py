@@ -4,13 +4,13 @@ import torch.nn.functional as F
 
 class CNNClassifier(torch.nn.Module):
     def __init__(self):
-        super().__init__()
+        #super().__init__()
         """
         Your code here
         Hint: Base this on yours or HW2 master solution if you'd like.
         Hint: Overall model can be similar to HW2, but you likely need some architecture changes (e.g. ResNets)
         """
-
+        super(CNNClassifier, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)

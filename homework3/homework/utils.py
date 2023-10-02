@@ -4,7 +4,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from torchvision.transforms import functional as F
 
-from . import dense_transforms
+#from  . import dense_transforms
+from utils import DenseSuperTuxDataset, load_dense_data, ConfusionMatrix, save_model
 
 LABEL_NAMES = ['background', 'kart', 'pickup', 'nitro', 'bomb', 'projectile']
 DENSE_LABEL_NAMES = ['background', 'kart', 'track', 'bomb/projectile', 'pickup/nitro']

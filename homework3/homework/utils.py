@@ -3,6 +3,9 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from torchvision.transforms import functional as F
+import csv
+import torch
+import os
 
 from  . import dense_transforms
 #from utils import DenseSuperTuxDataset, load_dense_data, ConfusionMatrix, save_model
@@ -14,7 +17,7 @@ DENSE_CLASS_DISTRIBUTION = [0.52683655, 0.02929112, 0.4352989, 0.0044619, 0.0041
 
 
 class SuperTuxDataset(Dataset):
-    def __init__(self, dataset_path):
+    def __init__(self, dataset_path,transform=None):
         """
         Your code here
         Hint: Use your solution (or the master solution) to HW1 / HW2
@@ -23,20 +26,54 @@ class SuperTuxDataset(Dataset):
         Hint: Do not store torch.Tensor's as data here, but use PIL images, torchvision.transforms expects PIL images
               for most transformations.
         """
-        raise NotImplementedError('SuperTuxDataset.__init__')
+        self.dataset_path = dataset_path
+        self.data = [] 
+
+        label_map = {
+            'background': 0,
+            'kart': 1,
+            'pickup': 2,
+            'nitro': 3,
+            'bomb': 4,
+            'projectile': 5
+         }
+ 
+        with open(os.path.join(dataset_path, 'labels.csv'), 'r') as file:
+            csv_reader = csv.reader(file)
+            next(csv_reader)  
+            for row in csv_reader:
+                image_path = os.path.join(dataset_path, row[0])
+                label = label_map.get(row[1], -1) 
+                if label != -1:
+                    self.data.append((image_path, label))
+
+        self.transform = transform
+        #raise NotImplementedError('SuperTuxDataset.__init__')
 
     def __len__(self):
         """
         Your code here
         """
-        raise NotImplementedError('SuperTuxDataset.__len__')
+        return len(self.data)
+        #raise NotImplementedError('SuperTuxDataset.__len__')
 
     def __getitem__(self, idx):
         """
         Your code here
         """
-        raise NotImplementedError('SuperTuxDataset.__getitem__')
-        return img, label
+        image_path, label = self.data[idx]
+        image = Image.open(image_path).convert('RGB')  
+        label = int(label)  
+              
+        transform = transforms.Compose([
+            transforms.Resize((64, 64)),  
+            transforms.ToTensor(),             
+        ])
+        image = transform(image)
+
+        return image, label
+        #raise NotImplementedError('SuperTuxDataset.__getitem__')
+        #return img, label
 
 
 class DenseSuperTuxDataset(Dataset):

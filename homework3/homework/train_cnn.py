@@ -126,10 +126,9 @@ def train(args):
         running_loss = 0.0
 
         for batch_data, batch_labels in train_loader:
-            # Move data and labels to the device
-            batch_data = batch_data.to(device)
-            batch_labels = batch_labels.to(device)
-            
+
+            batch_data = batch_data[0].to(device)
+            batch_labels = batch_labels[0].to(device)
             optimizer.zero_grad()
             
             # Forward pass

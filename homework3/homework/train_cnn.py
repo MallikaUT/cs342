@@ -83,6 +83,8 @@ from torchvision.transforms import functional as F
 from .models import CNNClassifier, save_model
 from .utils import accuracy, load_data
 from os import path
+import torch.utils.tensorboard as tb
+
 
 def train(args):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')

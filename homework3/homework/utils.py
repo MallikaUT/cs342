@@ -1,4 +1,4 @@
-import torch
+"""import torch
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -18,14 +18,14 @@ DENSE_CLASS_DISTRIBUTION = [0.52683655, 0.02929112, 0.4352989, 0.0044619, 0.0041
 
 class SuperTuxDataset(Dataset):
     def __init__(self, dataset_path,transform=None):
-        """
-        Your code here
-        Hint: Use your solution (or the master solution) to HW1 / HW2
-        Hint: If you're loading (and storing) PIL images here, make sure to call image.load(),
-              to avoid an OS error for too many open files.
-        Hint: Do not store torch.Tensor's as data here, but use PIL images, torchvision.transforms expects PIL images
-              for most transformations.
-        """
+        
+       # Your code here
+       # Hint: Use your solution (or the master solution) to HW1 / HW2
+       # Hint: If you're loading (and storing) PIL images here, make sure to call image.load(),
+             # to avoid an OS error for too many open files.
+       # Hint: Do not store torch.Tensor's as data here, but use PIL images, torchvision.transforms expects PIL images
+             # for most transformations.
+        
         self.dataset_path = dataset_path
         self.data = [] 
 
@@ -51,16 +51,16 @@ class SuperTuxDataset(Dataset):
         #raise NotImplementedError('SuperTuxDataset.__init__')
 
     def __len__(self):
-        """
-        Your code here
-        """
+        
+       # Your code here
+        
         return len(self.data)
         #raise NotImplementedError('SuperTuxDataset.__len__')
 
     def __getitem__(self, idx):
-        """
-        Your code here
-        """
+        
+        #Your code here
+        
         image_path, label = self.data[idx]
         image = Image.open(image_path).convert('RGB')  
         label = int(label)  
@@ -74,8 +74,90 @@ class SuperTuxDataset(Dataset):
         return image, label
         #raise NotImplementedError('SuperTuxDataset.__getitem__')
         #return img, label
+"""
+import os
+import csv
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+from torchvision import transforms
+
+# Import only the necessary functions/classes from dense_transforms
+from . import dense_transforms
+
+LABEL_MAP = {
+    'background': 0,
+    'kart': 1,
+    'pickup': 2,
+    'nitro': 3,
+    'bomb': 4,
+    'projectile': 5
+}
+
+# Define class names explicitly to avoid hardcoded values
+LABEL_NAMES = list(LABEL_MAP.keys())
+
+class SuperTuxDataset(Dataset):
+    def __init__(self, dataset_path, transform=None):
+        self.dataset_path = dataset_path
+        self.data = []
+
+        # Load data from labels.csv
+        with open(os.path.join(dataset_path, 'labels.csv'), 'r') as file:
+            csv_reader = csv.reader(file)
+            next(csv_reader)  # Skip header row
+            for row in csv_reader:
+                image_path = os.path.join(dataset_path, row[0])
+                label = LABEL_MAP.get(row[1])
+                if label is not None:
+                    self.data.append((image_path, label))
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        image_path, label = self.data[idx]
+        image = Image.open(image_path).convert('RGB')
+        label = int(label)
+
+        if self.transform is not None:
+            image = self.transform(image)
+
+        return image, label
+
+class DenseSuperTuxDataset(Dataset):
+    def __init__(self, dataset_path, transform=dense_transforms.ToTensor()):
+        self.files = [f.replace('_im.jpg', '') for f in glob(os.path.join(dataset_path, '*_im.jpg'))]
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        base_name = self.files[idx]
+        im = Image.open(base_name + '_im.jpg')
+        lbl = Image.open(base_name + '_seg.png')
+
+        if self.transform is not None:
+            im, lbl = self.transform(im, lbl)
+
+        return im, lbl
+
+def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
+    dataset = SuperTuxDataset(dataset_path, **kwargs)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+
+def load_dense_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
+    dataset = DenseSuperTuxDataset(dataset_path, **kwargs)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+
+# You can leave the rest of your code as is
 
 
+
+"""
 class DenseSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=dense_transforms.ToTensor()):
         from glob import glob
@@ -105,7 +187,7 @@ def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
 def load_dense_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
     dataset = DenseSuperTuxDataset(dataset_path, **kwargs)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
-
+"""
 
 def _one_hot(x, n):
     return (x.view(-1, 1) == torch.arange(n, dtype=x.dtype, device=x.device)).int()

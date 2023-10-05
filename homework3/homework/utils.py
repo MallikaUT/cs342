@@ -26,7 +26,7 @@ class SuperTuxDataset(Dataset):
         Hint: Do not store torch.Tensor's as data here, but use PIL images, torchvision.transforms expects PIL images
               for most transformations.
         """
-        self.dataset_path = dataset_path
+        """self.dataset_path = dataset_path
         self.data = [] 
 
         label_map = {
@@ -58,9 +58,9 @@ class SuperTuxDataset(Dataset):
         #raise NotImplementedError('SuperTuxDataset.__len__')
 
     def __getitem__(self, idx):
-        """
-        Your code here
-        """
+        
+       # Your code here
+       
         image_path, label = self.data[idx]
         image = Image.open(image_path).convert('RGB')  
         label = int(label)  
@@ -74,7 +74,30 @@ class SuperTuxDataset(Dataset):
         return image, label
         #raise NotImplementedError('SuperTuxDataset.__getitem__')
         #return img, label
+"""
+        import csv
+        from os import path
+        self.data = []
+        to_tensor = transforms.ToTensor()
+        with open(path.join(dataset_path, 'labels.csv'), newline='') as f:
+            reader = csv.reader(f)
+            for fname, label, _ in reader:
+                if label in LABEL_NAMES:
+                    image = Image.open(path.join(dataset_path, fname))
+                    label_id = LABEL_NAMES.index(label)
+                    self.data.append((to_tensor(image), label_id))
 
+    def __len__(self):
+        """
+        Your code here
+        """
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        """
+        Your code here
+        """
+        return self.data[idx]
 
 class DenseSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=dense_transforms.ToTensor()):
@@ -109,7 +132,7 @@ def load_dense_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
 def accuracy(outputs, labels):
     outputs_idx = outputs.max(1)[1].type_as(labels)
     return outputs_idx.eq(labels).float().mean()
-    
+
 def _one_hot(x, n):
     return (x.view(-1, 1) == torch.arange(n, dtype=x.dtype, device=x.device)).int()
 

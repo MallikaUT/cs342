@@ -15,7 +15,6 @@ DENSE_LABEL_NAMES = ['background', 'kart', 'track', 'bomb/projectile', 'pickup/n
 # Distribution of classes on dense training set (background and track dominate (96%)
 DENSE_CLASS_DISTRIBUTION = [0.52683655, 0.02929112, 0.4352989, 0.0044619, 0.00411153]
 
-
 class SuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=None):
         self.data = []
@@ -43,12 +42,6 @@ class SuperTuxDataset(Dataset):
 
         return image, label
 
-def collate_fn(batch):
-    images, labels = zip(*batch)
-    images = torch.stack(images)  # Convert PIL images to a tensor
-    labels = torch.tensor(labels)
-    return images, labels
-
 class DenseSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=dense_transforms.ToTensor()):
         from glob import glob
@@ -73,7 +66,7 @@ class DenseSuperTuxDataset(Dataset):
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
     dataset = SuperTuxDataset(dataset_path, **kwargs)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=collate_fn)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 def load_dense_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
     dataset = DenseSuperTuxDataset(dataset_path, **kwargs)
@@ -82,7 +75,7 @@ def load_dense_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
 def accuracy(outputs, labels):
     outputs_idx = outputs.max(1)[1].type_as(labels)
     return outputs_idx.eq(labels).float().mean()
-    
+
 def _one_hot(x, n):
     return (x.view(-1, 1) == torch.arange(n, dtype=x.dtype, device=x.device)).int()
 

@@ -127,8 +127,11 @@ def train(args):
 
         for batch_data, batch_labels in train_loader:
 
+            #batch_data = batch_data[0].to(device)
             batch_data = batch_data[0].to(device)
-            batch_labels = batch_labels[0].to(device)
+            batch_labels = torch.tensor([batch_labels], dtype=torch.long).to(device)
+
+           # batch_labels = batch_labels[0].to(device)
             optimizer.zero_grad()
             
             # Forward pass

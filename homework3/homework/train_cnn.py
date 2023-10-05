@@ -82,8 +82,6 @@ from torchvision.transforms import functional as F
 from .models import CNNClassifier, save_model
 from .utils import accuracy, load_data
 from os import path
-import torch.utils.tensorboard as tb
-
 
 def train(args):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -120,34 +118,28 @@ def train(args):
     best_valid_accuracy = 0.0
     no_improvement_count = 0
 
-    # Training loop
     for epoch in range(args.epochs):
         model.train()
-        running_loss = 0.0
+        total_loss = 0.0
 
         for batch_data, batch_labels in train_loader:
-
-            #batch_data = batch_data[0].to(device)
-            batch_data = batch_data[0].to(device)
-            batch_labels = torch.tensor([batch_labels], dtype=torch.long).to(device)
-
-           # batch_labels = batch_labels[0].to(device)
             optimizer.zero_grad()
-            
-            # Forward pass
+            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)
             outputs = model(batch_data)
             loss = criterion(outputs, batch_labels)
-
-
-            # Backpropagation and optimization
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item()
+            total_loss += loss.item()
 
-        # Calculate average loss for this epoch
-        avg_loss = running_loss / len(train_loader)
-        print(f"Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f}")
+        # Calculate average loss for the epoch
+        avg_loss = total_loss / len(train_loader)
+
+        # Log the training loss
+        if train_logger:
+            train_logger.add_scalar('train/loss', avg_loss, epoch)
+
+        print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f}')
 
         # Learning rate scheduling step
         scheduler.step()

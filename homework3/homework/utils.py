@@ -15,32 +15,89 @@ DENSE_LABEL_NAMES = ['background', 'kart', 'track', 'bomb/projectile', 'pickup/n
 # Distribution of classes on dense training set (background and track dominate (96%)
 DENSE_CLASS_DISTRIBUTION = [0.52683655, 0.02929112, 0.4352989, 0.0044619, 0.00411153]
 
+
 class SuperTuxDataset(Dataset):
-    def __init__(self, dataset_path, transform=None):
-        self.data = []
-        label_map = {label: idx for idx, label in enumerate(LABEL_NAMES)}
+    def __init__(self, dataset_path,transform=None):
+        """
+        Your code here
+        Hint: Use your solution (or the master solution) to HW1 / HW2
+        Hint: If you're loading (and storing) PIL images here, make sure to call image.load(),
+              to avoid an OS error for too many open files.
+        Hint: Do not store torch.Tensor's as data here, but use PIL images, torchvision.transforms expects PIL images
+              for most transformations.
+        """
+        """self.dataset_path = dataset_path
+        self.data = [] 
+
+        label_map = {
+            'background': 0,
+            'kart': 1,
+            'pickup': 2,
+            'nitro': 3,
+            'bomb': 4,
+            'projectile': 5
+         }
+ 
         with open(os.path.join(dataset_path, 'labels.csv'), 'r') as file:
             csv_reader = csv.reader(file)
-            next(csv_reader)
+            next(csv_reader)  
             for row in csv_reader:
                 image_path = os.path.join(dataset_path, row[0])
-                label = label_map.get(row[1], -1)
+                label = label_map.get(row[1], -1) 
                 if label != -1:
                     self.data.append((image_path, label))
+
         self.transform = transform
+        #raise NotImplementedError('SuperTuxDataset.__init__')
 
     def __len__(self):
+        
+       # Your code here
+        
+        return len(self.data)
+        #raise NotImplementedError('SuperTuxDataset.__len__')
+
+    def __getitem__(self, idx):
+        
+       # Your code here
+       
+        image_path, label = self.data[idx]
+        image = Image.open(image_path).convert('RGB')  
+        label = int(label)  
+              
+        transform = transforms.Compose([
+            transforms.Resize((64, 64)),  
+            transforms.ToTensor(),             
+        ])
+        image = transform(image)
+
+        return image, label
+        #raise NotImplementedError('SuperTuxDataset.__getitem__')
+        #return img, label
+"""
+        import csv
+        from os import path
+        self.data = []
+        to_tensor = transforms.ToTensor()
+        with open(path.join(dataset_path, 'labels.csv'), newline='') as f:
+            reader = csv.reader(f)
+            for fname, label, _ in reader:
+                if label in LABEL_NAMES:
+                    image = Image.open(path.join(dataset_path, fname))
+                    label_id = LABEL_NAMES.index(label)
+                    self.data.append((to_tensor(image), label_id))
+
+    def __len__(self):
+        """
+        Your code here
+        """
         return len(self.data)
 
     def __getitem__(self, idx):
-        image_path, label = self.data[idx]
-        image = Image.open(image_path).convert('RGB')
-        label = int(label)
-
-        if self.transform is not None:
-            image = self.transform(image)
-
-        return image, label
+        """
+        Your code here
+        """
+        return self.data[idx]
 
 class DenseSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=dense_transforms.ToTensor()):
@@ -58,30 +115,24 @@ class DenseSuperTuxDataset(Dataset):
         b = self.files[idx]
         im = Image.open(b + '_im.jpg')
         lbl = Image.open(b + '_seg.png')
-
         if self.transform is not None:
             im, lbl = self.transform(im, lbl)
-
         return im, lbl
 
-# Custom collate function
-def custom_collate_fn(batch):
-    images, labels = zip(*batch)
-    images = torch.stack(images)  # Convert PIL images to a tensor
-    return images, labels
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
     dataset = SuperTuxDataset(dataset_path, **kwargs)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=custom_collate_fn)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+
 
 def load_dense_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
     dataset = DenseSuperTuxDataset(dataset_path, **kwargs)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=custom_collate_fn)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 def accuracy(outputs, labels):
     outputs_idx = outputs.max(1)[1].type_as(labels)
     return outputs_idx.eq(labels).float().mean()
-    
+
 def _one_hot(x, n):
     return (x.view(-1, 1) == torch.arange(n, dtype=x.dtype, device=x.device)).int()
 

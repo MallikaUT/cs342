@@ -17,15 +17,7 @@ DENSE_CLASS_DISTRIBUTION = [0.52683655, 0.02929112, 0.4352989, 0.0044619, 0.0041
 
 
 class SuperTuxDataset(Dataset):
-    def __init__(self, dataset_path,transform=None):
-        """
-        Your code here
-        Hint: Use your solution (or the master solution) to HW1 / HW2
-        Hint: If you're loading (and storing) PIL images here, make sure to call image.load(),
-              to avoid an OS error for too many open files.
-        Hint: Do not store torch.Tensor's as data here, but use PIL images, torchvision.transforms expects PIL images
-              for most transformations.
-        """
+    def __init__(self, dataset_path, transform=None):
         self.data = []
         label_map = {label: idx for idx, label in enumerate(LABEL_NAMES)}
         with open(os.path.join(dataset_path, 'labels.csv'), 'r') as file:

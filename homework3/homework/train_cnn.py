@@ -123,26 +123,26 @@ def train(args):
 
     for epoch in range(args.epochs):
         model.train()
-        total_loss = 0.0
+        running_loss = 0.0
 
         for batch_data, batch_labels in train_loader:
+            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)  # Move data and labels to the device
+
             optimizer.zero_grad()
-            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)
+
+            # Forward pass
             outputs = model(batch_data)
             loss = criterion(outputs, batch_labels)
+
+            # Backpropagation and optimization
             loss.backward()
             optimizer.step()
 
-            total_loss += loss.item()
+            running_loss += loss.item()
 
-        # Calculate average loss for the epoch
-        avg_loss = total_loss / len(train_loader)
-
-        # Log the training loss
-        if train_logger:
-            train_logger.add_scalar('train/loss', avg_loss, epoch)
-
-        print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f}')
+        # Print average loss for this epoch
+        avg_loss = running_loss / len(train_loader)
+        print(f"Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f}")
 
         # Learning rate scheduling step
         scheduler.step()

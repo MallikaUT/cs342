@@ -127,8 +127,9 @@ def train(args):
 
         for batch_data, batch_labels in train_loader:
             # Move data and labels to the device
-            #batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)
-            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)
+            batch_data = batch_data.to(device)
+            batch_labels = batch_labels.to(device)
+            
             optimizer.zero_grad()
             
             # Forward pass

@@ -96,7 +96,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     train(args) """
 
-
 import torch
 import torch.optim as optim
 import torch.utils.tensorboard as tb

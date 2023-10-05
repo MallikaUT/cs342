@@ -121,24 +121,25 @@ def train(args):
     best_valid_accuracy = 0.0
     no_improvement_count = 0
 
-    for epoch in range(args.epochs):
-        model.train()
-        running_loss = 0.0
+for epoch in range(args.epochs):
+    model.train()
+    running_loss = 0.0
 
-        for batch_data, batch_labels in train_loader:
-            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)  # Move data and labels to the device
+    for batch_data, batch_labels in train_loader:
+        # Unpack the tuple
+        batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)  # Move data and labels to the device
 
-            optimizer.zero_grad()
+        optimizer.zero_grad()
 
-            # Forward pass
-            outputs = model(batch_data)
-            loss = criterion(outputs, batch_labels)
+        # Forward pass
+        outputs = model(batch_data)
+        loss = criterion(outputs, batch_labels)
 
-            # Backpropagation and optimization
-            loss.backward()
-            optimizer.step()
+        # Backpropagation and optimization
+        loss.backward()
+        optimizer.step()
 
-            running_loss += loss.item()
+        running_loss += loss.item()
 
         # Print average loss for this epoch
         avg_loss = running_loss / len(train_loader)

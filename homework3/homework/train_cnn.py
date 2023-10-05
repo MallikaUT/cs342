@@ -126,14 +126,15 @@ def train(args):
         running_loss = 0.0
 
         for batch_data, batch_labels in train_loader:
-            # Unpack the tuple
-            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)  # Move data and labels to the device
-
+            # Move data and labels to the device
+            #batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)
+            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)
             optimizer.zero_grad()
-
+            
             # Forward pass
             outputs = model(batch_data)
             loss = criterion(outputs, batch_labels)
+
 
             # Backpropagation and optimization
             loss.backward()

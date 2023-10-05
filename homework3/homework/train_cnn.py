@@ -73,7 +73,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     train(args)"""
 
-
 import torch
 import torch.optim as optim
 from torch.optim import lr_scheduler
@@ -118,66 +117,66 @@ def train(args):
     scheduler = lr_scheduler.StepLR(optimizer, step_size=args.lr_scheduler_step, gamma=args.lr_scheduler_gamma)
 
     # Early stopping variables
-best_valid_accuracy = 0.0
-no_improvement_count = 0
+    best_valid_accuracy = 0.0
+    no_improvement_count = 0
 
-# Training loop
-for epoch in range(args.epochs):
-    model.train()
-    running_loss = 0.0
+    # Training loop
+    for epoch in range(args.epochs):
+        model.train()
+        running_loss = 0.0
 
-    for batch_data, batch_labels in train_loader:
-        # Unpack the tuple
-        batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)  # Move data and labels to the device
+        for batch_data, batch_labels in train_loader:
+            # Unpack the tuple
+            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)  # Move data and labels to the device
 
-        optimizer.zero_grad()
+            optimizer.zero_grad()
 
-        # Forward pass
-        outputs = model(batch_data)
-        loss = criterion(outputs, batch_labels)
+            # Forward pass
+            outputs = model(batch_data)
+            loss = criterion(outputs, batch_labels)
 
-        # Backpropagation and optimization
-        loss.backward()
-        optimizer.step()
+            # Backpropagation and optimization
+            loss.backward()
+            optimizer.step()
 
-        running_loss += loss.item()
+            running_loss += loss.item()
 
-    # Print average loss for this epoch
-    avg_loss = running_loss / len(train_loader)
-    print(f"Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f}")
+        # Calculate average loss for this epoch
+        avg_loss = running_loss / len(train_loader)
+        print(f"Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f}")
 
-    # Learning rate scheduling step
-    scheduler.step()
+        # Learning rate scheduling step
+        scheduler.step()
 
-    # Validation loop
-    model.eval()
-    valid_acc_vals = []
-    for batch_data, batch_labels in valid_loader:
-        batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)
-        valid_outputs = model(batch_data)
-        valid_accuracy = accuracy(valid_outputs, batch_labels).detach().cpu().numpy()
-        valid_acc_vals.append(valid_accuracy)
+        # Validation loop
+        model.eval()
+        valid_acc_vals = []
+        for batch_data, batch_labels in valid_loader:
+            batch_data, batch_labels = batch_data.to(device), batch_labels.to(device)
+            valid_outputs = model(batch_data)
+            valid_accuracy = accuracy(valid_outputs, batch_labels).detach().cpu().numpy()
+            valid_acc_vals.append(valid_accuracy)
 
-    avg_valid_accuracy = sum(valid_acc_vals) / len(valid_acc_vals)
+        avg_valid_accuracy = sum(valid_acc_vals) / len(valid_acc_vals)
 
-    if valid_logger:
-        valid_logger.add_scalar('valid/accuracy', avg_valid_accuracy, epoch)
+        if valid_logger:
+            valid_logger.add_scalar('valid/accuracy', avg_valid_accuracy, epoch)
 
-    print(f'Validation Accuracy: {avg_valid_accuracy:.4f}')
+        print(f'Validation Accuracy: {avg_valid_accuracy:.4f}')
 
-    # Early stopping check
-    if avg_valid_accuracy > best_valid_accuracy:
-        best_valid_accuracy = avg_valid_accuracy
-        no_improvement_count = 0
-        # Save the best model
-        save_model(model)
-    else:
-        no_improvement_count += 1
+        # Early stopping check
+        if avg_valid_accuracy > best_valid_accuracy:
+            best_valid_accuracy = avg_valid_accuracy
+            no_improvement_count = 0
+            # Save the best model
+            save_model(model)
+        else:
+            no_improvement_count += 1
 
-    # Early stopping condition
-    if no_improvement_count >= args.early_stopping_patience:
-        print("No improvement in validation accuracy. Early stopping.")
-        break
+        # Early stopping condition
+        if no_improvement_count >= args.early_stopping_patience:
+            print("No improvement in validation accuracy. Early stopping.")
+            break
 
 if __name__ == '__main__':
     import argparse
@@ -199,7 +198,3 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     train(args)
-
-
-
-

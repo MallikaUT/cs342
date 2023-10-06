@@ -100,11 +100,28 @@ import torch
 import torch.optim as optim
 import torch.utils.tensorboard as tb
 from torch.utils.data import DataLoader
+from torchvision import transforms  # Import torchvision.transforms
 from torchvision.transforms import functional as F
 from .models import FCN, save_model
 from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
+import torch.nn as nn
+
+# Define the FCN model class
+class FCN(nn.Module):
+    def __init__(self, num_classes=5):
+        super(FCN, self).__init__()
+        # Define your FCN architecture here
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(128, num_classes, kernel_size=1)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = self.conv3(x)
+        return x
 
 def train(args):
     # Initialize the FCN model
@@ -114,14 +131,18 @@ def train(args):
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    # Set up TensorBoard loggers
-    train_logger, valid_logger = None, None
-    if args.log_dir is not None:
-        train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
-        valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
+    # Set up data augmentation transforms for training data
+    train_transforms = transforms.Compose([
+        transforms.RandomRotation(15),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
+        transforms.ToTensor(),
+    ])
 
-    # Data loading and preprocessing
-    train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size)
+    # Data loading and preprocessing with data augmentation
+    train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size,
+                                                 transform=train_transforms)  # Apply data augmentation to training data
 
     # Training loop
     for epoch in range(args.epochs):
@@ -147,8 +168,8 @@ def train(args):
 
         # Log training metrics
         if train_logger:
-            train_logger.add_scalar('train/loss', avg_loss, epoch)
-            train_logger.add_scalar('train/iou', iou, epoch)
+             train_logger.add_scalar('train/loss', avg_loss, epoch)
+             train_logger.add_scalar('train/iou', iou, epoch)
 
         print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f} - IoU: {iou:.4f}')
 
@@ -186,5 +207,3 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     train(args)
-
-

@@ -45,7 +45,8 @@ def train(args):
     #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size,
                                                 # transform=train_transforms)
 
-    train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
+    #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
+    train_loader, valid_loader = load_dense_data(args.train_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
 
     # Set up TensorBoard loggers
     train_logger, valid_logger = None, None

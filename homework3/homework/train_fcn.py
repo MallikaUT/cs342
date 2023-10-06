@@ -43,6 +43,8 @@ def train(args):
         transforms.ToTensor(),
     ])
 
+    print(f"num_workers: {args.num_workers}")
+
     # Data loading and preprocessing with data augmentation
     train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size,
                                                  transform=train_transforms)  # Apply data augmentation to training data

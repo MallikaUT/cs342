@@ -144,6 +144,12 @@ def train(args):
     train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size,
                                                  transform=train_transforms)  # Apply data augmentation to training data
 
+    # Set up TensorBoard loggers
+    train_logger, valid_logger = None, None
+    if args.log_dir is not None:
+        train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
+        valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
+
     # Training loop
     for epoch in range(args.epochs):
         model.train()
@@ -168,13 +174,14 @@ def train(args):
 
         # Log training metrics
         if train_logger:
-             train_logger.add_scalar('train/loss', avg_loss, epoch)
-             train_logger.add_scalar('train/iou', iou, epoch)
+            train_logger.add_scalar('train/loss', avg_loss, epoch)
+            train_logger.add_scalar('train/iou', iou, epoch)
 
         print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f} - IoU: {iou:.4f}')
 
     # Save the trained model
     save_model(model)
+
 
 def log(logger, imgs, lbls, logits, global_step):
     """
@@ -204,6 +211,6 @@ if __name__ == '__main__':
     parser.add_argument('--train_data', default='data/train')
     parser.add_argument('--valid_data', default='data/valid')
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
-
+   
     args = parser.parse_args()
     train(args)

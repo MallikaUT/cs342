@@ -1,93 +1,86 @@
 import torch
-import torch.nn.functional as F
 import torch.nn as nn
+import torch.nn.functional as F
+from torchvision import transforms
 
-
-class CNNClassifier(torch.nn.Module):
+class CNNClassifier(nn.Module):
     def __init__(self):
-        #super().__init__()
-        """
-        Your code here
-        Hint: Base this on yours or HW2 master solution if you'd like.
-        Hint: Overall model can be similar to HW2, but you likely need some architecture changes (e.g. ResNets)
-        """
         super(CNNClassifier, self).__init__()
+        
+        # Input normalization
+        self.bn1 = nn.BatchNorm2d(3)
+        
+        # Convolutional layers
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-
-        self.fc1 = nn.Linear(in_features=16 * 32 * 32, out_features=128)  # Adjust the input size
+        
+        # Residual blocks (add more if needed)
+        self.res1 = nn.Sequential(
+            nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1)
+        )
+        
+        # Dropout layers
+        self.dropout1 = nn.Dropout(p=0.5)
+        self.dropout2 = nn.Dropout(p=0.5)
+        
+        # Fully connected layers
+        self.fc1 = nn.Linear(in_features=16 * 32 * 32, out_features=128)
         self.relu2 = nn.ReLU()
-        self.fc2 = nn.Linear(in_features=128, out_features=6)  # Adjust the output size
-
-        #raise NotImplementedError('CNNClassifier.__init__')
+        self.fc2 = nn.Linear(in_features=128, out_features=6)
 
     def forward(self, x):
-        """
-        Your code here
-        @x: torch.Tensor((B,3,64,64))
-        @return: torch.Tensor((B,6))
-        Hint: Apply input normalization inside the network, to make sure it is applied in the grader
-        """
+        x = self.bn1(x)
+        
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.pool1(x)
-        # Add more convolutional layers, pooling, and activation functions as needed
+        
+        # Apply residual block(s)
+        x = self.res1(x)
         
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         x = self.relu2(x)
+        x = self.dropout1(x)  # Dropout layer 1
+        
         x = self.fc2(x)
-
+        x = self.dropout2(x)  # Dropout layer 2
+        
         return x
 
-       #raise NotImplementedError('CNNClassifier.forward')
-
-
-class FCN(torch.nn.Module):
+class FCN(nn.Module):
     def __init__(self):
-        super().__init__()
-        """
-        Your code here.
-        Hint: The FCN can be a bit smaller the the CNNClassifier since you need to run it at a higher resolution
-        Hint: Use up-convolutions
-        Hint: Use skip connections
-        Hint: Use residual connections
-        Hint: Always pad by kernel_size / 2, use an odd kernel_size
-        """
+        super(FCN, self).__init__()
 
+        # Input normalization
+        self.bn1 = nn.BatchNorm2d(3)
+        
+        # Convolutional layers
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        # Add more convolutional layers, up-convolutions, skip connections, or residual blocks as needed
-
-        self.upconv1 = nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=4, stride=2, padding=1)
+        
+        # Up-convolutions
+        self.upconv1 = nn.ConvTranspose2d(32, 16, kernel_size=4, stride=2, padding=1, output_padding=0)
         self.relu2 = nn.ReLU()
-        self.upconv2 = nn.ConvTranspose2d(in_channels=16, out_channels=5, kernel_size=4, stride=2, padding=1)
-        # Adjust the number of output channels based on your segmentation task
-
-        #raise NotImplementedError('FCN.__init__')
+        self.upconv2 = nn.ConvTranspose2d(16, 5, kernel_size=4, stride=2, padding=1, output_padding=0)
 
     def forward(self, x):
-        """
-        Your code here
-        @x: torch.Tensor((B,3,H,W))
-        @return: torch.Tensor((B,5,H,W))
-        Hint: Apply input normalization inside the network, to make sure it is applied in the grader
-        Hint: Input and output resolutions need to match, use output_padding in up-convolutions, crop the output
-              if required (use z = z[:, :, :H, :W], where H and W are the height and width of a corresponding strided
-              convolution
-        """
-        # Implement the forward pass here
+        x = self.bn1(x)
+        
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.pool1(x)
-        # Add more convolutional layers, pooling, and activation functions as needed
-
+        
         x = self.upconv1(x)
         x = self.relu2(x)
         x = self.upconv2(x)
+        
         return x
+
        #raise NotImplementedError('FCN.forward')
 
 

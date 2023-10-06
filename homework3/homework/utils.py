@@ -78,6 +78,11 @@ def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
 
 def load_dense_data(dataset_path, batch_size=32, num_workers=0, **kwargs):
     dataset = DenseSuperTuxDataset(dataset_path, **kwargs)
+    
+    # Ensure that batch_size is not greater than the dataset size
+    if batch_size > len(dataset):
+        batch_size = len(dataset)
+    
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 def accuracy(outputs, labels):

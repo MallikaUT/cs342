@@ -77,7 +77,7 @@ def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
 
 
 def load_dense_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
-    num_workers = int(num_workers)  # Ensure num_workers is an integer
+    #num_workers = int(num_workers)  # Ensure num_workers is an integer
     dataset = DenseSuperTuxDataset(dataset_path, **kwargs)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 

@@ -72,8 +72,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     train(args)"""
-
+    
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
@@ -84,10 +85,39 @@ from .utils import accuracy, load_data
 from os import path
 import torch.utils.tensorboard as tb
 
+# Define the ResidualBlock class
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, stride=1):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+
+        # Shortcut connection (identity mapping)
+        if stride != 1 or in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
+                nn.BatchNorm2d(out_channels)
+            )
+        else:
+            self.shortcut = nn.Identity()
+
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out += self.shortcut(x)  # Shortcut connection
+        out = self.relu(out)
+        return out
+
 def train(args):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    # Initialize the model
+    # Initialize the model with residual blocks and dropout
     model = CNNClassifier().to(device)
 
     # Set up TensorBoard loggers
@@ -96,13 +126,14 @@ def train(args):
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'))
 
-    # Define data transformations and data loaders
+    # Define data transformations and data loaders with input normalization
     train_transforms = transforms.Compose([
         transforms.RandomRotation(15),
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
         transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
         transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
 
     train_loader = load_data(args.train_data, batch_size=args.batch_size, transform=train_transforms)

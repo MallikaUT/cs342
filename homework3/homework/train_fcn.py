@@ -1,17 +1,15 @@
-
 import torch
 import torch.optim as optim
 import torch.utils.tensorboard as tb
 from torch.utils.data import DataLoader
-from torchvision import transforms  # Import torchvision.transforms
-from torchvision.transforms import functional as F
+from torchvision import transforms
 from .models import FCN, save_model
 from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
 import torch.nn as nn
 
-# Define the FCN model class
+# Define the FCN model class (you can use the previously defined FCN class)
 class FCN(nn.Module):
     def __init__(self, num_classes=5):
         super(FCN, self).__init__()
@@ -43,11 +41,9 @@ def train(args):
         transforms.ToTensor(),
     ])
 
-    print(f"num_workers: {args.num_workers}")
-
     # Data loading and preprocessing with data augmentation
     train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size,
-                                                 transform=train_transforms)  # Apply data augmentation to training data
+                                                 transform=train_transforms)
 
     # Set up TensorBoard loggers
     train_logger, valid_logger = None, None
@@ -87,22 +83,6 @@ def train(args):
     # Save the trained model
     save_model(model)
 
-
-def log(logger, imgs, lbls, logits, global_step):
-    """
-    logger: train_logger/valid_logger
-    imgs: image tensor from data loader
-    lbls: semantic label tensor
-    logits: predicted logits tensor
-    global_step: iteration
-    """
-    logger.add_image('image', imgs[0], global_step)
-    logger.add_image('label', np.array(dense_transforms.label_to_pil_image(lbls[0].cpu()).
-                                         convert('RGB')), global_step, dataformats='HWC')
-    logger.add_image('prediction', np.array(dense_transforms.
-                                              label_to_pil_image(logits[0].argmax(dim=0).cpu()).
-                                              convert('RGB')), global_step, dataformats='HWC')
-
 if __name__ == '__main__':
     import argparse
 
@@ -115,8 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--train_data', default='data/train')
     parser.add_argument('--valid_data', default='data/valid')
-    #parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
-    parser.add_argument('--num_workers', type=int, default=4)
+    parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
     print(args)

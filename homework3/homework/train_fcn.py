@@ -97,7 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--train_data', default='data/train')
     parser.add_argument('--valid_data', default='data/valid')
-    #parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
+    parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
     print(args)

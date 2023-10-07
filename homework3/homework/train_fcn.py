@@ -13,11 +13,9 @@ from .dense_transforms import RandomRotation
 import torch.nn.functional as F  # Import F for activation functions
 
 def train(args):
-    # Load labels from the 'data' directory
-    data_labels = np.load('data/labels.npy')  # Replace with the correct path to your labels
-
     # Initialize the FCN model
-    model = FCN(num_classes=data_labels.shape[1])  # Assuming data_labels contains one-hot encoded labels
+    #model = FCN()
+    model = FCN(num_classes=4)
 
     # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
     criterion = torch.nn.CrossEntropyLoss()
@@ -50,11 +48,12 @@ def train(args):
         for batch_data, batch_labels in train_loader:
             optimizer.zero_grad()
             outputs = model(batch_data)
-
+            
             # Ensure batch_labels has the correct shape (batch_size, height, width)
             assert batch_labels.dim() == 3
-
+            
             # Calculate loss
+            #loss = criterion(outputs, batch_labels)
             loss = criterion(outputs, batch_labels.long())
             loss.backward()
             optimizer.step()
@@ -63,7 +62,9 @@ def train(args):
 
             # Update confusion matrix and calculate IoU
             confusion_matrix.add(outputs.argmax(1), batch_labels)
-            iou = confusion_matrix.iou  # Note: This should be a function call, not a Tensor
+            #iou = confusion_matrix.iou()
+            iou = confusion_matrix.iou
+
 
         # Calculate average loss for the epoch
         avg_loss = total_loss / len(train_loader)
@@ -93,5 +94,11 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
+    #label_data = np.load('label_data.npy')  # Replace with the path to your label data
+    label_data = np.load('data/labels.npy')  # Specify the correct path here
+    label_tensor = torch.from_numpy(label_data)
+    unique_labels = torch.unique(label_tensor)
+    num_classes = len(unique_labels)
+    print(f"Number of classes in the dataset: {num_classes}")
 
     train(args)

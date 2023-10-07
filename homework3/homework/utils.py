@@ -1,13 +1,15 @@
 import torch
 from PIL import Image
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from torchvision import transforms
 from torchvision.transforms import functional as F
 import csv
-import torch
 import os
+import numpy as np
 
-from  . import dense_transforms
+from . import dense_transforms
+
+#from  . import dense_transforms
 #from utils import DenseSuperTuxDataset, load_dense_data, ConfusionMatrix, save_model
 
 LABEL_NAMES = ['background', 'kart', 'pickup', 'nitro', 'bomb', 'projectile']
@@ -30,6 +32,7 @@ class SuperTuxDataset(Dataset):
         from os import path
         self.data = []
         to_tensor = transforms.ToTensor()
+        self.transform = transform  # Add the transform argument
         with open(path.join(dataset_path, 'labels.csv'), newline='') as f:
             reader = csv.reader(f)
             for fname, label, _ in reader:
@@ -76,8 +79,8 @@ def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 
-def load_dense_data(dataset_path, batch_size=32, num_workers=0, **kwargs):
-    dataset = DenseSuperTuxDataset(dataset_path, **kwargs)
+def load_dense_data(dataset_path, batch_size=32, num_workers=0, transform=None):
+    dataset = DenseSuperTuxDataset(dataset_path, transform=transform)
     
     # Ensure that batch_size is not greater than the dataset size
     if batch_size > len(dataset):

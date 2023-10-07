@@ -8,7 +8,7 @@ from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
 import torch.nn as nn
-from torchvision import transforms
+import torch.nn.functional as F  # Import F for activation functions
 
 # Define the FCN model class (you can use the previously defined FCN class)
 class FCN(nn.Module):
@@ -43,12 +43,7 @@ def train(args):
     ])
 
     # Data loading and preprocessing with data augmentation
-    #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size,
-                                                # transform=train_transforms)
-
-    #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
-    #train_loader, valid_loader = load_dense_data(args.train_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
-    train_loader, valid_loader = load_dense_data(args.train_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=train_transforms)
+    train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=train_transforms)
 
     # Set up TensorBoard loggers
     train_logger, valid_logger = None, None
@@ -98,8 +93,8 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--train_data', default='data/train')
-    parser.add_argument('--valid_data', default='data/valid')
+    parser.add_argument('--train_data', default='dense_data/train')  # Updated train_data path
+    parser.add_argument('--valid_data', default='dense_data/valid')  # Updated valid_data path
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()

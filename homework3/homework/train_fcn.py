@@ -8,6 +8,7 @@ from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
 import torch.nn as nn
+from homework.dense_transforms import RandomRotation
 
 
 import torch.nn.functional as F  # Import F for activation functions

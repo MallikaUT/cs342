@@ -77,6 +77,13 @@ class RandomResizedCrop(T.RandomResizedCrop):
         return F.resized_crop(image, i, j, h, w, self.size, self.interpolation),\
                F.resized_crop(target, i, j, h, w, self.size, Image.NEAREST)
 
+class RandomRotation(object):
+    def __init__(self, degrees):
+        self.degrees = degrees
+
+    def __call__(self, image, target):
+        angle = random.uniform(-self.degrees, self.degrees)
+        return F.rotate(image, angle), F.rotate(target, angle)
 
 def label_to_tensor(lbl):
     """

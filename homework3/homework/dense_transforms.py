@@ -27,7 +27,6 @@ class Compose(object):
             image, target = t(image, target)
         return image, target
 
-
 class Resize(T.Resize):
     def __call__(self, image, target):
         return F.resize(image, self.size, self.interpolation), F.resize(target, self.size, interpolation=Image.NEAREST)

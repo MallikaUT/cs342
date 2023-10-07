@@ -36,17 +36,17 @@ def train(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # Set up data augmentation transforms for training data
-    train_transforms = transforms.Compose([
-    transforms.RandomRotation(15),  # Corrected import
-    transforms.RandomHorizontalFlip(),  # Corrected import
-    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-    transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
-    transforms.ToTensor(),
+    transform = dense_transforms.Compose([
+    dense_transforms.RandomRotation(15),
+    dense_transforms.RandomHorizontalFlip(),
+    dense_transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+    dense_transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
+    dense_transforms.ToTensor(),
 ])
 
     # Data loading and preprocessing with data augmentation
     #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=train_transforms)
-    train_loader, valid_loader = load_dense_data(args.train_data, num_workers=args.num_workers, transform=train_transforms)
+    train_loader, valid_loader = load_dense_data(args.train_data, num_workers=args.num_workers, transform=dense_transforms)
 
     # Set up TensorBoard loggers
     train_logger, valid_logger = None, None

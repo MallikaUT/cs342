@@ -68,19 +68,15 @@ class DenseSuperTuxDataset(Dataset):
     def __len__(self):
         return len(self.files)
 
-    def __getitem__(self, idx):
-        b = self.files[idx]
-        im = Image.open(b + '_im.jpg')
-        lbl = Image.open(b + '_seg.png')
+def __getitem__(self, idx):
+    b = self.files[idx]
+    im = Image.open(b + '_im.jpg')
+    lbl = Image.open(b + '_seg.png')
+    
+    if self.transform is not None:
+        im, lbl = self.transform(im, lbl)
         
-        # Convert PIL Images to tensors
-        im = F.to_tensor(im)
-        lbl = F.to_tensor(lbl).long()  # Convert labels to long tensor
-        
-        if self.transform is not None:
-            im, lbl = self.transform(im, lbl)
-        
-        return im, lbl
+    return im, lbl
 
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):

@@ -1,103 +1,106 @@
 import torch
-import numpy as np
-import os
-
-from models import FCN, save_model  # Import your FCN model
-from utils import load_dense_data, ConfusionMatrix
-from dense_transforms import Compose, RandomHorizontalFlip, RandomCrop, Normalize, ToTensor
+import torch.optim as optim
 import torch.utils.tensorboard as tb
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from .models import FCN, save_model
+from .utils import load_dense_data, ConfusionMatrix, dense_transforms
+from os import path
+import numpy as np
+import torch.nn as nn
+
+# Define the FCN model class (you can use the previously defined FCN class)
+class FCN(nn.Module):
+    def __init__(self, num_classes=5):
+        super(FCN, self).__init__()
+        # Define your FCN architecture here
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(128, num_classes, kernel_size=1)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = self.conv3(x)
+        return x
 
 def train(args):
-    # Create the output directory for model checkpoints
-    if not os.path.exists(args.checkpoint_dir):
-        os.makedirs(args.checkpoint_dir)
+    # Initialize the FCN model
+    model = FCN()
 
-    model = FCN(num_classes=args.num_classes)  # Adjust num_classes based on your task
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-
-    train_logger, valid_logger = None, None
-    if args.log_dir is not None:
-        train_logger = tb.SummaryWriter(os.path.join(args.log_dir, 'train'), flush_secs=1)
-        valid_logger = tb.SummaryWriter(os.path.join(args.log_dir, 'valid'), flush_secs=1)
-
-    # Define transformations for data augmentation and preprocessing
-    transform = Compose([
-        RandomHorizontalFlip(flip_prob=0.5),
-        RandomCrop(size=(args.image_size, args.image_size)),
-        Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ToTensor()
-    ])
-
-    # Load the train and validation datasets using load_dense_data function
-    train_loader, valid_loader = load_dense_data(args.train_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=transform)
-
-    # Define loss function (e.g., CrossEntropyLoss) and optimizer (e.g., Adam)
+    # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    for epoch in range(args.num_epochs):
-        model.train()  # Set the model to training mode
+    # Set up data augmentation transforms for training data
+    train_transforms = transforms.Compose([
+        transforms.RandomRotation(15),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
+        transforms.ToTensor(),
+    ])
+
+    # Data loading and preprocessing with data augmentation
+    #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size,
+                                                # transform=train_transforms)
+
+    #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
+    train_loader, valid_loader = load_dense_data(args.train_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
+
+    # Set up TensorBoard loggers
+    train_logger, valid_logger = None, None
+    if args.log_dir is not None:
+        train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
+        valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
+
+    # Training loop
+    for epoch in range(args.epochs):
+        model.train()
         total_loss = 0.0
+        confusion_matrix = ConfusionMatrix()
 
-        for batch_idx, (images, labels) in enumerate(train_loader):
-            images, labels = images.to(device), labels.to(device)
-            optimizer.zero_grad()  # Zero the gradient buffers
-            logits = model(images)  # Forward pass
+        for batch_data, batch_labels in train_loader:
+            optimizer.zero_grad()
+            outputs = model(batch_data)
+            loss = criterion(outputs, batch_labels)
+            loss.backward()
+            optimizer.step()
 
-            # Calculate the loss
-            loss = criterion(logits, labels)
             total_loss += loss.item()
 
-            loss.backward()  # Backpropagation
-            optimizer.step()  # Update weights
+            # Update confusion matrix and calculate IoU
+            confusion_matrix.add(outputs.argmax(1), batch_labels)
+            iou = confusion_matrix.iou()
 
-            # Logging
-            if train_logger is not None:
-                log(train_logger, images, labels, logits, epoch * len(train_loader) + batch_idx)
-
+        # Calculate average loss for the epoch
         avg_loss = total_loss / len(train_loader)
-        print(f"Epoch [{epoch+1}/{args.num_epochs}] - Loss: {avg_loss:.4f}")
 
-        # Validation
-        model.eval()  # Set the model to evaluation mode
-        confusion_matrix = ConfusionMatrix(num_classes=args.num_classes)
-        with torch.no_grad():
-            for batch_idx, (images, labels) in enumerate(valid_loader):
-                images, labels = images.to(device), labels.to(device)
-                logits = model(images)
-                confusion_matrix.add(logits.argmax(1), labels)
+        # Log training metrics
+        if train_logger:
+            train_logger.add_scalar('train/loss', avg_loss, epoch)
+            train_logger.add_scalar('train/iou', iou, epoch)
 
-        iou = confusion_matrix.iou()
-        print(f"Validation IoU: {iou:.4f}")
+        print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f} - IoU: {iou:.4f}')
 
-        # Save model checkpoints
-        if (epoch + 1) % args.save_interval == 0:
-            checkpoint_path = os.path.join(args.checkpoint_dir, f'epoch_{epoch+1}.pt')
-            save_model(model, checkpoint_path)
-
-    # Save the final trained model
-    final_checkpoint_path = os.path.join(args.checkpoint_dir, 'final_model.pt')
-    save_model(model, final_checkpoint_path)
-
-def log(logger, imgs, lbls, logits, global_step):
-    # Your existing log function
-    pass
+    # Save the trained model
+    save_model(model)
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log_dir', default='logs')  # Specify the log directory
-    parser.add_argument('--train_data', default='data/train')  # Adjust the default path
-    parser.add_argument('--checkpoint_dir', default='checkpoints')  # Specify the checkpoint directory
-    parser.add_argument('--batch_size', type=int, default=8)  # Adjust batch size
-    parser.add_argument('--num_workers', type=int, default=4)  # Adjust number of workers
-    parser.add_argument('--num_epochs', type=int, default=10)  # Adjust the number of epochs
-    parser.add_argument('--lr', type=float, default=0.001)  # Adjust learning rate
-    parser.add_argument('--image_size', type=int, default=256)  # Specify the image size
-    parser.add_argument('--num_classes', type=int, default=21)  # Specify the number of classes
-    parser.add_argument('--save_interval', type=int, default=1)  # Specify how often to save checkpoints
+
+    parser.add_argument('--log_dir')
+    # Custom arguments
+    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--train_data', default='data/train')
+    parser.add_argument('--valid_data', default='data/valid')
+    parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
+    print(args.train_data)
+    print(args.valid_data)
     train(args)

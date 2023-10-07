@@ -12,10 +12,12 @@ from .dense_transforms import RandomRotation
 
 import torch.nn.functional as F  # Import F for activation functions
 
+
+# It seems you've commented out the FCN class definition here. Ensure it's defined correctly in your models.py file.
+
 def train(args):
     # Initialize the FCN model
-    #model = FCN()
-    model = FCN(num_classes=5)
+    model = FCN()  # Make sure your FCN model is correctly defined in the models.py file.
 
     # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
     criterion = torch.nn.CrossEntropyLoss()
@@ -53,7 +55,6 @@ def train(args):
             assert batch_labels.dim() == 3
             
             # Calculate loss
-            #loss = criterion(outputs, batch_labels)
             loss = criterion(outputs, batch_labels.long())
             loss.backward()
             optimizer.step()
@@ -62,9 +63,7 @@ def train(args):
 
             # Update confusion matrix and calculate IoU
             confusion_matrix.add(outputs.argmax(1), batch_labels)
-            #iou = confusion_matrix.iou()
-            iou = confusion_matrix.iou
-
+            iou = confusion_matrix.iou  # Note: This should be a function call, not a Tensor
 
         # Calculate average loss for the epoch
         avg_loss = total_loss / len(train_loader)

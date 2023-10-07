@@ -67,7 +67,8 @@ def train(args):
             assert batch_labels.dim() == 3
             
             # Calculate loss
-            loss = criterion(outputs, batch_labels)
+            #loss = criterion(outputs, batch_labels)
+            loss = criterion(outputs, batch_labels.long())
             loss.backward()
             optimizer.step()
 

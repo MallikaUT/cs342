@@ -3,24 +3,21 @@ import torch.optim as optim
 import torch.utils.tensorboard as tb
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from .models import FCN, save_model
-from .utils import load_dense_data, ConfusionMatrix, dense_transforms
+from models import FCN, save_model  # Ensure that your FCN class is correctly defined in 'models.py'
+from utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
 import torch.nn as nn
-from .dense_transforms import RandomRotation
 
-import torch.nn.functional as F  # Import F for activation functions
-
-
-# It seems you've commented out the FCN class definition here. Ensure it's defined correctly in your models.py file.
+# Import F for activation functions
+import torch.nn.functional as F  
 
 def train(args):
     # Initialize the FCN model
-    model = FCN()  # Make sure your FCN model is correctly defined in the models.py file.
+    model = FCN(num_classes=5)  # Replace NUM_CLASSES with the actual number of classes in your dataset
 
     # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss()  # Consider using class weights for imbalanced data
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # Set up data augmentation transforms for training data
@@ -45,7 +42,7 @@ def train(args):
     for epoch in range(args.epochs):
         model.train()
         total_loss = 0.0
-        confusion_matrix = ConfusionMatrix()
+        confusion_matrix = ConfusionMatrix(num_classes=NUM_CLASSES)  # Replace NUM_CLASSES with the actual number of classes
 
         for batch_data, batch_labels in train_loader:
             optimizer.zero_grad()
@@ -63,10 +60,12 @@ def train(args):
 
             # Update confusion matrix and calculate IoU
             confusion_matrix.add(outputs.argmax(1), batch_labels)
-            iou = confusion_matrix.iou  # Note: This should be a function call, not a Tensor
-
+        
         # Calculate average loss for the epoch
         avg_loss = total_loss / len(train_loader)
+
+        # Calculate IoU using the confusion matrix
+        iou = confusion_matrix.iou()
 
         # Log training metrics
         if train_logger:
@@ -93,5 +92,8 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
+
+    # Define the actual number of classes in your dataset
+    NUM_CLASSES =5  # Replace with the actual number of classes
 
     train(args)

@@ -1,106 +1,76 @@
 import torch
-import torch.optim as optim
-import torch.utils.tensorboard as tb
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from .models import FCN, save_model
-from .utils import load_dense_data, ConfusionMatrix, dense_transforms
-from os import path
 import numpy as np
-import torch.nn as nn
 
-# Define the FCN model class (you can use the previously defined FCN class)
-class FCN(nn.Module):
-    def __init__(self, num_classes=5):
-        super(FCN, self).__init__()
-        # Define your FCN architecture here
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(128, num_classes, kernel_size=1)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.conv3(x)
-        return x
+from .models import FCN, save_model
+from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
+from . import dense_transforms
+import torch.utils.tensorboard as tb
 
 def train(args):
-    # Initialize the FCN model
-    model = FCN()
-
-    # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-
-    # Set up data augmentation transforms for training data
-    train_transforms = transforms.Compose([
-        transforms.RandomRotation(15),
-        transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
-        transforms.ToTensor(),
-    ])
-
-    # Data loading and preprocessing with data augmentation
-    #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size,
-                                                # transform=train_transforms)
-
-    #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
-    train_loader, valid_loader = load_dense_data(args.train_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
-
-    # Set up TensorBoard loggers
+    from os import path
+    model = FCN(num_classes=21)  # Adjust num_classes based on your task
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
 
-    # Training loop
-    for epoch in range(args.epochs):
-        model.train()
+    # Load the train and validation datasets using load_dense_data function
+    train_loader, valid_loader = load_dense_data(args.train_data, batch_size=args.batch_size, num_workers=int(args.num_workers))
+
+    # Define loss function (e.g., CrossEntropyLoss) and optimizer (e.g., Adam)
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    for epoch in range(args.num_epochs):
+        model.train()  # Set the model to training mode
         total_loss = 0.0
-        confusion_matrix = ConfusionMatrix()
 
-        for batch_data, batch_labels in train_loader:
-            optimizer.zero_grad()
-            outputs = model(batch_data)
-            loss = criterion(outputs, batch_labels)
-            loss.backward()
-            optimizer.step()
+        for batch_idx, (images, labels) in enumerate(train_loader):
+            optimizer.zero_grad()  # Zero the gradient buffers
+            logits = model(images)  # Forward pass
 
+            # Calculate the loss
+            loss = criterion(logits, labels)
             total_loss += loss.item()
 
-            # Update confusion matrix and calculate IoU
-            confusion_matrix.add(outputs.argmax(1), batch_labels)
-            iou = confusion_matrix.iou()
+            loss.backward()  # Backpropagation
+            optimizer.step()  # Update weights
 
-        # Calculate average loss for the epoch
+            # Logging
+            if train_logger is not None:
+                log(train_logger, images, labels, logits, epoch * len(train_loader) + batch_idx)
+
         avg_loss = total_loss / len(train_loader)
+        print(f"Epoch [{epoch+1}/{args.num_epochs}] - Loss: {avg_loss:.4f}")
 
-        # Log training metrics
-        if train_logger:
-            train_logger.add_scalar('train/loss', avg_loss, epoch)
-            train_logger.add_scalar('train/iou', iou, epoch)
+        # Validation
+        model.eval()  # Set the model to evaluation mode
+        confusion_matrix = ConfusionMatrix(num_classes=21)  # Adjust num_classes
+        with torch.no_grad():
+            for batch_idx, (images, labels) in enumerate(valid_loader):
+                logits = model(images)
+                confusion_matrix.add(logits.argmax(1), labels)
 
-        print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f} - IoU: {iou:.4f}')
+        iou = confusion_matrix.iou()
+        print(f"Validation IoU: {iou:.4f}")
 
     # Save the trained model
     save_model(model)
+
+def log(logger, imgs, lbls, logits, global_step):
+    # Your existing log function
+    pass
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-
     parser.add_argument('--log_dir')
-    # Custom arguments
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--train_data', default='data/train')
-    parser.add_argument('--valid_data', default='data/valid')
-    parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
+    parser.add_argument('--train_data', default='data/train')  # Adjust the default path
+    parser.add_argument('--batch_size', type=int, default=8)  # Adjust batch size
+    parser.add_argument('--num_workers', type=int, default=4)  # Adjust number of workers
+    parser.add_argument('--num_epochs', type=int, default=10)  # Adjust the number of epochs
+    parser.add_argument('--lr', type=float, default=0.001)  # Adjust learning rate
 
     args = parser.parse_args()
-    print(args.train_data)
-    print(args.valid_data)
     train(args)

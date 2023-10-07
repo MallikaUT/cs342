@@ -15,7 +15,7 @@ import torch.nn.functional as F  # Import F for activation functions
 def train(args):
     # Initialize the FCN model
     #model = FCN()
-    model = FCN(num_classes=4)
+    model = FCN(num_classes=10)
     print(model)
 
     # Define the loss function (CrossEntropyLoss) and optimizer (Adam)

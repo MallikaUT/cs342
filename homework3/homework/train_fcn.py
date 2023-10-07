@@ -10,7 +10,6 @@ import numpy as np
 import torch.nn as nn
 from .dense_transforms import RandomRotation
 
-
 import torch.nn.functional as F  # Import F for activation functions
 
 # Define the FCN model class (you can use the previously defined FCN class)
@@ -38,18 +37,16 @@ def train(args):
 
     # Set up data augmentation transforms for training data
     transform = dense_transforms.Compose([
-    dense_transforms.RandomRotation(15),
-    dense_transforms.RandomHorizontalFlip(),
-    dense_transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-    dense_transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
-    dense_transforms.ToTensor(),
-])
-    transform = RandomRotation(15)
-    # Data loading and preprocessing with data augmentation
-    #train_loader, valid_loader = load_dense_data(args.train_data, num_workers=args.num_workers, transform=transform)
-    train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, num_workers=args.num_workers, transform=transform)
+        dense_transforms.RandomRotation(15),
+        dense_transforms.RandomHorizontalFlip(),
+        dense_transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        dense_transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
+        dense_transforms.ToTensor(),
+    ])
 
-    
+    # Data loading and preprocessing with data augmentation
+    train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=transform)
+
     # Set up TensorBoard loggers
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
@@ -65,6 +62,11 @@ def train(args):
         for batch_data, batch_labels in train_loader:
             optimizer.zero_grad()
             outputs = model(batch_data)
+            
+            # Ensure batch_labels has the correct shape (batch_size, height, width)
+            assert batch_labels.dim() == 3
+            
+            # Calculate loss
             loss = criterion(outputs, batch_labels)
             loss.backward()
             optimizer.step()
@@ -103,6 +105,5 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
-    print(args.train_data)
-    print(args.valid_data)
+
     train(args)

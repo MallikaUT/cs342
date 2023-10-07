@@ -78,6 +78,7 @@ def train(args):
 
     # Save the trained model
     save_model(model)
+    print(model)
 
 if __name__ == '__main__':
     import argparse
@@ -94,5 +95,6 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
+  
 
     train(args)

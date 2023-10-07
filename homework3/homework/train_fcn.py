@@ -36,12 +36,12 @@ def train(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # Set up data augmentation transforms for training data
-    train_transforms = dense_transforms.Compose([
-    dense_transforms.RandomRotation(15),
-    dense_transforms.RandomHorizontalFlip(),
-    dense_transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-    dense_transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
-    dense_transforms.ToTensor(),
+    train_transforms = transforms.Compose([
+    transforms.RandomRotation(15),  # Corrected import
+    transforms.RandomHorizontalFlip(),  # Corrected import
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+    transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
+    transforms.ToTensor(),
 ])
 
     # Data loading and preprocessing with data augmentation

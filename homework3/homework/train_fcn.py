@@ -76,7 +76,9 @@ def train(args):
 
             # Update confusion matrix and calculate IoU
             confusion_matrix.add(outputs.argmax(1), batch_labels)
-            iou = confusion_matrix.iou()
+            #iou = confusion_matrix.iou()
+            iou = confusion_matrix.iou
+
 
         # Calculate average loss for the epoch
         avg_loss = total_loss / len(train_loader)

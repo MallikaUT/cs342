@@ -3,7 +3,7 @@ import torch.optim as optim
 import torch.utils.tensorboard as tb
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from .models import FCN, save_model
+from models import FCN, save_model
 from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np

@@ -94,6 +94,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Define the actual number of classes in your dataset
-    NUM_CLASSES =5  # Replace with the actual number of classes
+    #NUM_CLASSES =5  # Replace with the actual number of classes
 
     train(args)

@@ -72,8 +72,14 @@ class DenseSuperTuxDataset(Dataset):
         b = self.files[idx]
         im = Image.open(b + '_im.jpg')
         lbl = Image.open(b + '_seg.png')
+        
+        # Convert PIL Images to tensors
+        im = F.to_tensor(im)
+        lbl = F.to_tensor(lbl).long()  # Convert labels to long tensor
+        
         if self.transform is not None:
             im, lbl = self.transform(im, lbl)
+        
         return im, lbl
 
 

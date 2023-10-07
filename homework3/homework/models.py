@@ -52,35 +52,49 @@ class CNNClassifier(nn.Module):
         return x
 
 class FCN(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes):
         super(FCN, self).__init__()
-
-        # Input normalization
-        self.bn1 = nn.BatchNorm2d(3)
         
-        # Convolutional layers
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
-        self.relu1 = nn.ReLU()
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        # Encoder (downsampling path)
+        self.encoder_conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.encoder_conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.encoder_conv3 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
         
-        # Up-convolutions
-        self.upconv1 = nn.ConvTranspose2d(32, 16, kernel_size=4, stride=2, padding=1, output_padding=0)
-        self.relu2 = nn.ReLU()
-        self.upconv2 = nn.ConvTranspose2d(16, 5, kernel_size=4, stride=2, padding=1, output_padding=0)
-
+        # Max-pooling layers for downsampling
+        self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        
+        # Decoder (upsampling path)
+        self.decoder_conv1 = nn.Conv2d(256, 128, kernel_size=3, padding=1)
+        self.decoder_conv2 = nn.Conv2d(128, 64, kernel_size=3, padding=1)
+        
+        # Transposed convolution layers for upsampling
+        self.trans_conv1 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
+        self.trans_conv2 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
+        
+        # Final convolution layer for class prediction
+        self.final_conv = nn.Conv2d(64, num_classes, kernel_size=1)
+        
     def forward(self, x):
-        x = self.bn1(x)
+        # Encoder
+        x1 = self.encoder_conv1(x)
+        x2 = self.max_pool(x1)
+        x2 = self.encoder_conv2(x2)
+        x3 = self.max_pool(x2)
+        x3 = self.encoder_conv3(x3)
         
-        x = self.conv1(x)
-        x = self.relu1(x)
-        x = self.pool1(x)
+        # Decoder with skip connections
+        x = self.trans_conv1(x3)
+        x = torch.cat((x, x2), dim=1)  # Skip connection from encoder
+        x = self.decoder_conv1(x)
         
-        x = self.upconv1(x)
-        x = self.relu2(x)
-        x = self.upconv2(x)
+        x = self.trans_conv2(x)
+        x = torch.cat((x, x1), dim=1)  # Skip connection from encoder
+        x = self.decoder_conv2(x)
+        
+        # Final convolution for class prediction
+        x = self.final_conv(x)
         
         return x
-
        #raise NotImplementedError('FCN.forward')
 
 

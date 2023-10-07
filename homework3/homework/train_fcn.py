@@ -101,5 +101,6 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
-    print(args)
+    print(args.train_data)
+    print(args.valid_data)
     train(args)

@@ -30,10 +30,7 @@ def train(args):
     ])
 
     # Load the train and validation datasets using load_dense_data function
-    train_loader, valid_loader = load_dense_data(os.path.join(args.train_data, 'train'),  # Corrected path
-                                                 batch_size=args.batch_size,
-                                                 num_workers=args.num_workers,
-                                                 transform=transform)
+    train_loader, valid_loader = load_dense_data(args.train_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=transform)
 
     # Define loss function (e.g., CrossEntropyLoss) and optimizer (e.g., Adam)
     criterion = torch.nn.CrossEntropyLoss()
@@ -92,7 +89,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_dir', default='logs')  # Specify the log directory
-    parser.add_argument('--train_data', default='dense_data/data')  # Adjust the default path
+    parser.add_argument('--train_data', default='data/train')  # Adjust the default path
     parser.add_argument('--checkpoint_dir', default='checkpoints')  # Specify the checkpoint directory
     parser.add_argument('--batch_size', type=int, default=8)  # Adjust batch size
     parser.add_argument('--num_workers', type=int, default=4)  # Adjust number of workers

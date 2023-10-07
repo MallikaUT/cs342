@@ -8,7 +8,7 @@ from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
 import torch.nn as nn
-from homework.dense_transforms import RandomRotation
+from .dense_transforms import RandomRotation
 
 
 import torch.nn.functional as F  # Import F for activation functions
@@ -44,11 +44,11 @@ def train(args):
     dense_transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
     dense_transforms.ToTensor(),
 ])
-
+    transform = RandomRotation(15)
     # Data loading and preprocessing with data augmentation
     #train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=train_transforms)
-    train_loader, valid_loader = load_dense_data(args.train_data, num_workers=args.num_workers, transform=dense_transforms)
-
+    #train_loader, valid_loader = load_dense_data(args.train_data, num_workers=args.num_workers, transform=dense_transforms)
+    train_loader, valid_loader = load_dense_data(args.train_data, num_workers=args.num_workers, transform=transform)
     # Set up TensorBoard loggers
     train_logger, valid_logger = None, None
     if args.log_dir is not None:

@@ -162,12 +162,16 @@ class ConfusionMatrix(object):
 
 
 if __name__ == '__main__':
-    dataset = DenseSuperTuxDataset('dense_data/train', transform=dense_transforms.Compose(
-        [dense_transforms.RandomHorizontalFlip(), dense_transforms.ToTensor()]))
+    train_dataset_path = 'dense_data/train'
+    valid_dataset_path = 'dense_data/valid'
+    
+    # Load training and validation data loaders
+    train_loader, valid_loader = load_dense_data(train_dataset_path, valid_dataset_path, batch_size=32, num_workers=0)
+
     from pylab import show, imshow, subplot, axis
 
     for i in range(15):
-        im, lbl = dataset[i]
+        im, lbl = train_loader.dataset[i]  # Access the dataset from the loader
         subplot(5, 6, 2 * i + 1)
         imshow(F.to_pil_image(im))
         axis('off')
@@ -175,9 +179,10 @@ if __name__ == '__main__':
         imshow(dense_transforms.label_to_pil_image(lbl))
         axis('off')
     show()
+
     import numpy as np
 
     c = np.zeros(5)
-    for im, lbl in dataset:
+    for im, lbl in train_loader.dataset:  # Access the dataset from the loader
         c += np.bincount(lbl.view(-1), minlength=len(DENSE_LABEL_NAMES))
     print(100 * c / np.sum(c))

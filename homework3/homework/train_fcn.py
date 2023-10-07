@@ -12,21 +12,6 @@ from .dense_transforms import RandomRotation
 
 import torch.nn.functional as F  # Import F for activation functions
 
-# Define the FCN model class (you can use the previously defined FCN class)
-class FCN(nn.Module):
-    def __init__(self, num_classes=5):
-        super(FCN, self).__init__()
-        # Define your FCN architecture here
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(128, num_classes, kernel_size=1)
-
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.conv3(x)
-        return x
-
 def train(args):
     # Initialize the FCN model
     model = FCN()

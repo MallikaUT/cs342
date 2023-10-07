@@ -3,8 +3,8 @@ import torch.optim as optim
 import torch.utils.tensorboard as tb
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from models import FCN, save_model  # Ensure that your FCN class is correctly defined in 'models.py'
-from utils import load_dense_data, ConfusionMatrix, dense_transforms
+from .models import FCN, save_model  # Ensure that your FCN class is correctly defined in 'models.py'
+from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
 import torch.nn as nn

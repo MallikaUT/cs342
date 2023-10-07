@@ -68,15 +68,16 @@ class DenseSuperTuxDataset(Dataset):
     def __len__(self):
         return len(self.files)
 
-def __getitem__(self, idx):
-    b = self.files[idx]
-    im = Image.open(b + '_im.jpg')
-    lbl = Image.open(b + '_seg.png')
+    def __getitem__(self, idx):
+      b = self.files[idx]
+      im = Image.open(b + '_im.jpg')
+      lbl = Image.open(b + '_seg.png')
     
-    if self.transform is not None:
+      if self.transform is not None:
         im, lbl = self.transform(im, lbl)
         
-    return im, lbl
+      return im, lbl
+
 
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):

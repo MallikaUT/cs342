@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     #label_data = np.load('label_data.npy')  # Replace with the path to your label data
-    label_data = np.load('data/labels.npy') 
+    label_data = np.load('dense_data/labels.npy') 
     label_tensor = torch.from_numpy(label_data)
     unique_labels = torch.unique(label_tensor)
     num_classes = len(unique_labels)

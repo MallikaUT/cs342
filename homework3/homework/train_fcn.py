@@ -16,6 +16,7 @@ def train(args):
     # Initialize the FCN model
     #model = FCN()
     model = FCN(num_classes=4)
+    print(model)
 
     # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
     criterion = torch.nn.CrossEntropyLoss()
@@ -78,7 +79,7 @@ def train(args):
 
     # Save the trained model
     save_model(model)
-    print(model)
+    
 
 if __name__ == '__main__':
     import argparse

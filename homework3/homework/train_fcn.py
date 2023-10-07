@@ -8,6 +8,8 @@ from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
 import torch.nn as nn
+from torch.utils.data import DataLoader
+
 import torch.nn.functional as F  # Import F for activation functions
 
 # Define the FCN model class (you can use the previously defined FCN class)

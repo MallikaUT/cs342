@@ -95,6 +95,8 @@ class FCN(nn.Module):
         x = self.final_conv(x)
         
         return x
+       #raise NotImplementedError('FCN.forward')
+
 
 model_factory = {
     'cnn': CNNClassifier,

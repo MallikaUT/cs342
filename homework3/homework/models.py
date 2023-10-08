@@ -97,7 +97,10 @@ class FCN(nn.Module):
 def save_model(model, model_type):
     from torch import save
     from os import path
-    return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), f'{model_type}.th'))
+    for n, m in model_factory.items():
+        if isinstance(model, m):
+            return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), f'{n}_{model_type}.th'))
+    raise ValueError("model type '%s' not supported!" % str(type(model)))
 
 def load_model(model_type):
     from torch import load

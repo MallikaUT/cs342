@@ -52,7 +52,7 @@ class CNNClassifier(nn.Module):
         return x
 
 class FCN(nn.Module):
-    def __init__(self, num_classes):
+    def __init__(self):
         super(FCN, self).__init__()
         
         # Encoder (downsampling path)
@@ -72,7 +72,7 @@ class FCN(nn.Module):
         self.trans_conv2 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
         
         # Final convolution layer for class prediction
-        self.final_conv = nn.Conv2d(64, num_classes, kernel_size=1)
+        self.final_conv = nn.Conv2d(64, kernel_size=1)
         
     def forward(self, x):
         # Encoder

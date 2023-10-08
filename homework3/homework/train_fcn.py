@@ -16,7 +16,7 @@ def train(args):
     # Initialize the FCN model
     #model = FCN()
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    model = FCN().to(device)
+    model = FCN(num_classes=5).to(device)
     
 
     # Define the loss function (CrossEntropyLoss) and optimizer (Adam)

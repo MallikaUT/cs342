@@ -8,6 +8,7 @@ from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 from os import path
 import numpy as np
 import torch.nn as nn
+import argparse
 from .dense_transforms import RandomRotation
 
 import torch.nn.functional as F  # Import F for activation functions
@@ -95,7 +96,12 @@ if __name__ == '__main__':
     parser.add_argument('--valid_data', default='dense_data/valid')  # Updated valid_data path
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
+    #args = parser.parse_args()
+    parser.add_argument('--model_type', default='fcn', help='Model type (cnn or fcn)')
+    parser.add_argument('--num_classes', type=int, default=5, help='Number of classes')
+
     args = parser.parse_args()
   
 
     train(args)
+    

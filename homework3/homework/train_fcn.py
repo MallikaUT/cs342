@@ -14,13 +14,12 @@ import torch.nn.functional as F  # Import F for activation functions
 
 def train(args):
     # Initialize the FCN model
+    #model = FCN()
     model = FCN(num_classes=5)
-    #print(model)
+    print(model)
 
     # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
     criterion = torch.nn.CrossEntropyLoss()
-
-    # You can experiment with different learning rates
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # Set up data augmentation transforms for training data
@@ -50,11 +49,12 @@ def train(args):
         for batch_data, batch_labels in train_loader:
             optimizer.zero_grad()
             outputs = model(batch_data)
-
+            
             # Ensure batch_labels has the correct shape (batch_size, height, width)
             assert batch_labels.dim() == 3
-
+            
             # Calculate loss
+            #loss = criterion(outputs, batch_labels)
             loss = criterion(outputs, batch_labels.long())
             loss.backward()
             optimizer.step()
@@ -63,7 +63,9 @@ def train(args):
 
             # Update confusion matrix and calculate IoU
             confusion_matrix.add(outputs.argmax(1), batch_labels)
+            #iou = confusion_matrix.iou()
             iou = confusion_matrix.iou
+
 
         # Calculate average loss for the epoch
         avg_loss = total_loss / len(train_loader)
@@ -76,9 +78,8 @@ def train(args):
         print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f} - IoU: {iou:.4f}')
 
     # Save the trained model
-    #save_model(model)
-    #save_model(model, model_type)
     save_model(model)
+    
 
 if __name__ == '__main__':
     import argparse
@@ -95,6 +96,6 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
 
     args = parser.parse_args()
+  
 
-    #train(args)
     train(args)

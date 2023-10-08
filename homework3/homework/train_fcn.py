@@ -14,9 +14,7 @@ import torch.nn.functional as F  # Import F for activation functions
 
 def train(args):
     # Initialize the FCN model
-    #model = FCN()
-    model = FCN(num_classes=10)
-    print(model)
+    model = FCN(num_classes=5)  # Make sure the num_classes matches your dataset
 
     # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
     criterion = torch.nn.CrossEntropyLoss()
@@ -24,10 +22,13 @@ def train(args):
 
     # Set up data augmentation transforms for training data
     transform = dense_transforms.Compose([
+        # Adjust data augmentation as needed for segmentation
+        # Ensure input size matches model expectations
+        dense_transforms.Resize((128, 128)),  # Adjust size as needed
         dense_transforms.RandomRotation(15),
         dense_transforms.RandomHorizontalFlip(),
         dense_transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        dense_transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
+        dense_transforms.RandomResizedCrop(128, scale=(0.8, 1.0)),  # Adjust size as needed
         dense_transforms.ToTensor(),
     ])
 
@@ -54,7 +55,6 @@ def train(args):
             assert batch_labels.dim() == 3
             
             # Calculate loss
-            #loss = criterion(outputs, batch_labels)
             loss = criterion(outputs, batch_labels.long())
             loss.backward()
             optimizer.step()
@@ -63,12 +63,12 @@ def train(args):
 
             # Update confusion matrix and calculate IoU
             confusion_matrix.add(outputs.argmax(1), batch_labels)
-            #iou = confusion_matrix.iou()
-            iou = confusion_matrix.iou
-
-
+        
         # Calculate average loss for the epoch
         avg_loss = total_loss / len(train_loader)
+
+        # Calculate IoU
+        iou = confusion_matrix.iou()
 
         # Log training metrics
         if train_logger:
@@ -97,5 +97,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
   
-
     train(args)

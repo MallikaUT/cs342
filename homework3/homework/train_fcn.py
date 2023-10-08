@@ -12,7 +12,7 @@ from .dense_transforms import RandomRotation
 
 import torch.nn.functional as F  # Import F for activation functions
 
-def train(args,model_type):
+def train(args):
     # Initialize the FCN model
     model = FCN(num_classes=5)
     print(model)
@@ -77,7 +77,8 @@ def train(args,model_type):
 
     # Save the trained model
     #save_model(model)
-    save_model(model, model_type)
+    #save_model(model, model_type)
+    save_model(model, args.model_type)
 
 if __name__ == '__main__':
     import argparse
@@ -96,4 +97,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     #train(args)
-    train(args, args.model_type)
+    train(args)

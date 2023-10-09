@@ -28,7 +28,7 @@ def extract_peak(heatmap, max_pool_ks=7, min_score=-5, max_det=100):
     #raise NotImplementedError('extract_peak')
 
 
-class Detector(torch.nn.Module):
+class CNNClassifier(torch.nn.Module):
     class Block(torch.nn.Module):
         def __init__(self, n_input, n_output, kernel_size=3, stride=2):
             super().__init__()

@@ -62,29 +62,20 @@ class DenseSuperTuxDataset(Dataset):
         self.transform = transform
         self.num_classes = num_classes
         self.samples = []  # List to store (image, label) pairs
-        self.class_distribution = [0] * num_classes
 
         # Populate self.samples with (image, label) pairs
         self._load_samples()
 
+        # Calculate the class distribution
+        self.class_distribution = self.compute_class_distribution()
+
     def _load_samples(self):
-    # Get a list of all image files in the dataset directory
-        images_dir = self.dataset_path
-        image_files = [f for f in os.listdir(images_dir) if f.endswith('.jpg') or f.endswith('.png')]
+        # Get a list of all image files in the dataset directory
+        dataset_dir = self.dataset_path
+        image_files = [f for f in os.listdir(dataset_dir) if f.endswith('.jpg') or f.endswith('.png')]
 
-    # Create a list of (image, label) pairs
-        self.samples = [(os.path.join(images_dir, img), os.path.join(images_dir, img.replace('.jpg', '.label'))) for img in image_files]
-
-
-        # Iterate through the files and collect samples
-        for filename in os.listdir(images_dir):
-            if filename.endswith('.png'):
-                image_path = os.path.join(images_dir, filename)
-                label_path = os.path.join(labels_dir, filename)
-
-                # Ensure corresponding label file exists
-                if os.path.exists(label_path):
-                    self.samples.append((image_path, label_path))
+        # Create a list of (image, label) pairs
+        self.samples = [(os.path.join(dataset_dir, img), os.path.join(dataset_dir, img)) for img in image_files]
 
     def __len__(self):
         return len(self.samples)
@@ -101,15 +92,17 @@ class DenseSuperTuxDataset(Dataset):
         return image, label
 
     def compute_class_distribution(self):
+        class_distribution = [0] * self.num_classes
+
         for _, label_path in self.samples:
             label = Image.open(label_path)
             label = torch.tensor(label, dtype=torch.int64)
             unique_classes = torch.unique(label)
             for cls in unique_classes:
                 if cls < self.num_classes:
-                    self.class_distribution[cls] += 1
+                    class_distribution[cls] += 1
 
-        return self.class_distribution
+        return class_distribution
 
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):

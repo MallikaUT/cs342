@@ -32,7 +32,7 @@ def train(args):
     train_data_path = 'dense_data/train'
     valid_data_path = 'dense_data/valid'
     train_loader, valid_loader = load_dense_data(train_data_path, valid_data_path, batch_size=args.batch_size, num_workers=0, transform=transforms)
-
+    print(args.num_classes)
     train_dataset = DenseSuperTuxDataset(dataset_path=train_data_path, transform=Compose([ToTensor()]),num_classes=args.num_classes)
     #train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 

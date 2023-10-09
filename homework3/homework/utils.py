@@ -57,38 +57,56 @@ class SuperTuxDataset(Dataset):
         return self.data[idx]
 
 class DenseSuperTuxDataset(Dataset):
-    def __init__(self, dataset_path, num_classes=None, transform=dense_transforms.ToTensor()):
-        from glob import glob
-        from os import path
-        self.files = []
-        for im_f in glob(path.join(dataset_path, '*_im.jpg')):
-            self.files.append(im_f.replace('_im.jpg', ''))
+    def __init__(self, dataset_path, transform=None, num_classes=None):
+        self.dataset_path = dataset_path
         self.transform = transform
+        self.num_classes = num_classes
+        self.samples = []  # List to store (image, label) pairs
+        self.class_distribution = [0] * num_classes
+
+        # Populate self.samples with (image, label) pairs
+        self._load_samples()
+
+    def _load_samples(self):
+        # Walk through the dataset directory and collect (image, label) pairs
+        # Assuming images are in 'images' subdirectory and labels are in 'labels' subdirectory
+        images_dir = os.path.join(self.dataset_path, 'images')
+        labels_dir = os.path.join(self.dataset_path, 'labels')
+
+        # Iterate through the files and collect samples
+        for filename in os.listdir(images_dir):
+            if filename.endswith('.png'):
+                image_path = os.path.join(images_dir, filename)
+                label_path = os.path.join(labels_dir, filename)
+
+                # Ensure corresponding label file exists
+                if os.path.exists(label_path):
+                    self.samples.append((image_path, label_path))
 
     def __len__(self):
-        return len(self.files)
+        return len(self.samples)
 
-    def __getitem__(self, idx):
-      b = self.files[idx]
-      im = Image.open(b + '_im.jpg')
-      lbl = Image.open(b + '_seg.png')
-    
-      if self.transform is not None:
-        im, lbl = self.transform(im, lbl)
-        
-      return im, lbl
+    def __getitem__(self, index):
+        image_path, label_path = self.samples[index]
+        image = Image.open(image_path)
+        label = Image.open(label_path)
 
-    def compute_class_distribution(self, num_classes=None):
-        # Implement logic to compute the class distribution
-      class_distribution = [0] * num_classes  # Initialize counts for each class
+        if self.transform:
+            image = self.transform(image)
+            label = self.transform(label)
 
-      for sample in self.samples:
-            # Assuming each sample has a label indicating the class
-            label = sample['label']
-            class_distribution[label] += 1
+        return image, label
 
-      return class_distribution
+    def compute_class_distribution(self):
+        for _, label_path in self.samples:
+            label = Image.open(label_path)
+            label = torch.tensor(label, dtype=torch.int64)
+            unique_classes = torch.unique(label)
+            for cls in unique_classes:
+                if cls < self.num_classes:
+                    self.class_distribution[cls] += 1
 
+        return self.class_distribution
 
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):

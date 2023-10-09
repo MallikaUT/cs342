@@ -33,7 +33,9 @@ class DetectionSuperTuxDataset(Dataset):
 
 
 def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
-    dataset = DetectionSuperTuxDataset(dataset_path, **kwargs)
+    transform = dense_transforms.Compose(
+        [dense_transforms.ColorJitter(0.9, 0.9, 0.9, 0.1), dense_transforms.RandomHorizontalFlip(), dense_transforms.ToTensor(), dense_transforms.ToHeatmap()])
+    dataset = DetectionSuperTuxDataset(dataset_path, transform=transform, **kwargs)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 
@@ -46,7 +48,7 @@ if __name__ == '__main__':
 
     fig, axs = subplots(1, 2)
     for i, ax in enumerate(axs.flat):
-        im, kart, bomb, pickup = dataset[100+i]
+        im, kart, bomb, pickup = dataset[100 + i]
         ax.imshow(F.to_pil_image(im), interpolation=None)
         for k in kart:
             ax.add_patch(
@@ -66,12 +68,11 @@ if __name__ == '__main__':
 
     fig, axs = subplots(1, 2)
     for i, ax in enumerate(axs.flat):
-
-        im, *dets = dataset[100+i]
+        im, *dets = dataset[100 + i]
         hm, size = dense_transforms.detections_to_heatmap(dets, im.shape[1:])
         ax.imshow(F.to_pil_image(im), interpolation=None)
         hm = hm.numpy().transpose([1, 2, 0])
-        alpha = 0.25*hm.max(axis=2) + 0.75
+        alpha = 0.25 * hm.max(axis=2) + 0.75
         r = 1 - np.maximum(hm[:, :, 1], hm[:, :, 2])
         g = 1 - np.maximum(hm[:, :, 0], hm[:, :, 2])
         b = 1 - np.maximum(hm[:, :, 0], hm[:, :, 1])

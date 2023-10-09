@@ -14,12 +14,32 @@ def train(args):
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
-
+    
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    model = Detector().to(device)
     """
     Your code here, modify your HW3 code
     Hint: Use the log function below to debug and visualize your model
     """
-    raise NotImplementedError('train')
+    loss = torch.nn.BCEWithLogitsLoss(reduction='none').to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-6)
+
+    train_data = load_detection_data('dense_data/train', num_workers=4)
+
+    for epoch in range(50):
+        model.train()
+        for image, heatmap, delta in train_data:
+            image = image.to(device)
+            heatmap = heatmap.to(device)
+
+            pred_heatmap = model(image)
+
+            l = loss(pred_heatmap, heatmap).mean()
+            l.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+        model.eval()
+    #raise NotImplementedError('train')
     save_model(model)
 
 
@@ -42,6 +62,12 @@ if __name__ == '__main__':
 
     parser.add_argument('--log_dir')
     # Put custom arguments here
+    parser.add_argument('-n', '--num_epoch', type=int, default=20)
+    parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3)
+    parser.add_argument('-g', '--gamma', type=float, default=0, help="class dependent weight for cross entropy")
+    parser.add_argument('-c', '--continue_training', action='store_true')
+    parser.add_argument('-t', '--transform',
+                        default='Compose([ColorJitter(0.9, 0.9, 0.9, 0.1), RandomHorizontalFlip(), ToTensor()])')
 
     args = parser.parse_args()
     train(args)

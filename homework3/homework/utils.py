@@ -11,6 +11,7 @@ import numpy as np
 import random
 from . import dense_transforms
 from glob import glob
+from os import path
 
 LABEL_NAMES = ['background', 'kart', 'pickup', 'nitro', 'bomb', 'projectile']
 DENSE_LABEL_NAMES = ['background', 'kart', 'track', 'bomb/projectile', 'pickup/nitro']
@@ -56,7 +57,7 @@ class SuperTuxDataset(Dataset):
 class DenseSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=dense_transforms.ToTensor()):
         self.files = []
-        for im_f in glob(path.join(dataset_path, '*_im.jpg')):
+        for im_f in glob(path.join(dataset_path, '*_im.jpg')):  # Use 'path.join' here
             self.files.append(im_f.replace('_im.jpg', ''))
         self.transform = transform
 

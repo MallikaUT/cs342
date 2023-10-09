@@ -3,9 +3,8 @@ from os import path
 from torch.utils.data import DataLoader
 import torch.utils.tensorboard as tb
 from .models import FCN, save_model  # Assuming your FCN model and save_model function are in a file named 'models.py'
-from .utils import load_dense_data, ConfusionMatrix, DenseSuperTuxDataset
+from .utils import ConfusionMatrix, DenseSuperTuxDataset
 from .dense_transforms import Compose, ToTensor  # You should import your custom transformations here
-#from dense_super_tux_dataset import DenseSuperTuxDataset  # Make sure you import the dataset
 
 # Define a function to calculate class weights based on class distribution
 def calculate_class_weights(class_distribution):
@@ -27,17 +26,15 @@ def log(writer, step, loss, iou, accuracy):
 def train(args):
     # Initialize your FCN model
     model = FCN(in_channels=args.in_channels, out_channels=args.out_channels)
-    #dataset_path = 'dense_data'
+
     # Create data loaders for training and validation sets
     train_data_path = 'dense_data/train'
     valid_data_path = 'dense_data/valid'
 
     train_dataset = DenseSuperTuxDataset(dataset_path=train_data_path, transform=Compose([ToTensor()]))
-    #train_dataset = DenseSuperTuxDataset('dense_data/train', transform=Compose([ToTensor()]))
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
     valid_dataset = DenseSuperTuxDataset(dataset_path=valid_data_path, transform=Compose([ToTensor()]))
-    #valid_dataset = DenseSuperTuxDataset(split='validation')
     valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize TensorBoard loggers
@@ -46,11 +43,14 @@ def train(args):
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
 
+    # Calculate class distribution for training dataset
+    train_class_distribution = train_dataset.compute_class_distribution()
+
     # Define loss function (CrossEntropyLoss) and optimizer (e.g., Adam)
     criterion = torch.nn.CrossEntropyLoss()
 
-    # Calculate class weights based on your class distribution
-    class_weights = calculate_class_weights(train_loader.dataset.class_distribution())
+    # Calculate class weights based on the class distribution
+    class_weights = calculate_class_weights(train_class_distribution)
 
     # Use class weights in the loss function
     criterion = torch.nn.CrossEntropyLoss(weight=torch.Tensor(class_weights))

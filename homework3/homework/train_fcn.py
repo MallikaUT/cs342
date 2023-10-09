@@ -8,7 +8,6 @@ from .dense_transforms import Compose, ToTensor  # You should import your custom
 from dense_super_tux_dataset import DenseSuperTuxDataset  # Make sure you import the dataset
 
 # Define a function to calculate class weights based on class distribution
-#def calculate_class_weights(class_distribution):
 def calculate_class_weights(class_distribution):
     total_samples = sum(class_distribution)
     class_weights = [total_samples / (class_distribution[i] + 1e-6) for i in range(len(class_distribution))]
@@ -18,7 +17,6 @@ def calculate_class_weights(class_distribution):
     class_weights = [weight / sum_weights for weight in class_weights]
     
     return class_weights
-
 
 def log(writer, step, loss, iou, accuracy):
     # Log loss, IoU, and accuracy
@@ -46,11 +44,11 @@ def train(args):
     # Define loss function (CrossEntropyLoss) and optimizer (e.g., Adam)
     criterion = torch.nn.CrossEntropyLoss()
 
-    # Calculate class weights based on your class distribution (implement the logic)
+    # Calculate class weights based on your class distribution
     class_weights = calculate_class_weights(train_loader.dataset.class_distribution())
 
     # Use class weights in the loss function
-    criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
+    criterion = torch.nn.CrossEntropyLoss(weight=torch.Tensor(class_weights))
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 

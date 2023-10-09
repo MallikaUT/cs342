@@ -54,49 +54,48 @@ class CNNClassifier(nn.Module):
 class FCN(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(FCN, self).__init__()
-        
-        # Initial convolution layers
-        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
-        self.relu1 = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.relu2 = nn.ReLU(inplace=True)
-        
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        
-        # Intermediate convolution layers
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.relu3 = nn.ReLU(inplace=True)
-        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
-        self.relu4 = nn.ReLU(inplace=True)
-        
-        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        
-        # Deconvolution layers (Up-sampling)
-        self.upconv1 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
-        
-        # Skip connection from conv2
-        self.skip1 = nn.Conv2d(64, 64, kernel_size=1)
-        
-        self.upconv2 = nn.ConvTranspose2d(64, out_channels, kernel_size=2, stride=2)
-        
-    def forward(self, x):
-        # Encoder
-        x1 = self.relu2(self.conv2(self.relu1(self.conv1(x))))
-        x2 = self.pool1(x1)
-        
-        x3 = self.relu4(self.conv4(self.relu3(self.conv3(x2))))
-        x4 = self.pool2(x3)
-        
-        # Decoder with skip connections
-        x4_up = self.upconv1(x4)
-        x4_up = self.skip1(x4_up)
-        
-        x3_up = x4_up + x3
-        x3_up = self.upconv2(x3_up)
-        
-        return x3_up
-        #model = FCN(in_channels=3, out_channels=num_classes)
 
+        # Define your convolutional layers
+        self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
+        self.conv4 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
+        self.conv5 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
+
+        # Define your up-convolutional layers
+        self.upconv1 = nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1)
+        self.upconv2 = nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1)
+        self.upconv3 = nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1)
+        self.upconv4 = nn.ConvTranspose2d(64, out_channels, kernel_size=4, stride=2, padding=1)
+
+        # Define skip connections (residual connections)
+        self.skip_conv1 = nn.Conv2d(256, 256, kernel_size=1)
+        self.skip_conv2 = nn.Conv2d(128, 128, kernel_size=1)
+        self.skip_conv3 = nn.Conv2d(64, 64, kernel_size=1)
+
+    def forward(self, x):
+        # Forward pass through convolutional layers
+        x1 = torch.relu(self.conv1(x))
+        x2 = torch.relu(self.conv2(x1))
+        x3 = torch.relu(self.conv3(x2))
+        x4 = torch.relu(self.conv4(x3))
+        x5 = torch.relu(self.conv5(x4))
+
+        # Apply up-convolutions and skip connections
+        x_up1 = torch.relu(self.upconv1(x5))
+        x_up1 = torch.cat([x_up1, self.skip_conv1(x3)], dim=1)
+
+        x_up2 = torch.relu(self.upconv2(x_up1))
+        x_up2 = torch.cat([x_up2, self.skip_conv2(x2)], dim=1)
+
+        x_up3 = torch.relu(self.upconv3(x_up2))
+        x_up3 = torch.cat([x_up3, self.skip_conv3(x1)], dim=1)
+
+        # Final up-convolution to produce segmentation output
+        x_out = self.upconv4(x_up3)
+
+        return x_out
+        
 model_factory = {
     'cnn': CNNClassifier,
     'fcn': FCN,

@@ -5,6 +5,7 @@ from .models import FCN, save_model, ClassificationLoss
 from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
 from . import dense_transforms as T
 import torch.utils.tensorboard as tb
+from torchvision import transforms
 
 def train(args):
     from os import path

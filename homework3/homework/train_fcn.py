@@ -3,7 +3,7 @@ import numpy as np
 
 from .models import FCN, save_model  # Import your FCN model from models.py
 from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
-#from .dense_transforms import DenseTransforms  # Import dense data augmentation transforms
+from .dense_data_dataset import DenseDataDataset
 import torch.utils.tensorboard as tb
  
 #from .utils import load_dense_data, ConfusionMatrix, dense_transforms
@@ -22,11 +22,11 @@ def train(args):
     # Initialize your FCN model
     #model = FCN()  # Make sure your FCN model is correctly defined in models.py
     model = FCN(in_channels=3, out_channels=6)
-    # Create data loaders for training and validation sets
-    train_dataset = DenseSuperTuxDataset(transform=DenseTransforms())  # Use appropriate data augmentation
+    
+    train_dataset = DenseDataDataset(data_path=args.train_data, transform=DenseTransforms())  # Use appropriate data augmentation
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    valid_dataset = DenseSuperTuxDataset(split='validation')
+    valid_dataset = DenseDataDataset(data_path=args.valid_data, transform=DenseTransforms())
     valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize TensorBoard loggers

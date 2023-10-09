@@ -10,6 +10,7 @@ import os
 import numpy as np
 import random
 from . import dense_transforms
+from glob import glob
 
 LABEL_NAMES = ['background', 'kart', 'pickup', 'nitro', 'bomb', 'projectile']
 DENSE_LABEL_NAMES = ['background', 'kart', 'track', 'bomb/projectile', 'pickup/nitro']

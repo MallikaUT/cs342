@@ -5,7 +5,7 @@ from .models import FCN, save_model  # Import your FCN model from models.py
 from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
 #from .dense_data_dataset import DenseDataDataset
 import torch.utils.tensorboard as tb
-from torch.utils.data import Dataset
+from torchvision import transforms
  
 #from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 
@@ -24,11 +24,15 @@ def train(args):
     #model = FCN()  # Make sure your FCN model is correctly defined in models.py
     model = FCN(in_channels=3, out_channels=6)
     
-    train_dataset = DenseDataDataset(data_path=args.train_data, transform=DenseTransforms())  # Use appropriate data augmentation
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    # Data loading and preprocessing with data augmentation
+    train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=transform)
+    # Set up TensorBoard loggers
+    train_logger, valid_logger = None, None
+    if args.log_dir is not None:
+        train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
+        valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
+    
 
-    valid_dataset = DenseDataDataset(data_path=args.valid_data, transform=DenseTransforms())
-    valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize TensorBoard loggers
     train_logger, valid_logger = None, None

@@ -29,6 +29,8 @@ def compute_iou(confusion_matrix):
     class_iou = confusion_matrix.class_iou
     return class_iou.mean()
 
+DENSE_CLASS_DISTRIBUTION = [0.52683655, 0.02929112, 0.4352989, 0.0044619, 0.00411153]
+
 def train(args):
     # Initialize your FCN model
     model = FCN()

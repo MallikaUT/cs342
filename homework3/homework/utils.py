@@ -87,12 +87,9 @@ class DenseSuperTuxDataset(Dataset):
         label = Image.open(label_path)
 
         if self.transform:
-            image = self.transform(image)
-            label = self.transform(label)
+            image, label = self.transform(image, label)  # Apply the custom transform to both image and label
 
         return image, label
-    
-
 
     def compute_class_distribution(self):
         class_distribution = [0] * self.num_classes
@@ -104,8 +101,8 @@ class DenseSuperTuxDataset(Dataset):
             unique_classes, class_counts = np.unique(label, return_counts=True)
 
             for cls, count in zip(unique_classes, class_counts):
-                  if cls < self.num_classes:
-                       class_distribution[cls] += count
+                if cls < self.num_classes:
+                    class_distribution[cls] += count
 
         return class_distribution
 

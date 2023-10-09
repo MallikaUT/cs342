@@ -1,12 +1,11 @@
 import torch
-import numpy as np
-
-from .models import FCN, save_model  # Import your FCN model from models.py
-from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
-from .dense_transforms import DenseTransforms
+from os import path
+from torch.utils.data import DataLoader
 import torch.utils.tensorboard as tb
- 
-#from .utils import load_dense_data, ConfusionMatrix, dense_transforms
+from .models import FCN, save_model
+from .utils import load_dense_data, ConfusionMatrix, calculate_class_weights
+from .dense_transforms import DenseTransforms
+from .dense_super_tux_dataset import DenseSuperTuxDataset  # Make sure you import the dataset
 
 def log(writer, step, loss, iou, accuracy):
     # Log loss, IoU, and accuracy
@@ -14,14 +13,10 @@ def log(writer, step, loss, iou, accuracy):
     writer.add_scalar('IoU', iou, step)
     writer.add_scalar('Accuracy', accuracy, step)
 
-
 def train(args):
-    from os import path
-    from torch.utils.data import DataLoader
-
     # Initialize your FCN model
-    #model = FCN()  # Make sure your FCN model is correctly defined in models.py
-    model = FCN(in_channels=3, out_channels=6)
+    model = FCN(in_channels=args.in_channels, out_channels=args.out_channels)
+
     # Create data loaders for training and validation sets
     train_dataset = DenseSuperTuxDataset(transform=DenseTransforms())  # Use appropriate data augmentation
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
@@ -37,6 +32,13 @@ def train(args):
 
     # Define loss function (CrossEntropyLoss) and optimizer (e.g., Adam)
     criterion = torch.nn.CrossEntropyLoss()
+
+    # Calculate class weights based on your class distribution
+    class_weights = calculate_class_weights(train_loader.dataset.class_distribution())
+
+    # Use class weights in the loss function
+    criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
     for epoch in range(args.num_epochs):
@@ -111,8 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_classes', type=int, default=6)
     parser.add_argument('--in_channels', type=int, default=3)
     parser.add_argument('--out_channels', type=int, default=6)
-    
+
     args = parser.parse_args()
-    model = FCN(in_channels=args.in_channels, out_channels=args.out_channels)
 
     train(args)

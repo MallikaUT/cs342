@@ -79,25 +79,9 @@ def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 
-def load_dense_data(train_dataset_path, valid_dataset_path, batch_size=32, num_workers=0, transform=None):
-    train_dataset = DenseSuperTuxDataset(train_dataset_path, transform=transform)
-    valid_dataset = DenseSuperTuxDataset(valid_dataset_path, transform=transform)
-
-    # Ensure that batch_size is not greater than the dataset size
-    if batch_size > len(train_dataset):
-        batch_size = len(train_dataset)
-    
-    if batch_size > len(valid_dataset):
-        batch_size = len(valid_dataset)
-
-    train_loader = DataLoader(train_dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
-    valid_loader = DataLoader(valid_dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
-
-    return train_loader, valid_loader
-
-def accuracy(outputs, labels):
-    outputs_idx = outputs.max(1)[1].type_as(labels)
-    return outputs_idx.eq(labels).float().mean()
+def load_dense_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
+    dataset = DenseSuperTuxDataset(dataset_path, **kwargs)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 def _one_hot(x, n):
     return (x.view(-1, 1) == torch.arange(n, dtype=x.dtype, device=x.device)).int()

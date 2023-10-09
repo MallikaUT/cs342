@@ -55,9 +55,11 @@ class SuperTuxDataset(Dataset):
         return self.data[idx]
 
 class DenseSuperTuxDataset(Dataset):
-    def __init__(self, dataset_path, transform=dense_transforms.ToTensor()):
+    def __init__(self, dataset_path, transform=None):
+        from glob import glob
+        from os import path
         self.files = []
-        for im_f in glob(path.join(dataset_path, '*_im.jpg')):  # Use 'path.join' here
+        for im_f in glob(path.join(dataset_path, '*_im.jpg')):
             self.files.append(im_f.replace('_im.jpg', ''))
         self.transform = transform
 
@@ -68,8 +70,14 @@ class DenseSuperTuxDataset(Dataset):
         b = self.files[idx]
         im = Image.open(b + '_im.jpg')
         lbl = Image.open(b + '_seg.png')
+        
         if self.transform is not None:
             im, lbl = self.transform(im, lbl)
+
+        # Convert images to PyTorch tensors
+        im = F.to_tensor(im)
+        lbl = F.to_tensor(lbl)
+
         return im, lbl
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):

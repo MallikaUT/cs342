@@ -52,8 +52,9 @@ class CNNClassifier(nn.Module):
         return x
 
 class FCN(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, num_classes):
         super(FCN, self).__init__()
+        self.num_classes = num_classes 
         
         # Initial convolution layers
         self.conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
@@ -112,13 +113,13 @@ def save_model(model):
     raise ValueError("model type '%s' not supported!" % str(type(model)))
 
 
-def load_model(model_class):
+def load_model(model_class, num_classes):
     from torch import load
     from os import path
     if model_class == 'cnn':
         return CNNClassifier()
     elif model_class == 'fcn':
-        model = FCN(in_channels=3, out_channels=num_classes)  # You need to specify 'num_classes' here
+        model = FCN(in_channels=3, out_channels=num_classes)
         model.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), 'fcn.th'), map_location='cpu'))
         return model
     else:

@@ -86,9 +86,9 @@ class FCN(nn.Module):
 
         # Decoder (upsampling)
         self.up4 = self.upconv_block(256, 128)
-        self.up3 = self.upconv_block(256, 64)
-        self.up2 = self.upconv_block(128, 32)
-        self.up1 = nn.ConvTranspose2d(32, num_classes, kernel_size=4, stride=2, padding=1)
+        self.up3 = self.upconv_block(128 + 128, 64)  # Skip connection from down3
+        self.up2 = self.upconv_block(64 + 64, 32)    # Skip connection from down2
+        self.up1 = nn.ConvTranspose2d(32 + 32, num_classes, kernel_size=4, stride=2, padding=1)
 
     def conv_block(self, in_channels, out_channels):
         return nn.Sequential(
@@ -113,13 +113,19 @@ class FCN(nn.Module):
 
         # Decoder
         x_up4 = self.up4(x4)
-        x_up3 = self.up3(x_up4)
-        x_up3 = F.interpolate(x_up3, size=x2.size()[2:], mode='bilinear', align_corners=False)
-        x_up2 = self.up2(x_up3)
-        x_up2 = F.interpolate(x_up2, size=x1.size()[2:], mode='bilinear', align_corners=False)
-        x_up1 = self.up1(x_up2)       
+        x_up3 = self.up3(torch.cat((x_up4, x3), dim=1))
+        x_up2 = self.up2(torch.cat((x_up3, x2), dim=1))
+        x_up1 = self.up1(torch.cat((x_up2, x1), dim=1))
 
         return x_up1
+
+# Test the model
+input_channels = 3
+num_classes = 5
+input_tensor = torch.randn((1, input_channels, 128, 128))  # Example input tensor
+model = FCN(input_channels, num_classes)
+output_tensor = model(input_tensor)
+print(output_tensor.shape)  # Print the shape of the output tensor
         #raise NotImplementedError('FCN.forward')
         
 model_factory = {

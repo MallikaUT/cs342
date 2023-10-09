@@ -29,11 +29,15 @@ def train(args):
     model = FCN(in_channels=args.in_channels, out_channels=args.out_channels)
     #dataset_path = 'dense_data'
     # Create data loaders for training and validation sets
-    #train_dataset = DenseSuperTuxDataset(transform=Compose([ToTensor()]))  # Use appropriate data augmentation
-    train_dataset = DenseSuperTuxDataset('dense_data/train', transform=Compose([ToTensor()]))
+    train_data_path = 'dense_data/train'
+    valid_data_path = 'dense_data/valid'
+
+    train_dataset = DenseSuperTuxDataset(dataset_path=train_data_path, transform=Compose([ToTensor()]))
+    #train_dataset = DenseSuperTuxDataset('dense_data/train', transform=Compose([ToTensor()]))
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    valid_dataset = DenseSuperTuxDataset(split='validation')
+    valid_dataset = DenseSuperTuxDataset(dataset_path=valid_data_path, transform=Compose([ToTensor()]))
+    #valid_dataset = DenseSuperTuxDataset(split='validation')
     valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize TensorBoard loggers

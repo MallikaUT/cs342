@@ -92,7 +92,7 @@ def train(args):
         if train_logger:
             train_logger.add_scalar('train/loss', avg_loss, epoch)
 
-        print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f}')
+        print(f'Epoch [{epoch + 1}/{args.epochs}] - Loss: {avg_loss:.4f}')
         scheduler.step()
 
         model.eval()
@@ -118,7 +118,7 @@ def train(args):
             no_improvement_count += 1
 
         if no_improvement_count >= args.early_stopping_patience:
-            print("No improvement in validation accuracy. Early stopping.")
+            print("No improvement")
             break
 
 if __name__ == '__main__':

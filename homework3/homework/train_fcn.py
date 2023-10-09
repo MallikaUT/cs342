@@ -55,7 +55,7 @@ def train(args):
           pred = model(image)
           accuracy = accuracy + (pred.argmax(1) == label).float().mean().item()
           count += 1
-        print("Epoch: " + str(epoch) + ", Validation Accuracy: " + str(accuracy/count))
+        print("Validation Accuracy: " + str(accuracy/count))
         
         if accuracy/count > 0.87:
           print("No improvement")

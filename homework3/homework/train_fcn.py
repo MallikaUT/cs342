@@ -1,86 +1,93 @@
 import torch
-import torch.optim as optim
-import torch.utils.tensorboard as tb
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from .models import FCN, save_model
-from .utils import load_dense_data, ConfusionMatrix, dense_transforms
-from os import path
 import numpy as np
-import torch.nn as nn
-import argparse
-from .dense_transforms import RandomRotation
 
-import torch.nn.functional as F  # Import F for activation functions
+from models import FCN, save_model  # Import your FCN model from models.py
+from utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
+from dense_transforms import DenseTransforms  # Import dense data augmentation transforms
+import torch.utils.tensorboard as tb
+
 
 def train(args):
-    # Initialize the FCN model
-    #model = FCN()
-    model = FCN(num_classes = 5)
+    from os import path
+    from torch.utils.data import DataLoader
+
+    # Initialize your FCN model
+    model = FCN()  # Make sure your FCN model is correctly defined in models.py
+
+    # Create data loaders for training and validation sets
+    train_dataset = DenseSuperTuxDataset(transform=DenseTransforms())  # Use appropriate data augmentation
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     
+    valid_dataset = DenseSuperTuxDataset(split='validation')
+    valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
-    # Define the loss function (CrossEntropyLoss) and optimizer (Adam)
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-
-    # Set up data augmentation transforms for training data
-    transform = dense_transforms.Compose([
-        dense_transforms.RandomRotation(15),
-        dense_transforms.RandomHorizontalFlip(),
-        dense_transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        dense_transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
-        dense_transforms.ToTensor(),
-    ])
-
-    # Data loading and preprocessing with data augmentation
-    train_loader, valid_loader = load_dense_data(args.train_data, args.valid_data, batch_size=args.batch_size, num_workers=args.num_workers, transform=transform)
-
-    # Set up TensorBoard loggers
+    # Initialize TensorBoard loggers
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
 
-    # Training loop
-    for epoch in range(args.epochs):
-        model.train()
-        total_loss = 0.0
-        confusion_matrix = ConfusionMatrix()
+    # Define loss function (CrossEntropyLoss) and optimizer (e.g., Adam)
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
-        for batch_data, batch_labels in train_loader:
+    for epoch in range(args.num_epochs):
+        model.train()  # Set the model to training mode
+        for batch_idx, (imgs, lbls) in enumerate(train_loader):
+            # Forward pass
+            logits = model(imgs)
+            
+            # Calculate the loss
+            loss = criterion(logits, lbls)
+            
+            # Backpropagation and optimization
             optimizer.zero_grad()
-            outputs = model(batch_data)
-            
-            # Ensure batch_labels has the correct shape (batch_size, height, width)
-            assert batch_labels.dim() == 3
-            
-            # Calculate loss
-            #loss = criterion(outputs, batch_labels)
-            loss = criterion(outputs, batch_labels.long())
             loss.backward()
             optimizer.step()
+            
+            # Compute IoU and accuracy using ConfusionMatrix
+            confusion_matrix = ConfusionMatrix()
+            confusion_matrix.add(logits.argmax(1), lbls)
+            iou = confusion_matrix.iou()
+            accuracy = confusion_matrix.accuracy()
 
-            total_loss += loss.item()
+            # Log performance metrics and visualize results using log function
+            global_step = epoch * len(train_loader) + batch_idx
+            log(train_logger, imgs, lbls, logits, global_step)
 
-            # Update confusion matrix and calculate IoU
-            confusion_matrix.add(outputs.argmax(1), batch_labels)
-            #iou = confusion_matrix.iou()
-            iou = confusion_matrix.iou
+            # Print progress
+            print(f"Epoch [{epoch+1}/{args.num_epochs}] | "
+                  f"Batch [{batch_idx+1}/{len(train_loader)}] | "
+                  f"Loss: {loss.item():.4f} | "
+                  f"IoU: {iou:.4f} | "
+                  f"Accuracy: {accuracy:.4f}")
 
+        # Validation loop (similar to training loop) to evaluate the model on the validation set
+        model.eval()  # Set the model to evaluation mode
+        with torch.no_grad():
+            for valid_batch_idx, (valid_imgs, valid_lbls) in enumerate(valid_loader):
+                valid_logits = model(valid_imgs)
 
-        # Calculate average loss for the epoch
-        avg_loss = total_loss / len(train_loader)
+                # Compute IoU and accuracy for validation
+                valid_confusion_matrix = ConfusionMatrix()
+                valid_confusion_matrix.add(valid_logits.argmax(1), valid_lbls)
+                valid_iou = valid_confusion_matrix.iou()
+                valid_accuracy = valid_confusion_matrix.accuracy()
 
-        # Log training metrics
-        if train_logger:
-            train_logger.add_scalar('train/loss', avg_loss, epoch)
-            train_logger.add_scalar('train/iou', iou, epoch)
+                # Log validation performance metrics and visualize results using log function
+                valid_global_step = epoch * len(valid_loader) + valid_batch_idx
+                log(valid_logger, valid_imgs, valid_lbls, valid_logits, valid_global_step)
 
-        print(f'Epoch [{epoch + 1}/{args.epochs}] - Avg. Loss: {avg_loss:.4f} - IoU: {iou:.4f}')
+                # Print validation progress
+                print(f"Validation | "
+                      f"Epoch [{epoch+1}/{args.num_epochs}] | "
+                      f"Batch [{valid_batch_idx+1}/{len(valid_loader)}] | "
+                      f"IoU: {valid_iou:.4f} | "
+                      f"Accuracy: {valid_accuracy:.4f}")
 
-    # Save the trained model
-    save_model(model)
-    
+        # Save the trained model at appropriate intervals
+        if (epoch + 1) % args.save_interval == 0:
+            save_model(model, epoch)  # Save the model with a unique identifier (e.g., epoch number)
 
 if __name__ == '__main__':
     import argparse
@@ -88,20 +95,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--log_dir')
-    # Custom arguments
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--train_data', default='dense_data/train')  # Updated train_data path
-    parser.add_argument('--valid_data', default='dense_data/valid')  # Updated valid_data path
-    parser.add_argument('--num_workers', type=int, default=4)  # Ensure it's of type int
-
-    #args = parser.parse_args()
-    parser.add_argument('--model_type', default='fcn', help='Model type (cnn or fcn)')
-    parser.add_argument('--num_classes', type=int, default=5, help='Number of classes')
+    parser.add_argument('--num_epochs', type=int, default=100)  # Set the number of training epochs
+    parser.add_argument('--batch_size', type=int, default=32)   # Set the batch size
+    parser.add_argument('--learning_rate', type=float, default=0.001)  # Set the learning rate
+    parser.add_argument('--save_interval', type=int, default=10)  # Save model every 'save_interval' epochs
+    # Add other custom arguments here
 
     args = parser.parse_args()
-  
-
     train(args)
-    

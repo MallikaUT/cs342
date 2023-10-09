@@ -5,95 +5,62 @@ from .models import FCN, save_model, ClassificationLoss
 from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
 from . import dense_transforms as T
 import torch.utils.tensorboard as tb
-from torchvision import transforms
 
 def train(args):
     from os import path
-
-    # Initialize your FCN model
     model = FCN()
-
-    # Initialize TensorBoard loggers
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
 
-    # Set the device (GPU if available, otherwise CPU)
+    """
+    Your code here, modify your HW1 / HW2 code
+    Hint: Use ConfusionMatrix, ConfusionMatrix.add(logit.argmax(1), label), ConfusionMatrix.iou to compute
+          the overall IoU, where label are the batch labels, and logit are the logits of your classifier.
+    Hint: If you found a good data augmentation parameters for the CNN, use them here too. Use dense_transforms
+    Hint: Use the log function below to debug and visualize your model
+    """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-
-    # Define loss function and optimizer
     loss_func = ClassificationLoss()
     loss_func.to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.016, momentum=0.92, weight_decay=1e-4)
-
-    # Number of training epochs
+    optim = torch.optim.SGD(model.parameters(), lr=0.016, momentum=0.92, weight_decay=1e-4)
     epochs = 30
-
-    # Define data augmentation transformations
-    train_trans = transforms.Compose([
-        transforms.ColorJitter(0.3, 0.3, 0.3, 0.3),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomCrop(96),
-        transforms.ToTensor()
-    ])
-
-    # Load training and validation data
-    train_data = load_dense_data('dense_data/train', transform=train_trans)
-    val_data = load_dense_data('dense_data/valid')
+    train_trans = T.Compose((T.ColorJitter(0.3, 0.3, 0.3, 0.3), T.RandomHorizontalFlip(), T.RandomCrop(96), T.ToTensor())) 
+    data = load_dense_data('dense_data/train', transform=train_trans)
+    val = load_dense_data('dense_data/valid')
 
     for epoch in range(epochs):
-        # Set the model to training mode
         model.train()
         count = 0
         total_loss = 0
-
-        for x, y in train_data:
+        for x, y in data:
             x = x.to(device)
             y = y.to(device)
-
-            # Forward pass
             y_pred = model(x)
-
-            # Calculate the loss
             loss = loss_func(y_pred, y.long())
-            total_loss += loss.item()
+            total_loss = total_loss + loss.item()
             count += 1
-
-            # Backpropagation and optimization
-            optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
+            optim.step()
+            optim.zero_grad()
+        print("Epoch: " + str(epoch) + ", Loss: " + str(total_loss/count))
 
-        # Print training loss for this epoch
-        print(f"Epoch: {epoch}, Loss: {total_loss / count:.4f}")
-
-        # Set the model to evaluation mode
         model.eval()
         count = 0
         accuracy = 0
+        for image, label in val:
+          image = image.to(device)
+          label = label.to(device)
+          pred = model(image)
+          accuracy = accuracy + (pred.argmax(1) == label).float().mean().item()
+          count += 1
+        print("Epoch: " + str(epoch) + ", Accuracy: " + str(accuracy/count))
+        if accuracy/count > 0.87:
+          print("break -> done")
+          break
 
-        for image, label in val_data:
-            image = image.to(device)
-            label = label.to(device)
-
-            # Forward pass for validation
-            pred = model(image)
-
-            # Calculate accuracy
-            accuracy += (pred.argmax(1) == label).float().mean().item()
-            count += 1
-
-        # Print validation accuracy for this epoch
-        print(f"Epoch: {epoch}, Accuracy: {accuracy / count:.4f}")
-
-        # Check if the desired accuracy is reached and break if so
-        if accuracy / count > 0.87:
-            print("Accuracy threshold reached. Training completed.")
-            break
-
-    # Save the trained model
     save_model(model)
 
 

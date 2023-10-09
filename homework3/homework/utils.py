@@ -96,13 +96,15 @@ class DenseSuperTuxDataset(Dataset):
 
         for _, label_path in self.samples:
             label = Image.open(label_path)
+            label = label.convert('L')  # Convert to grayscale image
             label = torch.tensor(label, dtype=torch.int64)
             unique_classes = torch.unique(label)
             for cls in unique_classes:
-                if cls < self.num_classes:
-                    class_distribution[cls] += 1
+                 if cls < self.num_classes:
+                      class_distribution[cls] += 1
 
         return class_distribution
+
 
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):

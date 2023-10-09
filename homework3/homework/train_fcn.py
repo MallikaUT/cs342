@@ -10,6 +10,7 @@ from PIL import Image
 
 from .models import FCN, save_model
 from .utils import load_dense_data, ConfusionMatrix
+from glob import glob
 #import dense_transforms
 
 # Define a function to calculate class weights based on class distribution

@@ -88,9 +88,10 @@ class DenseSuperTuxDataset(Dataset):
 
         if self.transform:
             image = self.transform(image)
-            label = self.transform(label, target=label)  # Pass the 'target' argument
+            label = self.transform(label)
 
         return image, label
+    
 
 
     def compute_class_distribution(self):

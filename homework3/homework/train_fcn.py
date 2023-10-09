@@ -31,10 +31,10 @@ def train(args):
     train_data_path = 'dense_data/train'
     valid_data_path = 'dense_data/valid'
 
-    train_dataset = DenseSuperTuxDataset(dataset_path=train_data_path, transform=Compose([ToTensor()]))
+    train_dataset = DenseSuperTuxDataset(dataset_path=train_data_path, transform=Compose([ToTensor()]),num_classes=args.num_classes)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    valid_dataset = DenseSuperTuxDataset(dataset_path=valid_data_path, transform=Compose([ToTensor()]))
+    valid_dataset = DenseSuperTuxDataset(dataset_path=valid_data_path, transform=Compose([ToTensor()]),num_classes=args.num_classes)
     valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize TensorBoard loggers
@@ -44,7 +44,7 @@ def train(args):
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
 
     # Calculate class distribution for training dataset
-    train_class_distribution = train_dataset.compute_class_distribution()
+    train_class_distribution = train_dataset.compute_class_distribution(args.num_classes)
 
     # Define loss function (CrossEntropyLoss) and optimizer (e.g., Adam)
     criterion = torch.nn.CrossEntropyLoss()

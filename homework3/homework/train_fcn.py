@@ -44,7 +44,7 @@ def train(args):
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
 
     # Calculate class distribution for training dataset
-    train_class_distribution = train_dataset.compute_class_distribution(args.num_classes)
+    train_class_distribution = train_dataset.compute_class_distribution()
 
     # Define loss function (CrossEntropyLoss) and optimizer (e.g., Adam)
     criterion = torch.nn.CrossEntropyLoss()

@@ -1,121 +1,97 @@
 import torch
-import torch.optim as optim
-import torch.utils.tensorboard as tb
-from os import path
-import argparse
 import numpy as np
 
-from torchvision import transforms
-from PIL import Image
+from .models import FCN, save_model, ClassificationLoss
+from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
+from . import dense_transforms as T
+import torch.utils.tensorboard as tb
 
-from .models import FCN, save_model
-from .utils import load_dense_data, ConfusionMatrix
-from glob import glob
-#import dense_transforms
-
-# Define a function to calculate class weights based on class distribution
-def calculate_class_weights(class_distribution):
-    total_samples = sum(class_distribution)
-    class_weights = [total_samples / (class_distribution[i] + 1e-6) for i in range(len(class_distribution))]
-    
-    # Normalize the class weights
-    sum_weights = sum(class_weights)
-    class_weights = [weight / sum_weights for weight in class_weights]
-    
-    return class_weights
-
-# Define a function to calculate Intersection over Union (IoU)
-def compute_iou(confusion_matrix):
-    class_iou = confusion_matrix.class_iou
-    return class_iou.mean()
-
-DENSE_CLASS_DISTRIBUTION = [0.52683655, 0.02929112, 0.4352989, 0.0044619, 0.00411153]
 
 def train(args):
-    # Initialize your FCN model
+    from os import path
     model = FCN()
-
-    # Create data loaders for training and validation sets
-    train_loader, valid_loader = load_dense_data('dense_data/train', 'dense_data/valid', batch_size=32, num_workers=0, transform=None)
-
-    # Initialize TensorBoard loggers
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
 
-    # Calculate class distribution for training dataset
-    train_class_distribution = DENSE_CLASS_DISTRIBUTION  # Use the provided class distribution
+    """
+    Your code here, modify your HW1 / HW2 code
+    Hint: Use ConfusionMatrix, ConfusionMatrix.add(logit.argmax(1), label), ConfusionMatrix.iou to compute
+          the overall IoU, where label are the batch labels, and logit are the logits of your classifier.
+    Hint: If you found a good data augmentation parameters for the CNN, use them here too. Use dense_transforms
+    Hint: Use the log function below to debug and visualize your model
+    """
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+    loss_func = ClassificationLoss()
+    # loss_func = torch.nn.CrossEntropyLoss(torch.tensor([0.01, 0.05, 0.02, 0.46, 0.46]))
+    loss_func.to(device)
+    optim = torch.optim.SGD(model.parameters(), lr=0.016, momentum=0.92, weight_decay=1e-4)
+    epochs = 30
 
-    # Define loss function (CrossEntropyLoss) and optimizer (e.g., Adam)
-    criterion = torch.nn.CrossEntropyLoss()
+    train_trans = T.Compose((T.ColorJitter(0.3, 0.3, 0.3, 0.3), T.RandomHorizontalFlip(), T.RandomCrop(96), T.ToTensor())) # 96
+    # val_trans = T.Compose((T.CenterCrop(96), T.ToTensor()))
 
-    # Calculate class weights based on the class distribution
-    class_weights = calculate_class_weights(train_class_distribution)
+    data = load_dense_data('dense_data/train', transform=train_trans)
+    val = load_dense_data('dense_data/valid')
 
-    # Use class weights in the loss function
-    criterion = torch.nn.CrossEntropyLoss(weight=torch.Tensor(class_weights))
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-    for epoch in range(args.num_epochs):
-        model.train()  # Set the model to training mode
-        for batch_idx, (imgs, lbls) in enumerate(train_loader):
-            # Forward pass
-            logits = model(imgs)
-
-            # Calculate the loss
-            loss = criterion(logits, lbls)
-
-            # Backpropagation and optimization
-            optimizer.zero_grad()
+    for epoch in range(epochs):
+        model.train()
+        count = 0
+        total_loss = 0
+        for x, y in data:
+            x = x.to(device)
+            y = y.to(device)
+            y_pred = model(x)
+            loss = loss_func(y_pred, y.long())
+            total_loss = total_loss + loss.item()
+            count += 1
             loss.backward()
-            optimizer.step()
+            optim.step()
+            optim.zero_grad()
+        print("Epoch: " + str(epoch) + ", Loss: " + str(total_loss/count))
 
-            # Compute IoU using ConfusionMatrix
-            confusion_matrix = ConfusionMatrix()
-            confusion_matrix.add(logits.argmax(1), lbls)
-            iou = compute_iou(confusion_matrix)
+        model.eval()
+        count = 0
+        accuracy = 0
+        for image, label in val:
+          image = image.to(device)
+          label = label.to(device)
+          pred = model(image)
+          accuracy = accuracy + (pred.argmax(1) == label).float().mean().item()
+          count += 1
+        print("Epoch: " + str(epoch) + ", Accuracy: " + str(accuracy/count))
+        if accuracy/count > 0.87:
+          print("break -> done")
+          break
 
-            # Log performance metrics and visualize results using log function
-            global_step = epoch * len(train_loader) + batch_idx
-            log(train_logger, imgs, lbls, logits, global_step)
+    save_model(model)
 
-            # Print progress
-            print(f"Epoch [{epoch+1}/{args.num_epochs}] | "
-                  f"Batch [{batch_idx+1}/{len(train_loader)}] | "
-                  f"Loss: {loss.item():.4f} | "
-                  f"IoU: {iou:.4f}")
 
-        # Validation loop (similar to training loop) to evaluate the model on the validation set
-        model.eval()  # Set the model to evaluation mode
-        with torch.no_grad():
-            for valid_batch_idx, (valid_imgs, valid_lbls) in enumerate(valid_loader):
-                valid_logits = model(valid_imgs)
+def log(logger, imgs, lbls, logits, global_step):
+    """
+    logger: train_logger/valid_logger
+    imgs: image tensor from data loader
+    lbls: semantic label tensor
+    logits: predicted logits tensor
+    global_step: iteration
+    """
+    logger.add_image('image', imgs[0], global_step)
+    logger.add_image('label', np.array(dense_transforms.label_to_pil_image(lbls[0].cpu()).
+                                       convert('RGB')), global_step, dataformats='HWC')
+    logger.add_image('prediction', np.array(dense_transforms.
+                                            label_to_pil_image(logits[0].argmax(dim=0).cpu()).
+                                            convert('RGB')), global_step, dataformats='HWC')
 
-                # Compute IoU for validation
-                valid_confusion_matrix = ConfusionMatrix()
-                valid_confusion_matrix.add(valid_logits.argmax(1), valid_lbls)
-                valid_iou = compute_iou(valid_confusion_matrix)
-
-                # Log validation performance metrics and visualize results using log function
-                valid_global_step = epoch * len(valid_loader) + valid_batch_idx
-                log(valid_logger, valid_imgs, valid_lbls, valid_logits, valid_global_step)
-
-                # Print validation progress
-                print(f"Validation | "
-                      f"Epoch [{epoch+1}/{args.num_epochs}] | "
-                      f"Batch [{valid_batch_idx+1}/{len(valid_loader)}] | "
-                      f"IoU: {valid_iou:.4f}")
-
-        # Save the trained model at appropriate intervals
-        if (epoch + 1) % args.save_interval == 0:
-            save_model(model, epoch)  # Save the model with a unique identifier (e.g., epoch number)
 
 if __name__ == '__main__':
+    import argparse
+
     parser = argparse.ArgumentParser()
+
     parser.add_argument('--log_dir')
-    parser.add_argument('--num_epochs', type=int, default=100)  # Set the number of training epochs
-    parser.add_argument('--save_interval', type=int, default=10)  # Save model every 'save_interval' epochs
+    # Put custom arguments here
+
     args = parser.parse_args()
     train(args)

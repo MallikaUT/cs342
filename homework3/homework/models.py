@@ -51,49 +51,101 @@ class CNNClassifier(nn.Module):
         
         return x
 
-class FCN(nn.Module):
-    def __init__(self, num_classes=5):
-        super(FCN, self).__init__()
-        self.num_classes = num_classes
-
-        # Encoder
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+class FCN(torch.nn.Module):
+    def __init__(self, input_channels=3, output_channels=1):
+        super().__init__()
+        """
+        Your code here.
+        Hint: The FCN can be a bit smaller the the CNNClassifier since you need to run it at a higher resolution
+        Hint: Use up-convolutions
+        Hint: Use skip connections
+        Hint: Use residual connections
+        Hint: Always pad by kernel_size / 2, use an odd kernel_size
+        """
+        self.down1 = torch.nn.Sequential(
+            torch.nn.Conv2d(input_channels, 32, kernel_size=3, stride=2, padding=1),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.ReLU()
         )
-
-        # Middle
-        self.middle = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2)
+        self.down2 = torch.nn.Sequential(
+            torch.nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            torch.nn.BatchNorm2d(64),
+            torch.nn.ReLU()
         )
-
-        # Decoder
-        self.decoder = nn.Sequential(
-            nn.Conv2d(128, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.ConvTranspose2d(64, self.num_classes, kernel_size=4, stride=2, padding=1, output_padding=0)
+        self.down3 = torch.nn.Sequential(
+            torch.nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            torch.nn.BatchNorm2d(128),
+            torch.nn.ReLU()
         )
+        self.down4 = torch.nn.Sequential(
+            torch.nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+            torch.nn.BatchNorm2d(256),
+            torch.nn.ReLU()
+        )
+        self.up4 = torch.nn.Sequential(
+            torch.nn.ConvTranspose2d(256, 128, kernel_size=3, stride=1, padding=1),
+            torch.nn.BatchNorm2d(128),
+            torch.nn.ReLU()
+        )
+        self.up3 = torch.nn.Sequential(
+            torch.nn.ConvTranspose2d(256, 64, kernel_size=3, stride=1, padding=1),
+            torch.nn.BatchNorm2d(64),
+            torch.nn.ReLU()
+        )
+        self.up2 = torch.nn.Sequential(
+            torch.nn.ConvTranspose2d(128, 32, kernel_size=3, stride=1, padding=1),
+            torch.nn.BatchNorm2d(32),
+            torch.nn.ReLU()
+        )
+        self.up1 = torch.nn.Sequential(
+            torch.nn.ConvTranspose2d(64, 5, kernel_size=4, stride=2 ,padding=1),
+            torch.nn.BatchNorm2d(5),
+            torch.nn.ReLU()
+        )
+        self.d12 = torch.nn.ConvTranspose2d(32, 64, kernel_size=3, stride=1 ,padding=1)
+        self.d23 = torch.nn.ConvTranspose2d(64, 128, kernel_size=3, stride=1 ,padding=1)
+        self.d34 = torch.nn.ConvTranspose2d(128, 256, kernel_size=3, stride=1 ,padding=1)
+        self.du44 = torch.nn.ConvTranspose2d(256, 128, kernel_size=3, stride=1 ,padding=1)
+        self.u43 = torch.nn.ConvTranspose2d(128, 64, kernel_size=3, stride=1 ,padding=1)
+        self.u32 = torch.nn.ConvTranspose2d(64, 32, kernel_size=3, stride=1 ,padding=1)
+        self.u21 = torch.nn.ConvTranspose2d(3, 5, kernel_size=3, stride=1 ,padding=1)
+
 
     def forward(self, x):
-        # Encoder
-        x1 = self.encoder(x)
+        """
+        Your code here
+        @x: torch.Tensor((B,3,H,W))
+        @return: torch.Tensor((B,5,H,W))
+        Hint: Apply input normalization inside the network, to make sure it is applied in the grader
+        Hint: Input and output resolutions need to match, use output_padding in up-convolutions, crop the output
+              if required (use z = z[:, :, :H, :W], where H and W are the height and width of a corresponding strided
+              convolution
+        """
+        b, a, h, w = x.shape
+        x_down1 = self.down1(x)         # x_down1 N 128, 64, 64
+        # x_down1 = x_down1 + self.d12(x)
+        x_down2 = self.down2(x_down1)   # x_downN N 128, 64, 64
+        x_down2 = x_down2 + self.d12(x_down1)
 
-        # Middle
-        x2 = self.middle(x1)
+        x_down3 = self.down3(x_down2)
+        x_down3 = x_down3 + self.d23(x_down2)
+        x_down4 = self.down4(x_down3)
+        x_down4 = x_down4 + self.d34(x_down3)
+        x_up4 = self.up4(x_down4)
+        x_up4 = x_up4 + self.du44(x_down4)
+        x_wskip = torch.cat([x_up4, x_down3], dim=1)
+        x_up3 = self.up3(x_wskip)
+        x_up3 = x_up3 + self.u43(x_up4)
+        x_wskip = torch.cat([x_up3, x_down2], dim=1)
 
-        # Decoder
-        x3 = self.decoder(x2)
+        x_up2 = self.up2(x_wskip)       # x_upN   N 128, 64, 64
+        x_up2 = x_up2 + self.u32(x_up3)
 
-        return x3
+        x_wskip = torch.cat([x_up2, x_down1], dim=1)   # N 256, 64, 64
+        x_up1 = self.up1(x_wskip)
+        x_up1 = x_up1 + self.u21(x)
+        x_up1 = x_up1[:, :, :h, :w]
+        return x_up1
         
 model_factory = {
     'cnn': CNNClassifier,

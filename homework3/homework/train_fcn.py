@@ -2,10 +2,23 @@ import torch
 from os import path
 from torch.utils.data import DataLoader
 import torch.utils.tensorboard as tb
-from .models import FCN, save_model
-from .utils import load_dense_data, ConfusionMatrix
-from .dense_transforms import DenseTransforms
-from .dense_super_tux_dataset import DenseSuperTuxDataset  # Make sure you import the dataset
+from models import FCN, save_model  # Assuming your FCN model and save_model function are in a file named 'models.py'
+from utils import load_dense_data, ConfusionMatrix
+from dense_transforms import Compose, ToTensor  # You should import your custom transformations here
+from dense_super_tux_dataset import DenseSuperTuxDataset  # Make sure you import the dataset
+
+# Define a function to calculate class weights based on class distribution
+#def calculate_class_weights(class_distribution):
+def calculate_class_weights(class_distribution):
+    total_samples = sum(class_distribution)
+    class_weights = [total_samples / (class_distribution[i] + 1e-6) for i in range(len(class_distribution))]
+    
+    # Normalize the class weights
+    sum_weights = sum(class_weights)
+    class_weights = [weight / sum_weights for weight in class_weights]
+    
+    return class_weights
+
 
 def log(writer, step, loss, iou, accuracy):
     # Log loss, IoU, and accuracy
@@ -18,7 +31,7 @@ def train(args):
     model = FCN(in_channels=args.in_channels, out_channels=args.out_channels)
 
     # Create data loaders for training and validation sets
-    train_dataset = DenseSuperTuxDataset(transform=DenseTransforms())  # Use appropriate data augmentation
+    train_dataset = DenseSuperTuxDataset(transform=Compose([ToTensor()]))  # Use appropriate data augmentation
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
     valid_dataset = DenseSuperTuxDataset(split='validation')
@@ -33,7 +46,7 @@ def train(args):
     # Define loss function (CrossEntropyLoss) and optimizer (e.g., Adam)
     criterion = torch.nn.CrossEntropyLoss()
 
-    # Calculate class weights based on your class distribution
+    # Calculate class weights based on your class distribution (implement the logic)
     class_weights = calculate_class_weights(train_loader.dataset.class_distribution())
 
     # Use class weights in the loss function

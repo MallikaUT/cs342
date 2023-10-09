@@ -8,9 +8,9 @@ import numpy as np
 from torchvision import transforms
 from PIL import Image
 
-from models import FCN, save_model
-from utils import load_dense_data, ConfusionMatrix
-import dense_transforms
+from .models import FCN, save_model
+from .utils import load_dense_data, ConfusionMatrix
+#import dense_transforms
 
 # Define a function to calculate class weights based on class distribution
 def calculate_class_weights(class_distribution):

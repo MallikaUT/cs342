@@ -95,6 +95,7 @@ class FCN(nn.Module):
         x3_up = self.upconv2(x3_up)
         
         return x3_up
+        model = FCN(in_channels=3, out_channels=num_classes)
 
 model_factory = {
     'cnn': CNNClassifier,
@@ -111,9 +112,14 @@ def save_model(model):
     raise ValueError("model type '%s' not supported!" % str(type(model)))
 
 
-def load_model(model):
+def load_model(model_class):
     from torch import load
     from os import path
-    r = model_factory[model]()
-    r.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), '%s.th' % model), map_location='cpu'))
-    return r
+    if model_class == 'cnn':
+        return CNNClassifier()
+    elif model_class == 'fcn':
+        model = FCN(in_channels=3, out_channels=num_classes)  # You need to specify 'num_classes' here
+        model.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), 'fcn.th'), map_location='cpu'))
+        return model
+    else:
+        raise ValueError("Model class '%s' not supported!" % model_class)

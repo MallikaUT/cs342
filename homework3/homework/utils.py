@@ -61,7 +61,7 @@ class DenseSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=None, num_classes=None):
         self.dataset_path = dataset_path
         self.transform = transform
-        self.num_classes = num_classes
+        self.num_classes = 6
         self.samples = []  # List to store (image, label) pairs
 
         # Populate self.samples with (image, label) pairs

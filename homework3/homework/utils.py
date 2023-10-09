@@ -91,19 +91,21 @@ class DenseSuperTuxDataset(Dataset):
 
         return image, label
 
-    def compute_class_distribution(self):
-        class_distribution = [0] * self.num_classes
+def compute_class_distribution(self):
+    class_distribution = [0] * self.num_classes
 
-        for _, label_path in self.samples:
-            label = Image.open(label_path)
-            label = label.convert('L')  # Convert to grayscale image
-            label = torch.tensor(label, dtype=torch.int64)
-            unique_classes = torch.unique(label)
-            for cls in unique_classes:
-                 if cls < self.num_classes:
-                      class_distribution[cls] += 1
+    for _, label_path in self.samples:
+        label = Image.open(label_path)
+        label = label.convert('L')  # Convert to grayscale image
+        label = np.array(label)  # Convert to a NumPy array
+        unique_classes, class_counts = np.unique(label, return_counts=True)
 
-        return class_distribution
+        for cls, count in zip(unique_classes, class_counts):
+            if cls < self.num_classes:
+                class_distribution[cls] += count
+
+    return class_distribution
+
 
 
 

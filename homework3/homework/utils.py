@@ -76,7 +76,9 @@ class DenseSuperTuxDataset(Dataset):
 
         # Convert images to PyTorch tensors
         im = F.to_tensor(im)
-        lbl = F.to_tensor(lbl)
+
+        # Convert labels to PyTorch tensors and remove extra dimension
+        lbl = F.to_tensor(lbl)[0]  # Assuming lbl is a single-channel image (remove extra dimension)
 
         return im, lbl
 

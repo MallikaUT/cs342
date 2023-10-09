@@ -29,7 +29,7 @@ def train(args):
     model = FCN(in_channels=args.in_channels, out_channels=args.out_channels)
     dataset_path = 'dense_data'
     # Create data loaders for training and validation sets
-    train_dataset = DenseSuperTuxDataset(transform=Compose([ToTensor()]))  # Use appropriate data augmentation
+    #train_dataset = DenseSuperTuxDataset(transform=Compose([ToTensor()]))  # Use appropriate data augmentation
     train_dataset = DenseSuperTuxDataset(dataset_path, transform=Compose([ToTensor()]))
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 

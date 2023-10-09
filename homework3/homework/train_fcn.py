@@ -33,7 +33,7 @@ def train(args):
     model = FCN()
 
     # Create data loaders for training and validation sets
-    train_loader, valid_loader = load_dense_data(train_dataset_path, valid_dataset_path, batch_size=32, num_workers=0, transform=None)
+    train_loader, valid_loader = load_dense_data('dense_data/train', 'dense_data/valid', batch_size=32, num_workers=0, transform=None)
 
     # Initialize TensorBoard loggers
     train_logger, valid_logger = None, None

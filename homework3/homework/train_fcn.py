@@ -33,7 +33,7 @@ def train(args):
     train_dataset = DenseSuperTuxDataset('dense_data/train', transform=Compose([ToTensor()]))
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    valid_dataset = DenseSuperTuxDataset('dense_data/valid',split='validation')
+    valid_dataset = DenseSuperTuxDataset(split='validation')
     valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize TensorBoard loggers

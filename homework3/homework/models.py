@@ -3,6 +3,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
 
+class ClassificationLoss(torch.nn.Module):
+    def forward(self, input, target):
+        """
+        Your code here
+
+        Compute mean(-log(softmax(input)_label))
+
+        @input:  torch.Tensor((B,C))
+        @target: torch.Tensor((B,), dtype=torch.int64)
+
+        @return:  torch.Tensor((,))
+
+        Hint: Don't be too fancy, this is a one-liner
+        """
+        return F.cross_entropy(input, target)
+
+
 class CNNClassifier(nn.Module):
     def __init__(self):
         super(CNNClassifier, self).__init__()

@@ -1,6 +1,6 @@
 import torch
 from PIL import Image
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor
@@ -8,13 +8,8 @@ from torchvision.transforms import functional as F
 import csv
 import os
 import numpy as np
-
-
-
+import random
 from . import dense_transforms
-
-#from  . import dense_transforms
-#from utils import DenseSuperTuxDataset, load_dense_data, ConfusionMatrix, save_model
 
 LABEL_NAMES = ['background', 'kart', 'pickup', 'nitro', 'bomb', 'projectile']
 DENSE_LABEL_NAMES = ['background', 'kart', 'track', 'bomb/projectile', 'pickup/nitro']
@@ -58,53 +53,22 @@ class SuperTuxDataset(Dataset):
         return self.data[idx]
 
 class DenseSuperTuxDataset(Dataset):
-    def __init__(self, dataset_path, transform=None, num_classes=None):
-        self.dataset_path = dataset_path
+    def __init__(self, dataset_path, transform=dense_transforms.ToTensor()):
+        self.files = []
+        for im_f in glob(path.join(dataset_path, '*_im.jpg')):
+            self.files.append(im_f.replace('_im.jpg', ''))
         self.transform = transform
-        self.num_classes = 6
-        self.samples = []  # List to store (image, label) pairs
-
-        # Populate self.samples with (image, label) pairs
-        self._load_samples()
-
-        # Calculate the class distribution
-        self.class_distribution = self.compute_class_distribution()
-
-    def _load_samples(self):
-        # Get a list of all image files in the dataset directory
-        dataset_dir = self.dataset_path
-        image_files = [f for f in os.listdir(dataset_dir) if f.endswith('.jpg') or f.endswith('.png')]
-
-        # Create a list of (image, label) pairs
-        self.samples = [(os.path.join(dataset_dir, img), os.path.join(dataset_dir, img)) for img in image_files]
 
     def __len__(self):
-        return len(self.samples)
+        return len(self.files)
 
-    def __getitem__(self, index):
-        image_path, label_path = self.samples[index]
-        image = Image.open(image_path)
-        label = Image.open(label_path)
-
-        if self.transform:
-            image, label = self.transform(image, label)  # Apply the custom transform to both image and label
-
-        return image, label
-
-    def compute_class_distribution(self):
-        class_distribution = [0] * self.num_classes
-
-        for _, label_path in self.samples:
-            label = Image.open(label_path)
-            label = label.convert('L')  # Convert to grayscale image
-            label = np.array(label)  # Convert to a NumPy array
-            unique_classes, class_counts = np.unique(label, return_counts=True)
-
-            for cls, count in zip(unique_classes, class_counts):
-                if cls < self.num_classes:
-                    class_distribution[cls] += count
-
-        return class_distribution
+    def __getitem__(self, idx):
+        b = self.files[idx]
+        im = Image.open(b + '_im.jpg')
+        lbl = Image.open(b + '_seg.png')
+        if self.transform is not None:
+            im, lbl = self.transform(im, lbl)
+        return im, lbl
 
 def load_data(dataset_path, num_workers=0, batch_size=128, **kwargs):
     dataset = SuperTuxDataset(dataset_path, **kwargs)

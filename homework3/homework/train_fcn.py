@@ -1,14 +1,13 @@
 import torch
 import numpy as np
-
+import torch.optim as optim
 from .models import FCN, save_model, ClassificationLoss
 from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
 from . import dense_transforms as T
 import torch.utils.tensorboard as tb
 from torchvision import transforms
-from torch.utils.data import DataLoader
-import torch.optim as optim
 from tqdm import tqdm
+
 
 
 def train(args):

@@ -2,6 +2,7 @@ import torch
 from os import path
 from torch.utils.data import DataLoader
 import torch.utils.tensorboard as tb
+from torchvision import transforms
 from .models import FCN, save_model  # Assuming your FCN model and save_model function are in a file named 'models.py'
 from .utils import load_dense_data,ConfusionMatrix, DenseSuperTuxDataset
 from .dense_transforms import Compose, ToTensor  # You should import your custom transformations here
@@ -30,7 +31,7 @@ def train(args):
     # Create data loaders for training and validation sets
     train_data_path = 'dense_data/train'
     valid_data_path = 'dense_data/valid'
-    train_loader, valid_loader = load_dense_data(train_data_path, valid_data_path, batch_size=args.batch_size, num_workers=0, transform=transform)
+    train_loader, valid_loader = load_dense_data(train_data_path, valid_data_path, batch_size=args.batch_size, num_workers=0, transform=transforms)
 
     train_dataset = DenseSuperTuxDataset(dataset_path=train_data_path, transform=Compose([ToTensor()]),num_classes=args.num_classes)
     #train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)

@@ -146,30 +146,30 @@ class FCN(torch.nn.Module):
               convolution
         """
         b, a, h, w = x.shape
-        x_down1 = self.down1(x)         
+        x_d1 = self.down1(x)         
     
-        x_down2 = self.down2(x_down1)   
-        x_down2 = x_down2 + self.d12(x_down1)
+        x_d2 = self.down2(x_d1)   
+        x_d2 = x_d2 + self.d12(x_d1)
 
-        x_down3 = self.down3(x_down2)
-        x_down3 = x_down3 + self.d23(x_down2)
-        x_down4 = self.down4(x_down3)
-        x_down4 = x_down4 + self.d34(x_down3)
-        x_up4 = self.up4(x_down4)
-        x_up4 = x_up4 + self.du44(x_down4)
-        x_wskip = torch.cat([x_up4, x_down3], dim=1)
-        x_up3 = self.up3(x_wskip)
-        x_up3 = x_up3 + self.u43(x_up4)
-        x_wskip = torch.cat([x_up3, x_down2], dim=1)
+        x_d3 = self.down3(x_d2)
+        x_d3 = x_d3 + self.d23(x_d2)
+        x_d4 = self.down4(x_d3)
+        x_do4 = x_d4 + self.d34(x_d3)
+        x_u4 = self.up4(x_d4)
+        x_u4 = x_u4 + self.du44(x_d4)
+        x_wskip = torch.cat([x_u4, x_d3], dim=1)
+        x_u3 = self.up3(x_wskip)
+        x_u3 = x_u3 + self.u43(x_u4)
+        x_wskip = torch.cat([x_u3, x_d2], dim=1)
 
-        x_up2 = self.up2(x_wskip)       
-        x_up2 = x_up2 + self.u32(x_up3)
+        x_u2 = self.up2(x_wskip)       
+        x_u2 = x_u2 + self.u32(x_u3)
 
-        x_wskip = torch.cat([x_up2, x_down1], dim=1)  
-        x_up1 = self.up1(x_wskip)
-        x_up1 = x_up1 + self.u21(x)
-        x_up1 = x_up1[:, :, :h, :w]
-        return x_up1
+        x_wskip = torch.cat([x_u2, x_d1], dim=1)  
+        x_u1 = self.up1(x_wskip)
+        x_u1 = x_u1 + self.u21(x)
+        x_u1 = x_u1[:, :, :h, :w]
+        return x_u1
         
         #raise NotImplementedError('FCN.forward')
         

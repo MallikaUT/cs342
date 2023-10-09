@@ -3,8 +3,9 @@ import numpy as np
 
 from .models import FCN, save_model  # Import your FCN model from models.py
 from .utils import load_dense_data, DENSE_CLASS_DISTRIBUTION, ConfusionMatrix
-from .dense_data_dataset import DenseDataDataset
+#from .dense_data_dataset import DenseDataDataset
 import torch.utils.tensorboard as tb
+from torch.utils.data import Dataset
  
 #from .utils import load_dense_data, ConfusionMatrix, dense_transforms
 

@@ -113,11 +113,11 @@ class FCN(nn.Module):
 
         # Decoder
         x_up4 = self.up4(x4)
-
-        x_up4 = F.interpolate(x_up4, size=x3.size()[2:], mode='bilinear', align_corners=False)
-        x_up3 = self.up3(torch.cat((x_up4, x3), dim=1))
-        x_up2 = self.up2(torch.cat((x_up3, x2), dim=1))
-        x_up1 = self.up1(torch.cat((x_up2, x1), dim=1))     
+        x_up3 = self.up3(x_up4)
+        x_up3 = F.interpolate(x_up3, size=x2.size()[2:], mode='bilinear', align_corners=False)
+        x_up2 = self.up2(x_up3)
+        x_up2 = F.interpolate(x_up2, size=x1.size()[2:], mode='bilinear', align_corners=False)
+        x_up1 = self.up1(x_up2)       
 
         return x_up1
         #raise NotImplementedError('FCN.forward')

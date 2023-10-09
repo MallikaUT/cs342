@@ -95,7 +95,7 @@ class FCN(nn.Module):
         x3_up = self.upconv2(x3_up)
         
         return x3_up
-        model = FCN(in_channels=3, out_channels=num_classes)
+        #model = FCN(in_channels=3, out_channels=num_classes)
 
 model_factory = {
     'cnn': CNNClassifier,

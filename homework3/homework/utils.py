@@ -57,7 +57,7 @@ class SuperTuxDataset(Dataset):
         return self.data[idx]
 
 class DenseSuperTuxDataset(Dataset):
-    def __init__(self, dataset_path, num_classes=6, transform=dense_transforms.ToTensor()):
+    def __init__(self, dataset_path, num_classes=None, transform=dense_transforms.ToTensor()):
         from glob import glob
         from os import path
         self.files = []

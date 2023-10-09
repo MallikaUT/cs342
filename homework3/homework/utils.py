@@ -66,15 +66,15 @@ class DenseSuperTuxDataset(Dataset):
 
         # Populate self.samples with (image, label) pairs
         self._load_samples()
-
+        
     def _load_samples(self):
-        # Walk through the dataset directory and collect (image, label) pairs
-        # Assuming images are in 'images' subdirectory and labels are in 'labels' subdirectory
-        images_dir = os.path.join(self.dataset_path, 'images')
-        labels_dir = os.path.join(self.dataset_path, 'labels')
+    # Get a list of all image files in the dataset directory
+        images_dir = self.dataset_path
+        image_files = [f for f in os.listdir(images_dir) if f.endswith('.jpg') or f.endswith('.png')]
 
     # Create a list of (image, label) pairs
         self.samples = [(os.path.join(images_dir, img), os.path.join(images_dir, img)) for img in image_files]
+   
 
         # Iterate through the files and collect samples
         for filename in os.listdir(images_dir):

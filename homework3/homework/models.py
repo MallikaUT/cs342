@@ -23,50 +23,56 @@ class ClassificationLoss(torch.nn.Module):
 class CNNClassifier(nn.Module):
     def __init__(self):
         super(CNNClassifier, self).__init__()
-        
-        # Input normalization
+        """
+        Your code here
+        Hint: Base this on yours or HW2 master solution if you'd like.
+        Hint: Overall model can be similar to HW2, but you likely need some architecture changes (e.g. ResNets)
+        """
         self.bn1 = nn.BatchNorm2d(3)
         
-        # Convolutional layers
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         
-        # Residual blocks (add more if needed)
         self.res1 = nn.Sequential(
             nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Conv2d(16, 16, kernel_size=3, stride=1, padding=1)
         )
         
-        # Dropout layers
         self.dropout1 = nn.Dropout(p=0.5)
         self.dropout2 = nn.Dropout(p=0.5)
         
-        # Fully connected layers
         self.fc1 = nn.Linear(in_features=16 * 32 * 32, out_features=128)
         self.relu2 = nn.ReLU()
         self.fc2 = nn.Linear(in_features=128, out_features=6)
 
+        #raise NotImplementedError('CNNClassifier.__init__')
     def forward(self, x):
+        """
+        Your code here
+        @x: torch.Tensor((B,3,64,64))
+        @return: torch.Tensor((B,6))
+        Hint: Apply input normalization inside the network, to make sure it is applied in the grader
+        """
         x = self.bn1(x)
         
         x = self.conv1(x)
         x = self.relu1(x)
         x = self.pool1(x)
-        
-        # Apply residual block(s)
+  
         x = self.res1(x)
         
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         x = self.relu2(x)
-        x = self.dropout1(x)  # Dropout layer 1
+        x = self.dropout1(x)  
         
         x = self.fc2(x)
-        x = self.dropout2(x)  # Dropout layer 2
+        x = self.dropout2(x)  
         
         return x
+        #raise NotImplementedError('CNNClassifier.forward')
 
 class FCN(torch.nn.Module):
     def __init__(self, input_channels=3, output_channels=1):
@@ -126,7 +132,8 @@ class FCN(torch.nn.Module):
         self.u43 = torch.nn.ConvTranspose2d(128, 64, kernel_size=3, stride=1 ,padding=1)
         self.u32 = torch.nn.ConvTranspose2d(64, 32, kernel_size=3, stride=1 ,padding=1)
         self.u21 = torch.nn.ConvTranspose2d(3, 5, kernel_size=3, stride=1 ,padding=1)
-
+        
+        #raise NotImplementedError('FCN.__init__')
 
     def forward(self, x):
         """
@@ -139,9 +146,9 @@ class FCN(torch.nn.Module):
               convolution
         """
         b, a, h, w = x.shape
-        x_down1 = self.down1(x)         # x_down1 N 128, 64, 64
-        # x_down1 = x_down1 + self.d12(x)
-        x_down2 = self.down2(x_down1)   # x_downN N 128, 64, 64
+        x_down1 = self.down1(x)         
+    
+        x_down2 = self.down2(x_down1)   
         x_down2 = x_down2 + self.d12(x_down1)
 
         x_down3 = self.down3(x_down2)
@@ -155,14 +162,16 @@ class FCN(torch.nn.Module):
         x_up3 = x_up3 + self.u43(x_up4)
         x_wskip = torch.cat([x_up3, x_down2], dim=1)
 
-        x_up2 = self.up2(x_wskip)       # x_upN   N 128, 64, 64
+        x_up2 = self.up2(x_wskip)       
         x_up2 = x_up2 + self.u32(x_up3)
 
-        x_wskip = torch.cat([x_up2, x_down1], dim=1)   # N 256, 64, 64
+        x_wskip = torch.cat([x_up2, x_down1], dim=1)  
         x_up1 = self.up1(x_wskip)
         x_up1 = x_up1 + self.u21(x)
         x_up1 = x_up1[:, :, :h, :w]
         return x_up1
+        
+        #raise NotImplementedError('FCN.forward')
         
 model_factory = {
     'cnn': CNNClassifier,

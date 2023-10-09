@@ -25,14 +25,11 @@ def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     loss_func = ClassificationLoss()
-    # loss_func = torch.nn.CrossEntropyLoss(torch.tensor([0.01, 0.05, 0.02, 0.46, 0.46]))
     loss_func.to(device)
     optim = torch.optim.SGD(model.parameters(), lr=0.016, momentum=0.92, weight_decay=1e-4)
     epochs = 30
-
-    train_trans = T.Compose((T.ColorJitter(0.3, 0.3, 0.3, 0.3), T.RandomHorizontalFlip(), T.RandomCrop(96), T.ToTensor())) # 96
-    # val_trans = T.Compose((T.CenterCrop(96), T.ToTensor()))
-
+    
+    train_trans = T.Compose((T.ColorJitter(0.3, 0.3, 0.3, 0.3), T.RandomHorizontalFlip(), T.RandomCrop(96), T.ToTensor())) 
     data = load_dense_data('dense_data/train', transform=train_trans)
     val = load_dense_data('dense_data/valid')
 

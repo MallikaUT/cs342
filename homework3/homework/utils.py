@@ -73,6 +73,9 @@ class DenseSuperTuxDataset(Dataset):
         images_dir = os.path.join(self.dataset_path, 'images')
         labels_dir = os.path.join(self.dataset_path, 'labels')
 
+    # Create a list of (image, label) pairs
+        self.samples = [(os.path.join(images_dir, img), os.path.join(images_dir, img)) for img in image_files]
+
         # Iterate through the files and collect samples
         for filename in os.listdir(images_dir):
             if filename.endswith('.png'):

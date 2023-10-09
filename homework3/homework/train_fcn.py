@@ -1,3 +1,4 @@
+
 import torch
 from os import path
 from torch.utils.data import DataLoader
@@ -26,13 +27,13 @@ def log(writer, step, loss, iou, accuracy):
 
 def train(args):
     # Initialize your FCN model
+    print("args.num_classes:", args.num_classes) 
     model = FCN(in_channels=args.in_channels, out_channels=args.out_channels)
-
+    
     # Create data loaders for training and validation sets
     train_data_path = 'dense_data/train'
     valid_data_path = 'dense_data/valid'
     train_loader, valid_loader = load_dense_data(train_data_path, valid_data_path, batch_size=args.batch_size, num_workers=0, transform=transforms)
-    print(args.num_classes)
     train_dataset = DenseSuperTuxDataset(dataset_path=train_data_path, transform=Compose([ToTensor()]),num_classes=args.num_classes)
     #train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
@@ -133,5 +134,5 @@ if __name__ == '__main__':
     parser.add_argument('--out_channels', type=int, default=6)
 
     args = parser.parse_args()
-
+    args.num_classes = 6
     train(args)

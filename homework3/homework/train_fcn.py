@@ -19,8 +19,8 @@ def train(args):
     from torch.utils.data import DataLoader
 
     # Initialize your FCN model
-    model = FCN()  # Make sure your FCN model is correctly defined in models.py
-
+    #model = FCN()  # Make sure your FCN model is correctly defined in models.py
+    model = FCN(in_channels=3, out_channels=6)
     # Create data loaders for training and validation sets
     train_dataset = DenseSuperTuxDataset(transform=DenseTransforms())  # Use appropriate data augmentation
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
@@ -108,6 +108,10 @@ if __name__ == '__main__':
     parser.add_argument('--save_interval', type=int, default=10)  # Save model every 'save_interval' epochs
     # Add other custom arguments here
     parser.add_argument('--num_classes', type=int, default=6)
+    parser.add_argument('--in_channels', type=int, default=3)
+    parser.add_argument('--out_channels', type=int, default=6)
     
     args = parser.parse_args()
+    model = FCN(in_channels=args.in_channels, out_channels=args.out_channels)
+
     train(args)

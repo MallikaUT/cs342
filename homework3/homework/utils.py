@@ -80,14 +80,14 @@ class DenseSuperTuxDataset(Dataset):
 
     def compute_class_distribution(self):
         # Implement logic to compute the class distribution
-        class_distribution = [0] * num_classes  # Initialize counts for each class
+      class_distribution = [0] * num_classes  # Initialize counts for each class
 
-        for sample in self.samples:
+      for sample in self.samples:
             # Assuming each sample has a label indicating the class
             label = sample['label']
             class_distribution[label] += 1
 
-        return class_distribution
+      return class_distribution
 
 
 

@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 import torch.utils.tensorboard as tb
 from .models import FCN, save_model
 from .utils import load_dense_data, ConfusionMatrix
-#from .dense_transforms import DenseTransforms
+from .dense_transforms import DenseTransforms
 from .dense_super_tux_dataset import DenseSuperTuxDataset  # Make sure you import the dataset
 
 def log(writer, step, loss, iou, accuracy):

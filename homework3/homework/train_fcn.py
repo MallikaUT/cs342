@@ -7,6 +7,13 @@ from .dense_transforms import DenseTransforms  # Import dense data augmentation 
 import torch.utils.tensorboard as tb
 
 
+def log(writer, step, loss, iou, accuracy):
+    # Log loss, IoU, and accuracy
+    writer.add_scalar('Loss', loss, step)
+    writer.add_scalar('IoU', iou, step)
+    writer.add_scalar('Accuracy', accuracy, step)
+
+
 def train(args):
     from os import path
     from torch.utils.data import DataLoader
@@ -17,7 +24,7 @@ def train(args):
     # Create data loaders for training and validation sets
     train_dataset = DenseSuperTuxDataset(transform=DenseTransforms())  # Use appropriate data augmentation
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    
+
     valid_dataset = DenseSuperTuxDataset(split='validation')
     valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
@@ -36,15 +43,15 @@ def train(args):
         for batch_idx, (imgs, lbls) in enumerate(train_loader):
             # Forward pass
             logits = model(imgs)
-            
+
             # Calculate the loss
             loss = criterion(logits, lbls)
-            
+
             # Backpropagation and optimization
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
+
             # Compute IoU and accuracy using ConfusionMatrix
             confusion_matrix = ConfusionMatrix()
             confusion_matrix.add(logits.argmax(1), lbls)
@@ -53,7 +60,7 @@ def train(args):
 
             # Log performance metrics and visualize results using log function
             global_step = epoch * len(train_loader) + batch_idx
-            log(train_logger, imgs, lbls, logits, global_step)
+            log(train_logger, global_step, loss.item(), iou, accuracy)
 
             # Print progress
             print(f"Epoch [{epoch+1}/{args.num_epochs}] | "
@@ -76,7 +83,7 @@ def train(args):
 
                 # Log validation performance metrics and visualize results using log function
                 valid_global_step = epoch * len(valid_loader) + valid_batch_idx
-                log(valid_logger, valid_imgs, valid_lbls, valid_logits, valid_global_step)
+                log(valid_logger, valid_global_step, loss.item(), valid_iou, valid_accuracy)
 
                 # Print validation progress
                 print(f"Validation | "
@@ -100,6 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.001)  # Set the learning rate
     parser.add_argument('--save_interval', type=int, default=10)  # Save model every 'save_interval' epochs
     # Add other custom arguments here
-
+    parser.add_argument('--num_classes', type=int, default=6)
+    
     args = parser.parse_args()
     train(args)

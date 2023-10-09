@@ -46,7 +46,6 @@ def train(args):
             optim.step()
             optim.zero_grad()
         print("Epoch: " + str(epoch) + ", Loss: " + str(total_loss/count))
-        print(f'Epoch [{epoch + 1}/{args.epochs}] - Loss:'++ str(total_loss/count))
         model.eval()
         count = 0
         accuracy = 0
@@ -56,9 +55,10 @@ def train(args):
           pred = model(image)
           accuracy = accuracy + (pred.argmax(1) == label).float().mean().item()
           count += 1
-        print("Epoch: " + str(epoch) + ", Accuracy: " + str(accuracy/count))
-        print(f'Validation Accuracy: '+ str(accuracy/count))
+        print("Epoch: " + str(epoch) + ", Validation Accuracy: " + str(accuracy/count))
+        
         if accuracy/count > 0.87:
+          print("No improvement")
           break
 
     save_model(model)

@@ -20,7 +20,17 @@ class Planner(torch.nn.Module):
         """
         Your code here
         """
-        raise NotImplementedError('Planner.__init__')
+
+        layers = []
+        layers.append(torch.nn.Conv2d(3,128,5,2,2))
+        layers.append(torch.nn.ReLU())
+        layers.append(torch.nn.Conv2d(128,256,5,2,2))
+        layers.append(torch.nn.ReLU())
+        layers.append(torch.nn.Conv2d(256,1,5,2,2))
+      
+      
+        self._conv = torch.nn.Sequential(*layers)
+       # raise NotImplementedError('Planner.__init__')
 
     def forward(self, img):
         """
@@ -29,7 +39,10 @@ class Planner(torch.nn.Module):
         @img: (B,3,96,128)
         return (B,2)
         """
-        raise NotImplementedError("Planner.forward")
+        x = self._conv(img)
+        return spatial_argmax(x[:, 0])
+
+       # raise NotImplementedError("Planner.forward")
 
 
 def save_model(model):
@@ -47,23 +60,13 @@ def load_model():
     r.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), 'planner.th'), map_location='cpu'))
     return r
 
-def test_planner(pytux, track, verbose=False):
-    from .controller import control
-
-    track = [track] if isinstance(track, str) else track
-    planner = load_model().eval()
-
-    for t in track:
-        steps, how_far = pytux.rollout(t, control, planner, max_frames=1000, verbose=verbose)
-        print(steps, how_far)    
-
 
 if __name__ == '__main__':
-    #from .controller import control
+    from .controller import control
     from .utils import PyTux
     from argparse import ArgumentParser
 
-    """
+    
     def test_planner(args):
         # Load model
         planner = load_model().eval()
@@ -72,14 +75,10 @@ if __name__ == '__main__':
             steps, how_far = pytux.rollout(t, control, planner=planner, max_frames=1000, verbose=args.verbose)
             print(steps, how_far)
         pytux.close()
-    """
+    
 
     parser = ArgumentParser("Test the planner")
     parser.add_argument('track', nargs='+')
     parser.add_argument('-v', '--verbose', action='store_true')
-    #args = parser.parse_args()
-    #test_planner(args)
-
-    pytux = PyTux()
-    test_planner(pytux, **vars(parser.parse_args()))
-    pytux.close()
+    args = parser.parse_args()
+    test_planner(args)

@@ -2,7 +2,6 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from . import dense_transforms
 
-
 class DetectionSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=dense_transforms.ToTensor(), min_size=20):
         from glob import glob
@@ -31,13 +30,11 @@ class DetectionSuperTuxDataset(Dataset):
             data = self.transform(*data)
         return data
 
-
 def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
     transform = dense_transforms.Compose(
         [dense_transforms.ColorJitter(0.9, 0.9, 0.9, 0.1), dense_transforms.RandomHorizontalFlip(), dense_transforms.ToTensor(), dense_transforms.ToHeatmap()])
     dataset = DetectionSuperTuxDataset(dataset_path, transform=transform, **kwargs)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
-
 
 if __name__ == '__main__':
     dataset = DetectionSuperTuxDataset('dense_data/train')
@@ -64,8 +61,7 @@ if __name__ == '__main__':
                                        transform=dense_transforms.Compose([dense_transforms.RandomHorizontalFlip(0),
                                                                            dense_transforms.ToTensor()]))
     fig.tight_layout()
-    # fig.savefig('box.png', bbox_inches='tight', pad_inches=0, transparent=True)
-
+  
     fig, axs = subplots(1, 2)
     for i, ax in enumerate(axs.flat):
         im, *dets = dataset[100 + i]
@@ -78,7 +74,5 @@ if __name__ == '__main__':
         b = 1 - np.maximum(hm[:, :, 0], hm[:, :, 1])
         ax.imshow(np.stack((r, g, b, alpha), axis=2), interpolation=None)
         ax.axis('off')
-    fig.tight_layout()
-    # fig.savefig('heat.png', bbox_inches='tight', pad_inches=0, transparent=True)
-
+    fig.tight_layout()  
     show()

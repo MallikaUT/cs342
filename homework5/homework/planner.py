@@ -19,19 +19,8 @@ class Planner(torch.nn.Module):
 
         """
         Your code here
-        
-
-        layers = []
-        layers.append(torch.nn.Conv2d(3,128,5,2,2))
-        layers.append(torch.nn.ReLU())
-        layers.append(torch.nn.Conv2d(128,256,5,2,2))
-        layers.append(torch.nn.ReLU())
-        layers.append(torch.nn.Conv2d(256,1,5,2,2))
-      
-      
-        self._conv = torch.nn.Sequential(*layers)
-       """
-    raise NotImplementedError('Planner.__init__')
+        """
+        raise NotImplementedError('Planner.__init__')
 
     def forward(self, img):
         """
@@ -39,11 +28,8 @@ class Planner(torch.nn.Module):
         Predict the aim point in image coordinate, given the supertuxkart image
         @img: (B,3,96,128)
         return (B,2)
-        
-        x = self._conv(img)
-        return spatial_argmax(x[:, 0])
         """
-    raise NotImplementedError("Planner.forward")
+        raise NotImplementedError("Planner.forward")
 
 
 def save_model(model):

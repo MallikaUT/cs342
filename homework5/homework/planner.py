@@ -19,7 +19,7 @@ class Planner(torch.nn.Module):
 
         """
         Your code here
-        """
+        
 
         layers = []
         layers.append(torch.nn.Conv2d(3,128,5,2,2))
@@ -30,7 +30,8 @@ class Planner(torch.nn.Module):
       
       
         self._conv = torch.nn.Sequential(*layers)
-       # raise NotImplementedError('Planner.__init__')
+       """
+    raise NotImplementedError('Planner.__init__')
 
     def forward(self, img):
         """
@@ -38,11 +39,11 @@ class Planner(torch.nn.Module):
         Predict the aim point in image coordinate, given the supertuxkart image
         @img: (B,3,96,128)
         return (B,2)
-        """
+        
         x = self._conv(img)
         return spatial_argmax(x[:, 0])
-
-       # raise NotImplementedError("Planner.forward")
+        """
+    raise NotImplementedError("Planner.forward")
 
 
 def save_model(model):
@@ -66,7 +67,7 @@ if __name__ == '__main__':
     from .utils import PyTux
     from argparse import ArgumentParser
 
-    
+
     def test_planner(args):
         # Load model
         planner = load_model().eval()
@@ -75,7 +76,7 @@ if __name__ == '__main__':
             steps, how_far = pytux.rollout(t, control, planner=planner, max_frames=1000, verbose=args.verbose)
             print(steps, how_far)
         pytux.close()
-    
+
 
     parser = ArgumentParser("Test the planner")
     parser.add_argument('track', nargs='+')

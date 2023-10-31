@@ -1,6 +1,5 @@
 import pystk
 
-
 def control(aim_point, current_vel):
     """
     Set the Action for the low-level controller
@@ -10,29 +9,36 @@ def control(aim_point, current_vel):
     """
     action = pystk.Action()
 
-    """
-    Your code here
-    Hint: Use action.acceleration (0..1) to change the velocity. Try targeting a target_velocity (e.g. 20).
-    Hint: Use action.brake to True/False to brake (optionally)
-    Hint: Use action.steer to turn the kart towards the aim_point, clip the steer angle to -1..1
-    Hint: You may want to use action.drift=True for wide turns (it will turn faster)
-    """
+    # Target a constant velocity (adjust as needed)
+    target_velocity = 20  # You can tune this value
+    acceleration = 0.0
+    brake = False
+
+    # Calculate the steering angle based on the aim point
+    steering_angle = aim_point[0]  # Use the x-coordinate of the aim point
+    steering_angle = max(-1, min(1, steering_angle))  # Clip to -1..1
+
+    # Use drift for wide turns
+    drift = abs(steering_angle) > 0.5
+
+    # Set the values in the Action object
+    action.acceleration = acceleration
+    action.brake = brake
+    action.steer = steering_angle
+    action.drift = drift
 
     return action
-
 
 if __name__ == '__main__':
     from .utils import PyTux
     from argparse import ArgumentParser
 
     def test_controller(args):
-        import numpy as np
         pytux = PyTux()
         for t in args.track:
             steps, how_far = pytux.rollout(t, control, max_frames=1000, verbose=args.verbose)
             print(steps, how_far)
         pytux.close()
-
 
     parser = ArgumentParser()
     parser.add_argument('track', nargs='+')

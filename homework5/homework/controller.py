@@ -9,17 +9,21 @@ def control(aim_point, current_vel):
     """
     action = pystk.Action()
 
-    # Target a constant velocity (adjust as needed)
-    target_velocity = 20  # You can tune this value
+    # Fine-tune the target velocity for each track
+    # You can adjust this value based on the specific track
+    target_velocity = 20
 
     # Calculate the steering angle based on the aim point
     steering_angle = aim_point[0]  # Use the x-coordinate of the aim point
 
-    # Adjust the steering angle based on current velocity
-    # You may want to experiment with this to maintain a constant velocity
-    # Example: steering_angle = adjust_steering_for_velocity(steering_angle, current_vel, target_velocity)
+    # Adjust the steering angle based on current velocity and target velocity
+    # You may need to experiment with this to maintain a constant velocity
+    max_steering_angle = 1.0  # Maximum allowed steering angle
+    min_steering_angle = -1.0  # Minimum allowed steering angle
+    steering_gain = 0.5  # Adjust this gain to control steering sensitivity
+    steering_angle = max(min_steering_angle, min(max_steering_angle, steering_gain * (steering_angle - current_vel / target_velocity)))
 
-    # Use brake if the kart is too fast or needs to slow down
+    # Use brake if the kart is going too fast or needs to slow down
     brake = current_vel > target_velocity
 
     # Use drift for wide turns
@@ -28,7 +32,7 @@ def control(aim_point, current_vel):
     # Set the values in the Action object
     action.acceleration = 0.0  # Adjust acceleration as needed
     action.brake = brake
-    action.steer = max(-1, min(1, steering_angle))  # Clip to -1..1
+    action.steer = steering_angle
     action.drift = drift
 
     return action

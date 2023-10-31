@@ -11,20 +11,24 @@ def control(aim_point, current_vel):
 
     # Target a constant velocity (adjust as needed)
     target_velocity = 20  # You can tune this value
-    acceleration = 0.0
-    brake = False
 
     # Calculate the steering angle based on the aim point
     steering_angle = aim_point[0]  # Use the x-coordinate of the aim point
-    steering_angle = max(-1, min(1, steering_angle))  # Clip to -1..1
+
+    # Adjust the steering angle based on current velocity
+    # You may want to experiment with this to maintain a constant velocity
+    # Example: steering_angle = adjust_steering_for_velocity(steering_angle, current_vel, target_velocity)
+
+    # Use brake if the kart is too fast or needs to slow down
+    brake = current_vel > target_velocity
 
     # Use drift for wide turns
     drift = abs(steering_angle) > 0.5
 
     # Set the values in the Action object
-    action.acceleration = acceleration
+    action.acceleration = 0.0  # Adjust acceleration as needed
     action.brake = brake
-    action.steer = steering_angle
+    action.steer = max(-1, min(1, steering_angle))  # Clip to -1..1
     action.drift = drift
 
     return action
@@ -37,11 +41,11 @@ if __name__ == '__main__':
         pytux = PyTux()
         for t in args.track:
             steps, how_far = pytux.rollout(t, control, max_frames=1000, verbose=args.verbose)
-            print(steps, how_far)
+            print(f"Track: {t}, Steps: {steps}, Distance: {how_far}")
         pytux.close()
 
     parser = ArgumentParser()
-    parser.add_argument('track', nargs='+')
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('track', nargs='+', help='List of tracks to test the controller')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode')
     args = parser.parse_args()
     test_controller(args)

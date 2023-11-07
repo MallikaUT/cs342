@@ -1,8 +1,5 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from torch import save, load
-from os import path
 
 def spatial_argmax(logit):
     """
@@ -14,50 +11,53 @@ def spatial_argmax(logit):
     return torch.stack(((weights.sum(1) * torch.linspace(-1, 1, logit.size(2)).to(logit.device)[None]).sum(1),
                         (weights.sum(2) * torch.linspace(-1, 1, logit.size(1)).to(logit.device)[None]).sum(1)), 1)
 
-class Planner(nn.Module):
+class Planner(torch.nn.Module):
     def __init__(self):
-        super(Planner, self).__init__()
+        super().__init__()
 
-        # Define your planner model using an encoder-decoder structure or any architecture of your choice.
-        # Example architecture:
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            # Add more layers as needed
-        )
+        layers = []
+        ic = 3
+        structure = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']
+        for l in structure:
+            if l == 'M':
+                layers.append(torch.nn.MaxPool2d(kernel_size=2, stride=2))
+            else:
+                layers.append(torch.nn.Conv2d(in_channels=ic, out_channels=l, padding=1, kernel_size=3, stride=1))
+                layers.append(torch.nn.BatchNorm2d(l))
+                layers.append(torch.nn.ReLU(inplace=True))
+                ic = l
 
-        self.decoder = nn.Sequential(
-            nn.Linear(64 * 24 * 32, 128),
-            nn.ReLU(),
-            nn.Linear(128, 2)  # Output 2D aim point
-        )
+        layers.append(torch.nn.Conv2d(in_channels=512, out_channels=256, kernel_size=3, padding=1))
+        layers.append(torch.nn.ReLU(inplace=True))
+        layers.append(torch.nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1))
+        layers.append(torch.nn.ReLU(inplace=True))
+        layers.append(torch.nn.Conv2d(128, 1, 1))
+
+        self._conv = torch.nn.Sequential(*layers)
 
     def forward(self, img):
-        # Pass the input image through the encoder
-        x = self.encoder(img)
-        # Flatten the feature map
-        x = x.view(x.size(0), -1)
-        # Pass through the decoder to get the predicted aim point
-        aim_point = self.decoder(x)
-        return aim_point
+        
+        x = self._conv(img)
+        return spatial_argmax(x[:, 0])
+
 
 def save_model(model):
+    from torch import save
+    from os import path
     if isinstance(model, Planner):
         save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'planner.th'))
     else:
         raise ValueError("Model type '%s' not supported!" % str(type(model)))
 
 def load_model():
+    from torch import load
+    from os import path
     r = Planner()
     r.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), 'planner.th'), map_location='cpu'))
     return r
 
 if __name__ == '__main__':
-    #from controller import control
+    from controller import control
     from utils import PyTux
     from argparse import ArgumentParser
 

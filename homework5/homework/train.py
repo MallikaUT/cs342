@@ -91,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--log_dir')
     # Put custom arguments here
     parser.add_argument('--continue_training', action='store_true', help='Continue training from a saved model')
-
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for the optimizer')
 
     args = parser.parse_args()
     train(args)

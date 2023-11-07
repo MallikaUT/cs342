@@ -92,6 +92,7 @@ if __name__ == '__main__':
     # Put custom arguments here
     parser.add_argument('--continue_training', action='store_true', help='Continue training from a saved model')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate for the optimizer')
+    parser.add_argument('--transform', default='dense_transforms.YourTransformClass()', help='Data transformation class')
 
     args = parser.parse_args()
     train(args)

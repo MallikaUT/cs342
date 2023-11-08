@@ -1,62 +1,73 @@
-from .planner import Planner, save_model 
 import torch
-import torch.utils.tensorboard as tb
-from torch.utils.data import DataLoader
 import numpy as np
-from .utils import load_data
+
+from .models import Detector, save_model
+from .utils import load_detection_data
 from . import dense_transforms
+import torch.utils.tensorboard as tb
+
 
 def train(args):
     from os import path
-    # Initialize your model
-    model = Planner()
+    model = Detector()
+    train_logger, valid_logger = None, None
+    if args.log_dir is not None:
+        train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
+        valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
+    
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    model = Detector().to(device)
+    """
+    Your code here, modify your HW3 code
+    Hint: Use the log function below to debug and visualize your model
+    """
+    loss = torch.nn.BCEWithLogitsLoss(reduction='none').to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-6)
 
-    # Create data loaders for training and validation
-    # Modify the dataset and batch size according to your data
-    train_dataset = load_data('drive_data', transform=dense_transforms.YourTransformClass(), num_workers=args.num_workers)
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    train_data = load_detection_data('dense_data/train', num_workers=4)
 
-    # Create the optimizer and loss function
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    criterion = torch.nn.L1Loss()
-
-    # Set up TensorBoard logging
-    train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
-
-    # Move the model to the GPU if available
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-
-    # Training loop
-    for epoch in range(args.num_epochs):
+    for epoch in range(50):
         model.train()
-        total_loss = 0
+        for image, heatmap, delta in train_data:
+            image = image.to(device)
+            heatmap = heatmap.to(device)
 
-        for batch_idx, (img, label) in enumerate(train_loader):
-            img, label = img.to(device), label.to(device)
-            optimizer.zero_grad()
-            output = model(img)
-            loss = criterion(output, label)
-            loss.backward()
+            pred_heatmap = model(image)
+
+            l = loss(pred_heatmap, heatmap).mean()
+            l.backward()
             optimizer.step()
-            total_loss += loss.item()
-
-        # Log the loss
-        avg_loss = total_loss / len(train_loader)
-        train_logger.add_scalar('Loss', avg_loss, epoch)
-
-    # Save the trained model
+            optimizer.zero_grad()
+        model.eval()
+    #raise NotImplementedError('train')
     save_model(model)
+
+
+def log(logger, imgs, gt_det, det, global_step):
+    """
+    logger: train_logger/valid_logger
+    imgs: image tensor from data loader
+    gt_det: ground-truth object-center maps
+    det: predicted object-center heatmaps
+    global_step: iteration
+    """
+    logger.add_images('image', imgs[:16], global_step)
+    logger.add_images('label', gt_det[:16], global_step)
+    logger.add_images('pred', torch.sigmoid(det[:16]), global_step)
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log_dir', type=str, help='Directory for TensorBoard logs')
-    parser.add_argument('--num_epochs', type=int, default=10, help='Number of training epochs')
-    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
-    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
-    parser.add_argument('--num_workers', type=int, default=4, help='Number of data loading workers')
+
+    parser.add_argument('--log_dir')
+    # Put custom arguments here
+    parser.add_argument('-n', '--num_epoch', type=int, default=20)
+    parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3)
+    parser.add_argument('-g', '--gamma', type=float, default=0, help="class dependent weight for cross entropy")
+    parser.add_argument('-c', '--continue_training', action='store_true')
+    parser.add_argument('-t', '--transform',
+                        default='Compose([ColorJitter(0.9, 0.9, 0.9, 0.1), RandomHorizontalFlip(), ToTensor()])')
 
     args = parser.parse_args()
     train(args)

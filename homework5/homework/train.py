@@ -23,7 +23,7 @@ def train(args):
     loss = torch.nn.BCEWithLogitsLoss(reduction='none').to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-6)
 
-    train_data = load_detection_data('dense_data/train', num_workers=4)
+    train_data = load_data('dense_data/train', num_workers=4)
 
     for epoch in range(50):
         model.train()

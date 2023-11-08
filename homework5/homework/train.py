@@ -1,12 +1,11 @@
 from .planner import Planner, save_model
 import torch
 import torch.utils.tensorboard as tb
-import numpy as np
 from .utils import load_data
-from . import dense_transforms
-import matplotlib.pyplot as plt  # Add this import for visualization
+import dense_transforms
+import matplotlib.pyplot as plt
 import torchvision.transforms.functional as TF
-
+import numpy as np
 
 def train(args):
     from os import path
@@ -20,12 +19,16 @@ def train(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # Load your dataset using load_data function
-    train_data = load_data('drive_data', transform=dense_transforms, num_workers=4, batch_size=args.batch_size)
+    train_data = load_data(args.dataset_path, transform=args.transform, num_workers=args.num_workers, batch_size=args.batch_size)
 
     # Training loop
     for epoch in range(args.num_epochs):
         model.train()
-        for i, (image, label) in enumerate(train_data):
+        for i, data in enumerate(train_data):
+            image, label = data
+            image = image.to(args.device)
+            label = label.to(args.device)
+
             # Forward pass
             output = model(image)
 
@@ -46,17 +49,7 @@ def train(args):
 
     # Optionally, you can also log other training statistics using train_logger
 
-
 def log(logger, img, label, pred, global_step):
-    """
-    logger: train_logger/valid_logger
-    img: image tensor from data loader
-    label: ground-truth aim point
-    pred: predited aim point
-    global_step: iteration
-    """
-    import matplotlib.pyplot as plt
-    import torchvision.transforms.functional as TF
     fig, ax = plt.subplots(1, 1)
     ax.imshow(TF.to_pil_image(img[0].cpu()))
     WH2 = np.array([img.size(-1), img.size(-2)]) / 2
@@ -64,7 +57,6 @@ def log(logger, img, label, pred, global_step):
     ax.add_artist(plt.Circle(WH2 * (pred[0].cpu().detach().numpy() + 1), 2, ec='r', fill=False, lw=1.5))
     logger.add_figure('viz', fig, global_step)
     del ax, fig
-
 
 if __name__ == '__main__':
     import argparse
@@ -75,6 +67,10 @@ if __name__ == '__main__':
     parser.add_argument('--num_epochs', type=int, default=20)  # Add custom arguments
     parser.add_argument('--learning_rate', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=32)  # Add batch size argument
+    parser.add_argument('--dataset_path', default='drive_data', type=str)
+    parser.add_argument('--transform', default=dense_transforms.ToTensor(), type=eval)
+    parser.add_argument('--num_workers', type=int, default=4)
 
     args = parser.parse_args()
+    args.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     train(args)

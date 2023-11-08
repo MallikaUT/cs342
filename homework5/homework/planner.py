@@ -57,8 +57,8 @@ def load_model():
     return r
 
 if __name__ == '__main__':
-    from controller import control
-    from utils import PyTux
+    from .controller import control
+    from .utils import PyTux
     from argparse import ArgumentParser
 
     def test_planner(args):

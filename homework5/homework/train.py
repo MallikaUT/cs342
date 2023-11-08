@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from .models import Detector, save_model
+
 from .utils import load_detection_data
 from . import dense_transforms
 import torch.utils.tensorboard as tb

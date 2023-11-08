@@ -2,7 +2,7 @@ from .planner import Planner, save_model
 import torch
 import torch.utils.tensorboard as tb
 from .utils import load_data
-import dense_transforms
+from .import dense_transforms
 import matplotlib.pyplot as plt
 import torchvision.transforms.functional as TF
 import numpy as np

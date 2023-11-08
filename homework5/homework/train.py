@@ -9,7 +9,7 @@ import numpy as np
 
 def train(args):
     from os import path
-    model = Planner()
+    model = Planner().to(args.device)  # Move the model to the specified device
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
@@ -26,8 +26,8 @@ def train(args):
         model.train()
         for i, data in enumerate(train_data):
             image, label = data
-            image = image.to(args.device)
-            label = label.to(args.device)
+            image = image.to(args.device)  # Move the input data to the device
+            label = label.to(args.device)  # Move the label data to the device
 
             # Forward pass
             output = model(image)

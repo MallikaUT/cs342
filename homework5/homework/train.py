@@ -3,7 +3,7 @@ import torch
 import torch.utils.tensorboard as tb
 import numpy as np
 from .utils import load_data
-from . import dense_transforms
+from .import dense_transforms
 
 
 def train(args):

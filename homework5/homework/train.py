@@ -1,22 +1,21 @@
+from .planner import Planner, save_model 
 import torch
-import numpy as np
-
-
-from .utils import load_detection_data
-from . import dense_transforms
 import torch.utils.tensorboard as tb
+import numpy as np
+from .utils import load_data
+from . import dense_transforms
 
 
 def train(args):
     from os import path
-    model = Detector()
+    model = Planner()
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'), flush_secs=1)
         valid_logger = tb.SummaryWriter(path.join(args.log_dir, 'valid'), flush_secs=1)
     
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    model = Detector().to(device)
+    model = Planner().to(device)
     """
     Your code here, modify your HW3 code
     Hint: Use the log function below to debug and visualize your model

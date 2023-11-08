@@ -1,70 +1,50 @@
-from .planner import Planner, save_model 
+from .planner import Planner, save_model
 import torch
 import torch.utils.tensorboard as tb
 import numpy as np
 from .utils import load_data
-from .import dense_transforms
+from . import dense_transforms
+import matplotlib.pyplot as plt  # Add this import for visualization
+import torchvision.transforms.functional as TF
 
 
 def train(args):
     from os import path
-    print("Initializing Model =================================")
     model = Planner()
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
 
-    """
-    Your code here, modify your HW4 code
-    
-    """
-    print("installing torch ...")
-    import torch
-
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-    model = model.to(device)
-    if args.continue_training:
-        model.load_state_dict(torch.load(path.join(path.dirname(path.abspath(__file__)), 'planner.th')))
-
-    loss = torch.nn.L1Loss()
+    # Define your loss function and optimizer
+    loss_fn = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    
-    print("installing inspect ...")
-    import inspect
-    transform = eval(args.transform, {k: v for k, v in inspect.getmembers(dense_transforms) if inspect.isclass(v)})
-    print("loading data ...")
-    train_data = load_data('drive_data', transform=transform, num_workers=args.num_workers)
 
-    global_step = 0
-    print("Begin Training =================================")
-    for epoch in range(args.num_epoch):
+    # Load your dataset using load_data function
+    train_data = load_data('drive_data', transform=dense_transforms, num_workers=4, batch_size=args.batch_size)
+
+    # Training loop
+    for epoch in range(args.num_epochs):
         model.train()
-        losses = []
-        for img, label in train_data:
-            img, label = img.to(device), label.to(device)
+        for i, (image, label) in enumerate(train_data):
+            # Forward pass
+            output = model(image)
 
-            pred = model(img)
-            loss_val = loss(pred, label)
+            # Compute the loss
+            loss = loss_fn(output, label)
 
-            if train_logger is not None:
-                train_logger.add_scalar('loss', loss_val, global_step)
-                if global_step % 100 == 0:
-                    log(train_logger, img, label, pred, global_step)
-
+            # Backpropagation
             optimizer.zero_grad()
-            loss_val.backward()
+            loss.backward()
             optimizer.step()
-            global_step += 1
-            
-            losses.append(loss_val.detach().cpu().numpy())
-        
-        avg_loss = np.mean(losses)
-        if train_logger is None:
-            print('epoch %-3d \t loss = %0.3f' % (epoch, avg_loss))
+
+            # Log the visualization
+            if train_logger is not None:
+                log(train_logger, image, label, output, epoch * len(train_data) + i)
+
+        # Save the model after each epoch
         save_model(model)
 
-    save_model(model)
+    # Optionally, you can also log other training statistics using train_logger
 
 
 def log(logger, img, label, pred, global_step):
@@ -92,7 +72,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--log_dir')
-    # Put custom arguments here
+    parser.add_argument('--num_epochs', type=int, default=20)  # Add custom arguments
+    parser.add_argument('--learning_rate', type=float, default=0.001)
+    parser.add_argument('--batch_size', type=int, default=32)  # Add batch size argument
 
     args = parser.parse_args()
     train(args)

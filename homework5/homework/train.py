@@ -4,6 +4,7 @@ import torch.utils.tensorboard as tb
 import numpy as np
 from .utils import load_data
 from .import dense_transforms
+from torchvision import transforms
 
 
 def train(args):
@@ -23,7 +24,7 @@ def train(args):
     loss = torch.nn.BCEWithLogitsLoss(reduction='none').to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-6)
 
-    train_data = load_data('drive_data', transform=transform, num_workers=args.num_workers)
+    train_data = load_data('drive_data', transform=transforms, num_workers=args.num_workers)
 
     for epoch in range(50):
         model.train()

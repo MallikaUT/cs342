@@ -34,7 +34,7 @@ def train(args):
     import inspect
     transform = eval(args.transform, {k: v for k, v in inspect.getmembers(dense_transforms) if inspect.isclass(v)})
     print("loading data ...")
-    train_data = load_data('drive_data', transform=transform, num_workers=args.num_workers)
+    train_data = load_data(args.dataset_path, transform=transform, num_workers=2)
 
     global_step = 0
     print("Begin Training =================================")

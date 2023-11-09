@@ -24,7 +24,7 @@ def train(args):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     model = model.to(device)
-    if args.continue_training:
+    if args.use_existing:
         model.load_state_dict(torch.load(path.join(path.dirname(path.abspath(__file__)), 'planner.th')))
 
     loss = torch.nn.L1Loss()

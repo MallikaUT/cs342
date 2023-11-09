@@ -94,5 +94,11 @@ if __name__ == '__main__':
     parser.add_argument('--log_dir')
     # Put custom arguments here
 
+    parser.add_argument('-learning_rate', type=float, default=0.001, help="learning rate")
+    parser.add_argument('-dataset_path', type=str, default="drive_data", help="train dataset path")
+    parser.add_argument('-epoch', type=int, default=50, help="number of epoch for training")
+    parser.add_argument('-use_existing', action='store_true', help="use existing file")
+    parser.add_argument('-w', '--size-weight', type=float, default=0.01)
+
     args = parser.parse_args()
     train(args)

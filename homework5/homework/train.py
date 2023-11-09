@@ -32,7 +32,11 @@ def train(args):
     
     print("installing inspect ...")
     import inspect
-    transform = eval(args.transform, {k: v for k, v in inspect.getmembers(dense_transforms) if inspect.isclass(v)})
+    transform = DT.Compose([
+      DT.ColorJitter(brightness=0.2,contrast=0.5,saturation=0.5,hue=0.2),
+      DT.RandomHorizontalFlip(),
+      DT.ToTensor()
+    ])
     print("loading data ...")
     train_data = load_data(args.dataset_path, transform=transform, num_workers=2)
 

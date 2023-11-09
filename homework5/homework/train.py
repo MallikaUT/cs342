@@ -1,9 +1,9 @@
-from planner import Planner, save_model
-import torch
+from .planner import Planner, save_model
+from torch import device, cuda, load, optim, nn
 import torch.utils.tensorboard as tb
 import numpy as np
-from utils import load_data
-import dense_transforms
+from .utils import load_data
+from . import dense_transforms as DT
 
 
 def train(args):

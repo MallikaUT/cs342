@@ -14,18 +14,14 @@ def spatial_argmax(logit):
 
 class Planner(nn.Module):
     def __init__(self, channels=[16, 32, 32, 32]):
-        super(Planner, self).__init__()
+        super().__init__()
 
-        layers = []
-        ic = 3
-        for l in channels:
-            layers.append(nn.Conv2d(ic, l, kernel_size=3, padding=1))
-            layers.append(nn.ReLU(inplace=True))
-            layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
-            ic = l
-
-        self._conv = nn.Sequential(*layers)
-
+    conv_block= lambda c, h:[torch.nn.BatchNorm2d(h), torch.nn.Conv2d(h,c,5,2,2),torch.nn.ReLU(True)]
+    h, _conv=3,[]
+    for c in channels :
+       _conv +=conv_block(c,h)
+       h=c
+    self._conv = torch.nn.Sequential(*_conv,torch.nn.Conv2d(h,1,1))  
     def forward(self, img):
         x = self._conv(img)
         return spatial_argmax(x[:, 0])

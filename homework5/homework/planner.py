@@ -16,12 +16,16 @@ class Planner(nn.Module):
     def __init__(self, channels=[16, 32, 32, 32]):
         super().__init__()
 
-    conv_block= lambda c, h:[torch.nn.BatchNorm2d(h), torch.nn.Conv2d(h,c,5,2,2),torch.nn.ReLU(True)]
-    h, _conv=3,[]
-    for c in channels :
-       _conv +=conv_block(c,h)
-       h=c
-    self._conv = torch.nn.Sequential(*_conv,torch.nn.Conv2d(h,1,1))  
+        def conv_block(c, h):
+            return [nn.BatchNorm2d(h), nn.Conv2d(h, c, 5, 2, 2), nn.ReLU(True)]
+
+        h, _conv = 3, []
+        for c in channels:
+            _conv += conv_block(c, h)
+            h = c
+        _conv.append(nn.Conv2d(h, 1, 1))
+        self._conv = nn.Sequential(*_conv)
+
     def forward(self, img):
         x = self._conv(img)
         return spatial_argmax(x[:, 0])

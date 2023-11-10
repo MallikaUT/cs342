@@ -34,7 +34,7 @@ def save_model(model):
     if isinstance(model, Planner):
         save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'planner.th'))
     else:
-        raise ValueError("Model type '%s' not supported!" % str(type(model))
+        raise ValueError("Model type '%s' not supported!" % str(type(model)))
 
 def load_model():
     from torch import load

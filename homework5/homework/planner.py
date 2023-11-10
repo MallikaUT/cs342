@@ -1,48 +1,46 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import MobileNetV2
-
 
 class Planner(nn.Module):
     def __init__(self):
-        super(Planner, self).__init()
-        # Create a custom lightweight base model
-        self.base_model = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2)
-        )
-        
-        # Additional layers to adapt the model for your task
-        self.conv1 = nn.Conv2d(512, 256, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(256, 128, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(128, 1, kernel_size=1)
-        
-    def forward(self, x):
-        x = self.base_model(x)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = self.conv3(x)
+        super(Planner, self).__init__()
+        # Define a simple CNN architecture
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(64 * 48 * 64, 128)
+        self.fc2 = nn.Linear(128, 2)
+
+    def forward(self, img):
+        x = F.relu(self.pool(self.conv1(img)))
+        x = x.view(-1, 64 * 48 * 64)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
         return x
 
+def spatial_argmax(logit):
+    """
+    Compute the soft-argmax of a heatmap
+    :param logit: A tensor of size BS x H x W
+    :return: A tensor of size BS x 2 the soft-argmax in normalized coordinates (-1 .. 1)
+    """
+    weights = F.softmax(logit.view(logit.size(0), -1), dim=-1).view_as(logit)
+    return torch.stack(((weights.sum(1) * torch.linspace(-1, 1, logit.size(2)).to(logit.device)[None]).sum(1),
+                        (weights.sum(2) * torch.linspace(-1, 1, logit.size(1)).to(logit.device)[None]).sum(1)), 1)
+
 def save_model(model):
-    # Save the model using torch.save as before
-    torch.save(model.state_dict(), 'planner.th')
+    from torch import save
+    from os import path
+    if isinstance(model, Planner):
+        save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'planner.th'))
+    else:
+        raise ValueError("Model type '%s' not supported!" % str(type(model))
 
 def load_model():
-    # Load the model using torch.load as before
+    from torch import load
+    from os import path
     model = Planner()
-    model.load_state_dict(torch.load('planner.th'))
+    model.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), 'planner.th'), map_location='cpu'))
     return model
 
 if __name__ == '__main__':

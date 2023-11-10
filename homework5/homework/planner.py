@@ -15,18 +15,18 @@ def spatial_argmax(logit):
 class Planner(nn.Module):
     def __init__(self):
         super(Planner, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(32 * 48 * 64, 64)
+        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, padding=1)
+        self.depthwise_conv1 = nn.Conv2d(16, 16, kernel_size=3, padding=1, groups=16)
+        self.fc1 = nn.Linear(16 * 48 * 64, 64)
         self.fc2 = nn.Linear(64, 2)
 
     def forward(self, img):
-        x = F.relu(self.pool(self.conv1(img)))
-        x = x.view(-1, 32 * 48 * 64)
-        x = F.relu(self.fc1(x))
+        x = self.conv1(img)
+        x = self.depthwise_conv1(x)
+        x = x.view(-1, 16 * 48 * 64)
+        x = self.fc1(x)
         x = self.fc2(x)
         return x
-
 
 def save_model(model):
     from torch import save

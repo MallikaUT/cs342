@@ -13,19 +13,22 @@ def spatial_argmax(logit):
                         (weights.sum(2) * torch.linspace(-1, 1, logit.size(1)).to(logit.device)[None]).sum(1)), 1)
 
 class Planner(nn.Module):
-    def __init__(self):
+    def __init__(self, channels=[16, 32, 32, 32]):
         super(Planner, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(32 * 48 * 64, 64)
-        self.fc2 = nn.Linear(64, 2)  # Output size is 2 for the aim point
+
+        layers = []
+        ic = 3
+        for l in channels:
+            layers.append(nn.Conv2d(ic, l, kernel_size=3, padding=1))
+            layers.append(nn.ReLU(inplace=True))
+            layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
+            ic = l
+
+        self._conv = nn.Sequential(*layers)
 
     def forward(self, img):
-        x = F.relu(self.pool(self.conv1(img)))
-        x = x.view(-1, 32 * 48 * 64)
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)  # Output size is 2
-        return x
+        x = self._conv(img)
+        return spatial_argmax(x[:, 0])
 
 
 def save_model(model):

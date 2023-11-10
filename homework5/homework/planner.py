@@ -2,22 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class Planner(nn.Module):
-    def __init__(self):
-        super(Planner, self).__init__()
-        # Define a simple CNN architecture
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.fc1 = nn.Linear(64 * 48 * 64, 128)
-        self.fc2 = nn.Linear(128, 2)
-
-    def forward(self, img):
-        x = F.relu(self.pool(self.conv1(img)))
-        x = x.view(-1, 64 * 48 * 64)
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
 def spatial_argmax(logit):
     """
     Compute the soft-argmax of a heatmap
@@ -27,6 +11,22 @@ def spatial_argmax(logit):
     weights = F.softmax(logit.view(logit.size(0), -1), dim=-1).view_as(logit)
     return torch.stack(((weights.sum(1) * torch.linspace(-1, 1, logit.size(2)).to(logit.device)[None]).sum(1),
                         (weights.sum(2) * torch.linspace(-1, 1, logit.size(1)).to(logit.device)[None]).sum(1)), 1)
+
+class Planner(nn.Module):
+    def __init__(self):
+        super(Planner, self).__init__()
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc1 = nn.Linear(32 * 48 * 64, 64)
+        self.fc2 = nn.Linear(64, 2)
+
+    def forward(self, img):
+        x = F.relu(self.pool(self.conv1(img)))
+        x = x.view(-1, 32 * 48 * 64)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
 
 def save_model(model):
     from torch import save

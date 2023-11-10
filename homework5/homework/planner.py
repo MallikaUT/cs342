@@ -3,9 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models import MobileNetV2
 
+
 class Planner(nn.Module):
     def __init__(self):
-        super(Planner, self).__init()
+        super(Planner, self).__init__()
         # Use a lightweight base model, such as MobileNetV2
         self.base_model = MobileNetV2(features_only=True)
         

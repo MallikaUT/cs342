@@ -6,13 +6,26 @@ from torchvision.models import MobileNetV2
 
 class Planner(nn.Module):
     def __init__(self):
-        super(Planner, self).__init__()
-        # Use a lightweight base model, such as MobileNetV2
-        self.base_model = MobileNetV2(features_only=True)
+        super(Planner, self).__init()
+        # Create a custom lightweight base model
+        self.base_model = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
         
         # Additional layers to adapt the model for your task
-        self.conv1 = nn.Conv2d(1280, 256, kernel_size=1)
-        self.conv2 = nn.Conv2d(256, 128, kernel_size=1)
+        self.conv1 = nn.Conv2d(512, 256, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(256, 128, kernel_size=3, padding=1)
         self.conv3 = nn.Conv2d(128, 1, kernel_size=1)
         
     def forward(self, x):

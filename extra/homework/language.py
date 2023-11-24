@@ -24,12 +24,12 @@ def sample_random(model: LanguageModel, max_length: int = 100):
     :param max_length: The maximum sentence length
     :return: A string
     """
-    result = ''
-    while len(result) < max_length:
-        log_probs = model.predict_next(result)
-        next_char = utils.sample_from_distribution(log_probs)
-        result += utils.index_to_char(next_char)
-        if result.endswith('.'):
+    result = ""
+    for _ in range(max_length):
+        log_probs = model.predict_all(result)
+        sampled_index = utils.sample_from_distribution(log_probs[:, -1])
+        result += utils.index_to_char(sampled_index)
+        if result[-1] == '.':
             break
     return result
 

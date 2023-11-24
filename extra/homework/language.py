@@ -4,23 +4,18 @@ from . import utils
 
 def log_likelihood(model: LanguageModel, some_text: str):
     """
-    Your code here
-
     Evaluate the log-likelihood of a given string.
 
-    Hint: utils.one_hot might come in handy
-
     :param model: A LanguageModel
-    :param some_text:
+    :param some_text: A string
     :return: float
     """
-    raise NotImplementedError('log_likelihood')
+    log_probs = model.predict_all(some_text)
+    return log_probs.sum().item()
 
 
 def sample_random(model: LanguageModel, max_length: int = 100):
     """
-    Your code here.
-
     Sample a random sentence from the language model.
     Terminate once you reach a period '.'
 
@@ -28,21 +23,17 @@ def sample_random(model: LanguageModel, max_length: int = 100):
     :param max_length: The maximum sentence length
     :return: A string
     """
-    raise NotImplementedError('sample_random')
+    result = ''
+    while len(result) < max_length:
+        log_probs = model.predict_next(result)
+        next_char = utils.sample_from_distribution(log_probs)
+        result += utils.index_to_char(next_char)
+        if result.endswith('.'):
+            break
+    return result
 
 
 class TopNHeap:
-    """
-    A heap that keeps the top N elements around
-    h = TopNHeap(2)
-    h.add(1)
-    h.add(2)
-    h.add(3)
-    h.add(0)
-    print(h.elements)
-    > [2,3]
-
-    """
     def __init__(self, N):
         self.elements = []
         self.N = N
@@ -57,29 +48,42 @@ class TopNHeap:
 
 def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_length: int = 100, average_log_likelihood: bool = False):
     """
-    Your code here
-
-    Use beam search for find the highest likelihood generations, such that:
-      * No two returned sentences are the same
-      * the `log_likelihood` of each returned sentence is as large as possible
+    Use beam search to find the highest likelihood generations.
 
     :param model: A LanguageModel
     :param beam_size: The size of the beam in beam search (number of sentences to keep around)
     :param n_results: The number of results to return
     :param max_length: The maximum sentence length
     :param average_log_likelihood: Pick the best beams according to the average log-likelihood, not the sum
-                                   This option favors longer strings.
     :return: A list of strings of size n_results
     """
-    raise NotImplementedError('beam_search')
+    heap = TopNHeap(n_results)
+    beam = [{'text': '', 'log_likelihood': 0.0}]
+
+    while len(heap.elements) < n_results and len(beam) > 0:
+        new_beam = []
+        for candidate in beam:
+            current_text = candidate['text']
+            log_probs = model.predict_next(current_text)
+
+            for char_index in range(len(utils.vocab)):
+                new_char = utils.index_to_char(char_index)
+                new_text = current_text + new_char
+                new_log_likelihood = candidate['log_likelihood'] + log_probs[char_index].item()
+
+                if new_char == '.' or len(new_text) >= max_length:
+                    heap.add((new_log_likelihood / len(new_text), new_text))
+                else:
+                    new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
+
+        new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
+        beam = new_beam[:beam_size]
+
+    result_sentences = [item[1] for item in heap.elements]
+    return result_sentences
 
 
 if __name__ == "__main__":
-    """
-      Some test code.
-    """
-    from argparse import ArgumentParser
-
     parser = ArgumentParser()
     parser.add_argument('-m', '--model', choices=['Adjacent', 'Bigram', 'TCN'], default='Adjacent')
     args = parser.parse_args()

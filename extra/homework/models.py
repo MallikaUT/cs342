@@ -1,38 +1,15 @@
 import torch
-
+from torch import nn
 from . import utils
-
 
 class LanguageModel(object):
     def predict_all(self, some_text):
-        """
-        Given some_text, predict the likelihoods of the next character for each substring from 0..i
-        The resulting tensor is one element longer than the input, as it contains probabilities for all sub-strings
-        including the first empty string (probability of the first character)
-
-        :param some_text: A string containing characters in utils.vocab, may be an empty string!
-        :return: torch.Tensor((len(utils.vocab), len(some_text)+1)) of log-probabilities
-        """
         raise NotImplementedError('Abstract function LanguageModel.predict_all')
 
     def predict_next(self, some_text):
-        """
-        Given some_text, predict the likelihood of the next character
-
-        :param some_text: A string containing characters in utils.vocab, may be an empty string!
-        :return: a Tensor (len(utils.vocab)) of log-probabilities
-        """
         return self.predict_all(some_text)[:, -1]
 
-
 class Bigram(LanguageModel):
-    """
-    Implements a simple Bigram model. You can use this to compare your TCN to.
-    The bigram, simply counts the occurrence of consecutive characters in transition, and chooses more frequent
-    transitions more often. See https://en.wikipedia.org/wiki/Bigram .
-    Use this to debug your `language.py` functions.
-    """
-
     def __init__(self):
         from os import path
         self.first, self.transition = torch.load(path.join(path.dirname(path.abspath(__file__)), 'bigram.th'))
@@ -40,76 +17,66 @@ class Bigram(LanguageModel):
     def predict_all(self, some_text):
         return torch.cat((self.first[:, None], self.transition.t().matmul(utils.one_hot(some_text))), dim=1)
 
-
 class AdjacentLanguageModel(LanguageModel):
-    """
-    A simple language model that favours adjacent characters.
-    The first character is chosen uniformly at random.
-    Use this to debug your `language.py` functions.
-    """
-
     def predict_all(self, some_text):
-        prob = 1e-3*torch.ones(len(utils.vocab), len(some_text)+1)
+        prob = 1e-3 * torch.ones(len(utils.vocab), len(some_text) + 1)
         if len(some_text):
             one_hot = utils.one_hot(some_text)
-            prob[-1, 1:] += 0.5*one_hot[0]
-            prob[:-1, 1:] += 0.5*one_hot[1:]
-            prob[0, 1:] += 0.5*one_hot[-1]
-            prob[1:, 1:] += 0.5*one_hot[:-1]
-        return (prob/prob.sum(dim=0, keepdim=True)).log()
+            prob[-1, 1:] += 0.5 * one_hot[0]
+            prob[:-1, 1:] += 0.5 * one_hot[1:]
+            prob[0, 1:] += 0.5 * one_hot[-1]
+            prob[1:, 1:] += 0.5 * one_hot[:-1]
+        return (prob / prob.sum(dim=0, keepdim=True)).log()
 
-
-class TCN(torch.nn.Module, LanguageModel):
-    class CausalConv1dBlock(torch.nn.Module):
+class TCN(nn.Module, LanguageModel):
+    class CausalConv1dBlock(nn.Module):
         def __init__(self, in_channels, out_channels, kernel_size, dilation):
-            """
-            Your code here.
-            Implement a Causal convolution followed by a non-linearity (e.g. ReLU).
-            Optionally, repeat this pattern a few times and add in a residual block
-            :param in_channels: Conv1d parameter
-            :param out_channels: Conv1d parameter
-            :param kernel_size: Conv1d parameter
-            :param dilation: Conv1d parameter
-            """
-            raise NotImplementedError('CausalConv1dBlock.__init__')
+            super(TCN.CausalConv1dBlock, self).__init__()
+            self.conv = nn.Conv1d(
+                in_channels, out_channels, kernel_size, dilation=dilation, padding=(kernel_size - 1) * dilation
+            )
+            self.relu = nn.ReLU()
 
         def forward(self, x):
-            raise NotImplementedError('CausalConv1dBlock.forward')
+            return self.relu(self.conv(x))
 
-    def __init__(self):
-        """
-        Your code here
-
-        Hint: Try to use many layers small (channels <=50) layers instead of a few very large ones
-        Hint: The probability of the first character should be a parameter
-        use torch.nn.Parameter to explicitly create it.
-        """
-        raise NotImplementedError('TCN.__init__')
+    def __init__(self, vocab_size, hidden_channels=50, kernel_size=2, num_layers=5, dilation_base=2):
+        super(TCN, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, hidden_channels)
+        self.conv_blocks = nn.ModuleList([
+            self.CausalConv1dBlock(hidden_channels, hidden_channels, kernel_size, dilation_base**i)
+            for i in range(num_layers)
+        ])
+        self.output_layer = nn.Conv1d(hidden_channels, vocab_size, kernel_size=1)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
-        """
-        Your code here
-        Return the logit for the next character for prediction for any substring of x
-
-        @x: torch.Tensor((B, vocab_size, L)) a batch of one-hot encodings
-        @return torch.Tensor((B, vocab_size, L+1)) a batch of log-likelihoods or logits
-        """
-        raise NotImplementedError('TCN.forward')
+        x = self.embedding(x)
+        for block in self.conv_blocks:
+            x = block(x)
+        logits = self.output_layer(x)
+        return logits
 
     def predict_all(self, some_text):
-        """
-        Your code here
+        with torch.no_grad():
+            # Convert characters to indices using utils.char_to_index
+            indices = [utils.char_to_index(c) for c in some_text]
+            indices = torch.tensor(indices).unsqueeze(0)  # Add batch dimension
+            indices = indices.long()
 
-        @some_text: a string
-        @return torch.Tensor((vocab_size, len(some_text)+1)) of log-likelihoods (not logits!)
-        """
-        raise NotImplementedError('TCN.predict_all')
+            # Forward pass through the TCN
+            logits = self.forward(indices)
 
+            # Softmax to get probabilities
+            probabilities = self.softmax(logits.squeeze(0))
 
+            # Return log-likelihoods (not logits!)
+            return probabilities.log()
+
+# The save_model and load_model functions can remain unchanged
 def save_model(model):
     from os import path
     return torch.save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'tcn.th'))
-
 
 def load_model():
     from os import path

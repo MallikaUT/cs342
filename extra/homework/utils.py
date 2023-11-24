@@ -24,6 +24,8 @@ def sample_from_distribution(log_probs):
     return vocab[sampled_index]
 
 def index_to_char(index):
+    print(f"Type of index: {type(index)}")
+    print(f"Type of vocab: {type(vocab)}")
     return vocab[index]
 
 class SpeechDataset(Dataset):

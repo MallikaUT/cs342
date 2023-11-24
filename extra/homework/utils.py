@@ -21,6 +21,8 @@ def one_hot(s: str):
 def sample_from_distribution(log_probs):
     probs = torch.exp(log_probs)
     sampled_index = torch.multinomial(probs, 1).item()
+    print(f"Type of sampled_index: {type(sampled_index)}")
+    print(f"Sampled index: {sampled_index}")
     return vocab[sampled_index]
 
 def index_to_char(index):

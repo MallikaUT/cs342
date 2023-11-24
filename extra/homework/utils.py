@@ -18,7 +18,11 @@ def one_hot(s: str):
         return torch.zeros((len(vocab), 0))
     return torch.as_tensor(np.array(list(s.lower()))[None, :] == np.array(list(vocab))[:, None]).float()
 
-
+def sample_from_distribution(log_probs):
+    probs = torch.exp(log_probs)
+    sampled_index = torch.multinomial(probs, 1).item()
+    return vocab[sampled_index]
+    
 class SpeechDataset(Dataset):
     """
     Creates a dataset of strings from a text file.

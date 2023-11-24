@@ -4,7 +4,8 @@ import string
 import torch
 from torch.utils.data import Dataset
 
-vocab = string.ascii_lowercase + ' .'
+#vocab = string.ascii_lowercase + ' .'
+vocab = list(string.ascii_lowercase + ' .')
 
 
 def one_hot(s: str):

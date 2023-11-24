@@ -23,6 +23,9 @@ def sample_from_distribution(log_probs):
     sampled_index = torch.multinomial(probs, 1).item()
     return vocab[sampled_index]
 
+def index_to_char(index):
+    return vocab[index]
+
 class SpeechDataset(Dataset):
     """
     Creates a dataset of strings from a text file.

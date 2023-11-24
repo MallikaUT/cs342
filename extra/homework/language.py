@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from .models import LanguageModel, AdjacentLanguageModel, Bigram, load_model
 from . import utils
 

@@ -1,4 +1,4 @@
-from .planner import Planner, save_model 
+from .player import Planner, save_model 
 import torch
 import torch.utils.tensorboard as tb
 import numpy as np

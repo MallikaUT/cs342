@@ -11,7 +11,9 @@ def log_likelihood(model: LanguageModel, some_text: str):
     :param some_text: A string
     :return: float
     """
+    some_text = some_text.lower()
     log_probs = model.predict_all(some_text)
+    total_log_likelihood = log_probs.sum().item()
     return log_probs.sum().item()
 
 

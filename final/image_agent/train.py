@@ -7,7 +7,7 @@ from . import dense_transforms
 
 def train(args):
     from os import path
-    model = Planner()
+    model = player()
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))

@@ -14,7 +14,7 @@ def log_likelihood(model: LanguageModel, some_text: str):
     some_text = some_text.lower()
     log_probs = model.predict_all(some_text)
     total_log_likelihood = log_probs.sum().item()
-    return log_probs.sum().item()
+    return total_log_likelihood
 
 
 def sample_random(model: LanguageModel, max_length: int = 100):
@@ -45,7 +45,7 @@ class TopNHeap:
         from heapq import heappush, heapreplace
         if len(self.elements) < self.N:
             heappush(self.elements, e)
-        elif self.elements[0] < e:
+        elif self.elements[0][0] < e[0]:
             heapreplace(self.elements, e)
 
 

@@ -1,6 +1,18 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import transforms
+
+def spatial_argmax(logit):
+    """
+    Compute the soft-argmax of a heatmap
+    :param logit: A tensor of size BS x H x W
+    :return: A tensor of size BS x 2 the soft-argmax in normalized coordinates (-1 .. 1)
+    """
+    weights = F.softmax(logit.view(logit.size(0), -1), dim=-1).view_as(logit)
+    return torch.stack(((weights.sum(1) * torch.linspace(-1, 1, logit.size(2)).to(logit.device)[None]).sum(1),
+                        (weights.sum(2) * torch.linspace(-1, 1, logit.size(1)).to(logit.device)[None]).sum(1)), 1)
+
 
 class FCNModel(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -42,6 +54,46 @@ class Team:
         """
         self.team = None
         self.num_players = None
+
+        self.fcn_model = FCNModel(in_channels=3, out_channels=2)  # Assuming 3 input channels for RGB images and 2 output channels for x, y coordinates
+        self.fcn_model.eval()
+
+        self.game_width = 100.0  
+        self.game_height = 50.0 
+        
+    def preprocess_image(self, player_image):
+        # Define image preprocessing transformations
+        transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((256, 256)), 
+            transforms.ToTensor(),
+            
+        ])
+
+        img = transform(player_image)
+        img = img.unsqueeze(0)
+
+        return img
+    def locate_puck(self, img):
+        # Forward pass through the FCN model
+        with torch.no_grad():
+            output = self.fcn_model(img)
+
+        # Use spatial_argmax to get the puck location
+        puck_location = spatial_argmax(output[:, 0])
+
+        return puck_location
+
+    def screen_to_world_coordinates(self, screen_point):
+        """
+        Convert screen coordinates to game world coordinates
+        :param screen_point: Point in screen coordinate frame [-1..1]
+        :return: Point in game world coordinates
+        """
+        world_x = screen_point[0] * 0.5 * self.game_width
+        world_y = screen_point[1] * 0.5 * self.game_height
+        return world_x, world_y
+
 
     def new_match(self, team: int, num_players: int) -> list:
         """
@@ -95,4 +147,29 @@ class Team:
                  steer:        float -1..1 steering angle
         """
         # TODO: Change me. I'm just cruising straight
-        return [dict(acceleration=1, steer=0)] * self.num_players
+        aim_point_screen_coordinates = player_state[0]['aim_point']
+        aim_point_world_coordinates = self.screen_to_world_coordinates(aim_point_screen_coordinates)
+
+        # Preprocess the image
+        img = self.preprocess_image(player_image[0])  # Assuming there's only one player
+
+        # Use the FCN model to locate the puck
+        puck_location = self.locate_puck(img)
+
+        # Convert puck location from normalized coordinates to game world coordinates
+        puck_location_world_coordinates = self.screen_to_world_coordinates(puck_location[0])
+
+        # TODO: Implement your logic here based on puck_location_world_coordinates and aim_point_world_coordinates
+        # Example: Setting actions based on relative positions of aim point and puck location
+        actions = []
+        for i in range(self.num_players):
+            # Placeholder logic: Accelerate if the puck is in front, steer towards the puck
+            acceleration = 1.0 if puck_location_world_coordinates[0] > 0 else 0.0
+            steer = (puck_location_world_coordinates[0] - aim_point_world_coordinates[0]) * 0.5
+
+            # Ensure steer is within valid range
+            steer = max(-1.0, min(1.0, steer))
+
+            actions.append(dict(acceleration=acceleration, steer=steer))
+
+        return actions

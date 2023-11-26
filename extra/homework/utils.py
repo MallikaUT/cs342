@@ -24,12 +24,12 @@ def sample_from_distribution(log_probs):
     sampled_index = torch.multinomial(probs, 1).item()
     print(f"Type of sampled_index: {type(sampled_index)}")
     print(f"Sampled index: {sampled_index}")
-    return vocab[sampled_index]
+    return index_to_char(sampled_index)
 
 def index_to_char(index):
     print(f"Type of index: {type(index)}")
     print(f"Type of vocab: {type(vocab)}")
-    return vocab[index]
+    return vocab[index] if isinstance(index, int) else index
 
 class SpeechDataset(Dataset):
     """

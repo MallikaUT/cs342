@@ -23,7 +23,13 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
     result = ""
     for _ in range(max_length):
         log_probs = model.predict_all(result)
-        probabilities = torch.exp(log_probs[:, -1])  # Convert log probabilities to probabilities
+
+        # Handle the case where the result is empty
+        if len(result) == 0:
+            probabilities = torch.exp(log_probs[:, 0])  # Use the first column for initial probabilities
+        else:
+            probabilities = torch.exp(log_probs[:, -1])  # Convert log probabilities to probabilities
+
         sampled_index = utils.sample_from_distribution(probabilities)
 
         # Convert sampled_index to character

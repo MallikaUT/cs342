@@ -36,7 +36,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
 
         sampled_index = utils.sample_from_distribution(probabilities)
 
-        # Debug print
+        # Debug prints
         print(f"sampled_index before conversion: {sampled_index}")
         print(f"Probabilities: {probabilities}")
         print(f"Log Probabilities: {log_probs[:, -1]}")
@@ -48,7 +48,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
         print(f"log_probs shape: {log_probs.shape}, sampled_index: {sampled_index}, min_likelihood: {min_likelihood}")
 
         # Adjust likelihood threshold
-        if log_probs[0, sampled_index] < float(min_likelihood):
+        if log_probs[0, sampled_index.item()] < float(min_likelihood):
             print("Skipping due to low likelihood")
             continue
 
@@ -58,6 +58,11 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
             break
 
     return result
+
+
+
+
+
 
 class TopNHeap:
     def __init__(self, N):

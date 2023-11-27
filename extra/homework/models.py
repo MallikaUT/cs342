@@ -71,7 +71,7 @@ class TCN(torch.nn.Module, LanguageModel):
         self.classifier = torch.nn.Conv1d(c, 28, 1)
 
     def forward(self, x):
-        first_char_distribution = torch.nn.Parameter(torch.rand(x.shape[0], x.shape[1], 1))
+        first_char_distribution = torch.nn.Parameter(torch.rand(x.shape[0], 28, 1))  # Assuming 28 is your vocab size
         output = self.network(x)
         output = self.classifier(output)
         output = torch.cat((first_char_distribution, output), dim=2)

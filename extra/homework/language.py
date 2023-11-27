@@ -36,7 +36,7 @@ def sample_random(model: LanguageModel, max_length: int = 100):
         sampled_index = utils.sample_from_distribution(probabilities)
         result += utils.index_to_char(sampled_index)
 
-        if result[-1] == '.' or len(result) >= max_length:
+        if len(result) >= max_length:
             break
 
     return result

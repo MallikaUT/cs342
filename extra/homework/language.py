@@ -143,8 +143,7 @@ if __name__ == "__main__":
     for i in range(10):
         s = sample_random(lm)
         if len(s) > 0:
-          ratio = float(log_likelihood(lm, s)) / len(s)
-          print(s, ratio)
+          print(s, float(log_likelihood(lm, s)) / len(s))
         else:
            print("Empty string generated.")
         

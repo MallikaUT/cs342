@@ -1,67 +1,93 @@
-from argparse import ArgumentParser
 from .models import LanguageModel, AdjacentLanguageModel, Bigram, load_model
 from . import utils
 import torch
-import numpy as np
+import string
+from .utils import one_hot
 
 
-def log_likelihood(model: LanguageModel, some_text: str):
+
+def log_likelihood(model: LanguageModel, 
+                   some_text: str):
+   
+    onehot_text = utils.one_hot(some_text)
+    
+
+    #how probable is the string some_text under this model?
+
+    all_predictions = model.predict_all(some_text)
+    #print ("\n Size of all_predictions is", all_predictions.shape) #([28, 7])
+    all_predictions = all_predictions[:, :-1]  #remove last character prediction 
+    #print ("\n New Size of all_predictions is", all_predictions.shape) #torch.Size([28, 6])
+        
+    likelihoods = all_predictions.t() @ onehot_text #multiply  one hot encoded text matrix by predictions matrix
+
+    #this obtains the likelihood of the specific character at a specidic position
+    #shape is len(some_text) x len(some_text) (e.g 6x6) 
+
+
+    #print ("\n Size of one hot encoded text is ", text.shape) #([28, 6]))
+    #print ("\n  Size of TRANSPOSE all_predictions is", all_predictions.t().shape) #([6, 28])
+    #print ("\n  Size of likelihoods  is",likelihoods.shape) #([6, 6])
+    
+    
+    output = likelihoods.diag()
+
+    output = sum(output) #The log-likelihood is the sum of all individual likelihoods, not the average
+
+    return  output
+
+
+def sample_random(model: LanguageModel, 
+                  max_length: int = 100):
+    
     """
-    Evaluate the log-likelihood of a given string.
+    https://piazza.com/class/ksjhagmd59d6sg?cid=1033
+    
+    >>> m =torch.distributions.categorical.Categorical(torch.tensor([ 0.25, 0.25, 0.25, 0.25 ]))
+    https://pytorch.org/docs/stable/distributions.html
+    
+    CLASStorch.distributions.categorical.Categorical(probs=None, logits=None, validate_args=None)
+    make sure use “logit = language_model_output”.
+    
+    --->LanguageModel class has a method of predict_next(), which will give you the distribution.
+    ---->predict_next can take an empty string
+    
+    
+    
+    Sample a random sentence from the language model.
+    Terminate once you reach a period '.'
 
     :param model: A LanguageModel
-    :param some_text: A string
-    :return: float
+    :param max_length: The maximum sentence length
+    :return: A string
     """
-    some_text = some_text.lower()
-    log_probs = model.predict_all(some_text)
+    
+    stringD = ""
+    vocab = string.ascii_lowercase + ' .'
+    
+    for i in range (max_length):
+      prob_next = model.predict_next(stringD)
+      random_i = torch.distributions.categorical.Categorical(logits=prob_next).sample()
+      stringD = stringD + vocab[random_i]
+      if vocab[random_i] == '.':
+        break
+    
+    return(stringD)
 
-    # Sum all log probabilities in the sequence
-    total_log_likelihood = torch.sum(log_probs[:, -1]).item()
-    return total_log_likelihood
 
-def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: float = -0.1):
-    result = ""
-    for _ in range(max_length):
-        log_probs = model.predict_all(result)
-
-        # Check if log_probs is empty
-        if log_probs.numel() == 0:
-            break
-
-        # Handle the case where the result is empty
-        if len(result) == 0:
-            probabilities = torch.exp(log_probs[:, 0])  # Use the first column for initial probabilities
-        else:
-            probabilities = torch.exp(log_probs[:, -1])  # Convert log probabilities to probabilities
-
-        sampled_index = utils.sample_from_distribution(probabilities)
-
-        # Debug prints
-        print(f"sampled_index before conversion: {sampled_index}")
-        print(f"Probabilities: {probabilities}")
-        print(f"Log Probabilities: {log_probs[:, -1]}")
-
-        # Convert sampled_index to character
-        sampled_char = utils.index_to_char(sampled_index)
-
-        # Debug prints
-        print(f"log_probs shape: {log_probs.shape}, sampled_index: {sampled_index}, min_likelihood: {min_likelihood}")
-        
-        # Adjust likelihood threshold
-        dynamic_threshold = np.percentile(log_probs[0].detach().numpy(), 10)
-        if 0 <= sampled_index < log_probs.size(1) and log_probs[0, sampled_index] < dynamic_threshold and log_probs[0, sampled_index] > 0:
-            print("Skipping due to low likelihood")
-            continue
-
-        result += sampled_char
-
-        if len(result) >= max_length:
-            break
-
-    return result
 
 class TopNHeap:
+    """
+    A heap that keeps the top N elements around
+    h = TopNHeap(2)
+    h.add(1)
+    h.add(2)
+    h.add(3)
+    h.add(0)
+    print(h.elements)
+    > [2,3]
+
+    """
     def __init__(self, N):
         self.elements = []
         self.N = N
@@ -70,67 +96,95 @@ class TopNHeap:
         from heapq import heappush, heapreplace
         if len(self.elements) < self.N:
             heappush(self.elements, e)
-        elif self.elements[0][0] < e[0]:
+        elif self.elements[0] < e:
             heapreplace(self.elements, e)
 
+#############################################B  E   A  M   S E A R CH ###############
+def beam_search(model: LanguageModel, 
+                beam_size: int, 
+                n_results: int = 10, 
+                max_length: int = 100, 
+                average_log_likelihood: bool = False):
+   
+# heap will sort by first element in tuple
+    heap = TopNHeap(beam_size)
+    heap2 = TopNHeap(n_results)
+    visited = set()
+    term_list = []
+    strings_only = []
+    
 
-def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_length: int = 100, average_log_likelihood: bool = False):
-    heap = TopNHeap(n_results)
-    beam = [{'text': '', 'log_likelihood': 0.0}]
-    seen_texts = set()
+    # initialize heap
+    prediction = model.predict_next("")  #shape [28]
 
-    while len(heap.elements) < n_results and len(beam) > 0:
-        new_beam = []
-        for candidate in beam:
-            current_text = candidate['text']
+    for i, likelihood in enumerate(prediction):  #i=0 to 27, and likelihood[i]
+        
+        visited.add(utils.vocab[i])  #iterate through all letters a to z and . (period)
 
-            # Handle the case where current_text is empty
-            if not current_text:
-                log_probs = model.predict_all(current_text)
-            else:
-                log_probs = model.predict_all(current_text)  # Use predict_all instead of predict_next
+        if utils.vocab[i] == '.':
+            #print ("\n the Period corresponds to likelihood ---- ", l)
+            heap2.add(( likelihood, utils.vocab[i]) )
+        else:
+            #print ("\n this letter corresponds to likelihood that follows ---- ",  utils.vocab[i], l)
+            heap.add( (likelihood, utils.vocab[i]) )
 
-            for char_index in range(len(utils.vocab)):
-                new_char = utils.index_to_char(char_index)
-                new_text = current_text + new_char
+    m = 0
 
-                # Compute log_probs only once
-                log_probs = model.predict_all(new_text)  # Use predict_all instead of predict_next
+    while m < 40:
 
-                # Adjust the index based on the length of new_text
-                last_char_index = min(len(new_text) - 1, log_probs.shape[-1] - 1)
-                new_log_likelihood = candidate['log_likelihood'] + log_probs[char_index, last_char_index].item()
+        for curr_likelihood, curr_s in heap.elements:
 
-                print(f"Char: {new_char}, Log Likelihood: {new_log_likelihood}")
-                if new_text not in seen_texts:
-                    seen_texts.add(new_text)
-                    if new_char == '.' or len(new_text) >= max_length:
-                        heap.add((new_log_likelihood, new_text))
+            #get the next prediction
+            prediction = model.predict_next(curr_s)
+
+            for i, likelihood in enumerate(prediction):
+                
+                new_s = curr_s + utils.vocab[i]
+                
+                if average_log_likelihood:
+                    new_likelihood = log_likelihood(model, new_s) / len(new_s)
+                else:
+                    new_likelihood = curr_likelihood + likelihood
+
+                if new_s not in visited:
+                    visited.add(new_s)
+                    #print(new_s)
+                    if new_s[-1] == '.' or len(new_s) > max_length:
+                        heap2.add( (new_likelihood, new_s) )
                     else:
-                        new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
+                        heap.add( (new_likelihood, new_s) )
+        m += 1
 
-        new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
-        beam = new_beam[:beam_size]
+    
+    
+    for i in range(len(heap2.elements)):
+        term_list.append(heap2.elements[i])
+    
+    term_list.sort()
 
-    result_sentences = [item[1] for item in heap.elements]
-    return result_sentences
+    
+    #extract strings
+    
+    for likelihood, string in term_list:
+        strings_only.append(string)
+        #print ("\nThis string being extracted from beam_search", string) 
+    
+    return strings_only
+
 
 
 
 if __name__ == "__main__":
+    """
+      Some test code.
+    """
+    from argparse import ArgumentParser
+
     parser = ArgumentParser()
     parser.add_argument('-m', '--model', choices=['Adjacent', 'Bigram', 'TCN'], default='Adjacent')
     args = parser.parse_args()
 
-    # Compute vocab_size (you need to adjust this part based on your actual implementation)
-    vocab_size = len(utils.vocab)
-
-    if args.model == 'Adjacent':
-        lm = AdjacentLanguageModel()
-    elif args.model == 'TCN':
-        lm = load_model(vocab_size)
-    else:
-        lm = Bigram()
+    lm = AdjacentLanguageModel() if args.model == 'Adjacent' else (load_model() if args.model == 'TCN' else Bigram())
 
     for s in ['abcdefg', 'abcgdef', 'abcbabc', '.abcdef', 'fedcba.']:
         print(s, float(log_likelihood(lm, s)))
@@ -138,11 +192,7 @@ if __name__ == "__main__":
 
     for i in range(10):
         s = sample_random(lm)
-        if len(s) > 0:
-          print(s, float(log_likelihood(lm, s)) / len(s))
-        else:
-           print("Empty string generated.")
-        
+        print(s, float(log_likelihood(lm, s)) / len(s))
     print()
 
     for s in beam_search(lm, 100):

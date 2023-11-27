@@ -24,6 +24,10 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
     for _ in range(max_length):
         log_probs = model.predict_all(result)
 
+        # Check if log_probs is empty
+        if log_probs.numel() == 0:
+            break
+
         # Handle the case where the result is empty
         if len(result) == 0:
             probabilities = torch.exp(log_probs[:, 0])  # Use the first column for initial probabilities
@@ -45,6 +49,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
             break
 
     return result
+
 
 
 class TopNHeap:

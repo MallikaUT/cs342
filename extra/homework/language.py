@@ -83,10 +83,11 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                 else:
                     log_probs = model.predict_next(current_text)
 
-                new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[char_index]).item()
+                # Adjust the index based on the length of new_text
+                last_char_index = len(new_text) - 1
+                new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[last_char_index, -1]).item()
 
                 print(f"Char: {new_char}, Log Likelihood: {new_log_likelihood}")
-
                 if new_char == '.' or len(new_text) >= max_length:
                     heap.add((new_log_likelihood, new_text))
                 else:

@@ -61,8 +61,9 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         def __init__(self, in_channels, out_channels, kernel_size, dilation):
           
             self.pad1d = torch.nn.ConstantPad1d((2*dilation,0), 0)
-            self.c1 = torch.nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2, dilation=total_dilation)
-            #self.b1 = torch.nn.BatchNorm2d(out_channels)               
+            self.c1 = torch.nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2, dilation=dilation)
+            #self.b1 = torch.nn.BatchNorm2d(out_channels)
+                          
          
         def forward(self, x):
             return F.relu(self.c1(self.pad1d(x)))
@@ -77,7 +78,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         
                
         super().__init__()
-        
+        self.total_dilation = total_dilation 
        
         c = 28 
         
@@ -113,7 +114,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         #The P( next | “”) is the parameter you defined, and will learn from the data later.
         #x = torch.cat((x,self.param),dim=2)
         #print(f'Nov 21, the NEW shape of x is {x.shape}')   #([32, 28, 1])
-
+        total_dilation = self.total_dilation
         output = self.network(x)  #x is  [32,28, L]
         output = self.classifier(output)
 
@@ -148,7 +149,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         
         #one_hotx = one_hot(some_text)[:, :-1]
 
-        one_hotx = one_hot(some_text)[None]
+        one_hotx = one_hot(some_text)
 
         #print (f'Dec 2 in predict_all, sometext is {some_text}')
         #print (f'Dec 2 in predict all one_hotx shape is {one_hotx.shape}')
@@ -165,14 +166,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         #print (f'3.......in predict all output shape is {output.shape}')
         #return (output)
 
-        return(output)
-
-        
-        
-        
-        
-        
-        
+        return(output)        
         
         
 

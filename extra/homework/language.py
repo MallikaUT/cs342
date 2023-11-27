@@ -67,10 +67,6 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                 new_char = utils.index_to_char(char_index)
                 new_text = current_text + new_char
 
-                # Check if the length exceeds the available predictions
-                if len(new_text) > log_probs.shape[0]:
-                    continue
-
                 # Compute log_probs only once
                 if not current_text or len(new_text) == 1:
                     log_probs = model.predict_all(current_text)
@@ -78,8 +74,8 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                     log_probs = model.predict_next(current_text)
 
                 # Adjust the index based on the length of new_text
-                last_char_index = min(len(new_text) - 1, log_probs.shape[0] - 1)
-                new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[last_char_index, -1]).item()
+                last_char_index = min(len(new_text) - 1, log_probs.shape[1] - 1)
+                new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[:, last_char_index]).item()
 
                 print(f"Char: {new_char}, Log Likelihood: {new_log_likelihood}")
                 if new_text not in seen_texts:
@@ -94,6 +90,7 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
 
     result_sentences = [item[1] for item in heap.elements]
     return result_sentences
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()

@@ -138,10 +138,11 @@ if __name__ == "__main__":
     for i in range(10):
         s = sample_random(lm)
         if len(s) > 0:
-           print(s, float(log_likelihood(lm, s)) / len(s))
+          ratio = float(log_likelihood(lm, s)) / len(s)
+          print(s, ratio)
         else:
            print("Empty string generated.")
-        print(s, float(log_likelihood(lm, s)) / len(s))
+        
     print()
 
     for s in beam_search(lm, 100):

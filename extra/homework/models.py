@@ -99,9 +99,9 @@ class TCN(torch.nn.Module, LanguageModel):
             output = output.permute(0, 2, 1)
 
         output = F.log_softmax(output, dim=2)
-        log_probs = output.sum(dim=1)
+        log_probs = output.squeeze(0)  # Squeeze the batch dimension
 
-        return log_probs.squeeze()
+        return log_probs
 
 def save_model(model):
     from os import path

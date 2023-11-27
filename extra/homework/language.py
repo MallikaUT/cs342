@@ -19,7 +19,7 @@ def log_likelihood(model: LanguageModel, some_text: str):
     total_log_likelihood = torch.sum(log_probs[:, -1]).item()
     return total_log_likelihood
 
-def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: float = -0.05):
+def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: float = -0.1):
     result = ""
     for _ in range(max_length):
         log_probs = model.predict_all(result)
@@ -58,12 +58,6 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
             break
 
     return result
-
-
-
-
-
-
 
 class TopNHeap:
     def __init__(self, N):

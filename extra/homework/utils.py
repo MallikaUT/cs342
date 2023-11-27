@@ -25,8 +25,13 @@ def sample_from_distribution(log_probs):
     return index_to_char(sampled_index)
 
 def index_to_char(index):
-    return vocab[index] if isinstance(index, int) else index
-
+    if isinstance(index, int):
+        return vocab[index]
+    elif isinstance(index, torch.Tensor):
+        return [vocab[i.item()] for i in index]
+    else:
+        return index
+        
 class SpeechDataset(Dataset):
     """
     Creates a dataset of strings from a text file.

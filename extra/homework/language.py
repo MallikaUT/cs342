@@ -54,7 +54,6 @@ class TopNHeap:
         elif self.elements[0][0] < e[0]:
             heapreplace(self.elements, e)
 
-
 def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_length: int = 100, average_log_likelihood: bool = False):
     heap = TopNHeap(n_results)
     beam = [{'text': '', 'log_likelihood': 0.0}]
@@ -74,6 +73,10 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                 new_char = utils.index_to_char(char_index)
                 new_text = current_text + new_char
 
+                # Check if the length exceeds the available predictions
+                if len(new_text) > log_probs.shape[0]:
+                    continue
+
                 # Compute log_probs only once
                 if not current_text:
                     log_probs = model.predict_all(current_text)
@@ -88,12 +91,13 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                     heap.add((new_log_likelihood, new_text))
                 else:
                     new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
-                    
+
         new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
         beam = new_beam[:beam_size]
 
     result_sentences = [item[1] for item in heap.elements]
     return result_sentences
+
 
 
 

@@ -28,7 +28,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
         sampled_index = utils.sample_from_distribution(probabilities)
 
         # Convert sampled_index to integer
-        sampled_index = utils.index_to_char(sampled_index)
+        sampled_index = utils.sample_from_distribution(probabilities)
 
         # Adjust likelihood threshold
         if log_probs[sampled_index, -1] < float(min_likelihood):

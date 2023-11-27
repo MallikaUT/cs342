@@ -71,31 +71,25 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
             for char_index in range(len(utils.vocab)):
                 new_char = utils.index_to_char(char_index)
                 new_text = current_text + new_char
+
                 if not current_text:
                     log_probs = model.predict_all(current_text)
                 else:
                     log_probs = model.predict_next(current_text)
-                    
-                new_log_likelihood = 0.0
-                # Update the accumulation of log likelihood
-                if not current_text:
-                    new_log_likelihood = log_probs[char_index].item()
-                else:
-                    new_log_likelihood = candidate['log_likelihood'] + log_probs[char_index].item()
-            
+
+                new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[char_index]).item()
 
                 print(f"Char: {new_char}, Log Likelihood: {new_log_likelihood}")
-            
+
                 if new_char == '.' or len(new_text) >= max_length:
                     heap.add((new_log_likelihood, new_text))
                 else:
                     new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
+                    new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
+                    beam = new_beam[:beam_size]
 
-        new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
-        beam = new_beam[:beam_size]
-
-    result_sentences = [item[1] for item in heap.elements]
-    return result_sentences
+                result_sentences = [item[1] for item in heap.elements]
+                return result_sentences
 
 
 if __name__ == "__main__":

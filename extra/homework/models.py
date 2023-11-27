@@ -45,6 +45,7 @@ class AdjacentLanguageModel(LanguageModel):
 
 class TCN(torch.nn.Module, LanguageModel):
 
+    
     class CausalConv1dBlock(torch.nn.Module):
         def __init__(self, in_channels, out_channels, kernel_size, dilation):
             super(TCN.CausalConv1dBlock, self).__init__()

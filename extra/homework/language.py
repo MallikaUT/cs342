@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from .models import LanguageModel, AdjacentLanguageModel, Bigram, load_model
 from . import utils
+import torch
 
 
 def log_likelihood(model: LanguageModel, some_text: str):

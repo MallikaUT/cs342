@@ -74,22 +74,21 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
     
     #--------------->TCN INIT
 
-    def __init__(self, layers=[28,16,8], char_set="string"):   #<---------------------------added char_set 11/16/2021
-        
-               
+    def __init__(self, layers=[28,16,8], char_set="string"):
         super().__init__()
-        self.total_dilation = total_dilation 
-       
-        c = 28 
-        
+
+        total_dilation = 1  # starting dilation at 2, not 1?????
+        c = 28
         L = []
-        total_dilation = 1 # starting dilation at 2, not 1?????
+
         for l in layers:
-            L.append(torch.nn.ConstantPad1d((2*total_dilation,0), 0))
+            L.append(torch.nn.ConstantPad1d((2 * total_dilation, 0), 0))
             L.append(torch.nn.Conv1d(c, l, kernel_size=3, dilation=total_dilation))
             L.append(torch.nn.ReLU())
             total_dilation *= 2
             c = l
+
+        self.total_dilation = total_dilation  # Move this line here
         self.network = torch.nn.Sequential(*L)
         self.classifier = torch.nn.Conv1d(c, 28, 1)
         

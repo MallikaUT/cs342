@@ -50,6 +50,7 @@ class TopNHeap:
 def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_length: int = 100, average_log_likelihood: bool = False):
     heap = TopNHeap(n_results)
     beam = [{'text': '', 'log_likelihood': 0.0}]
+    seen_texts = set()
 
     while len(heap.elements) < n_results and len(beam) > 0:
         new_beam = []
@@ -81,14 +82,15 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                 new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[last_char_index, -1]).item()
 
                 print(f"Char: {new_char}, Log Likelihood: {new_log_likelihood}")
-                if new_char == '.' or len(new_text) >= max_length:
-                    heap.add((new_log_likelihood, new_text))
-                else:
-                    new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
+                if new_text not in seen_texts:
+                    seen_texts.add(new_text)
+                    if new_char == '.' or len(new_text) >= max_length:
+                        heap.add((new_log_likelihood, new_text))
+                    else:
+                        new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
 
-    new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
-    beam = new_beam[:beam_size]
-
+        new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
+        beam = new_beam[:beam_size]
 
     result_sentences = [item[1] for item in heap.elements]
     return result_sentences

@@ -39,8 +39,12 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
         # Convert sampled_index to character
         sampled_char = utils.index_to_char(sampled_index)
 
+        # Debug prints
+        print(f"log_probs shape: {log_probs.shape}, sampled_index: {sampled_index}, min_likelihood: {min_likelihood}")
+
         # Adjust likelihood threshold
         if log_probs[0, sampled_index] < float(min_likelihood):
+            print("Skipping due to low likelihood")
             continue
 
         result += sampled_char
@@ -49,6 +53,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
             break
 
     return result
+
 
 
 

@@ -97,7 +97,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         # Check if the input sequence is too short
         if x.size(2) < 3:
             # Handle short sequences, for example, return a default value
-            return torch.zeros(x.size(0), x.size(1), 28)  # Modify the shape as needed
+            return torch.zeros(x.size(0), 28, 1)  # Modify the shape as needed
 
         first_char_distribution = torch.nn.Parameter(torch.rand(x.size(0), x.size(1), 1))
         total_dilation = self.total_dilation
@@ -118,7 +118,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
 
         output = self.forward(one_hotx)
 
-        output = F.log_softmax(output, dim=1)
+        output = F.log_softmax(output, dim=2)
 
         # Squeeze the extra dimension
         output = output.squeeze(0)

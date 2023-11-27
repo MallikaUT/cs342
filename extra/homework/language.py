@@ -36,7 +36,10 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
 
         sampled_index = utils.sample_from_distribution(probabilities)
 
-        # Convert sampled_index to character
+
+        # Debug print
+        print(f"sampled_index before conversion: {sampled_index}")
+                # Convert sampled_index to character
         sampled_char = utils.index_to_char(sampled_index)
 
         # Debug prints

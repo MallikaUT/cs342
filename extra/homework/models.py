@@ -111,7 +111,10 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
 
         output = F.log_softmax(output, dim=1)
 
-        return output    
+        # Squeeze the extra dimension
+        output = output.squeeze(0)
+
+        return output  
         
         
 

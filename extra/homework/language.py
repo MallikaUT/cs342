@@ -75,7 +75,7 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
 
                 # Adjust the index based on the length of new_text
                 last_char_index = min(len(new_text) - 1, log_probs.shape[1] - 1)
-                new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[:, last_char_index]).item()
+                new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[:, last_char_index]).sum().item()
 
                 print(f"Char: {new_char}, Log Likelihood: {new_log_likelihood}")
                 if new_text not in seen_texts:

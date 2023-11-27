@@ -11,24 +11,12 @@ def log_likelihood(model: LanguageModel,
    
     onehot_text = utils.one_hot(some_text)
     
-
-    #how probable is the string some_text under this model?
-
     all_predictions = model.predict_all(some_text)
     #print ("\n Size of all_predictions is", all_predictions.shape) #([28, 7])
     all_predictions = all_predictions[:, :-1]  #remove last character prediction 
     #print ("\n New Size of all_predictions is", all_predictions.shape) #torch.Size([28, 6])
         
     likelihoods = all_predictions.t() @ onehot_text #multiply  one hot encoded text matrix by predictions matrix
-
-    #this obtains the likelihood of the specific character at a specidic position
-    #shape is len(some_text) x len(some_text) (e.g 6x6) 
-
-
-    #print ("\n Size of one hot encoded text is ", text.shape) #([28, 6]))
-    #print ("\n  Size of TRANSPOSE all_predictions is", all_predictions.t().shape) #([6, 28])
-    #print ("\n  Size of likelihoods  is",likelihoods.shape) #([6, 6])
-    
     
     output = likelihoods.diag()
 
@@ -41,19 +29,6 @@ def sample_random(model: LanguageModel,
                   max_length: int = 100):
     
     """
-    https://piazza.com/class/ksjhagmd59d6sg?cid=1033
-    
-    >>> m =torch.distributions.categorical.Categorical(torch.tensor([ 0.25, 0.25, 0.25, 0.25 ]))
-    https://pytorch.org/docs/stable/distributions.html
-    
-    CLASStorch.distributions.categorical.Categorical(probs=None, logits=None, validate_args=None)
-    make sure use “logit = language_model_output”.
-    
-    --->LanguageModel class has a method of predict_next(), which will give you the distribution.
-    ---->predict_next can take an empty string
-    
-    
-    
     Sample a random sentence from the language model.
     Terminate once you reach a period '.'
 
@@ -162,7 +137,6 @@ def beam_search(model: LanguageModel,
     
     term_list.sort()
 
-    
     #extract strings
     
     for likelihood, string in term_list:
@@ -170,8 +144,6 @@ def beam_search(model: LanguageModel,
         #print ("\nThis string being extracted from beam_search", string) 
     
     return strings_only
-
-
 
 
 if __name__ == "__main__":

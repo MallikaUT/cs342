@@ -29,8 +29,6 @@ def train(args):
     MSEloss = torch.nn.MSELoss(reduction='none')  #NOT USING
     loss_val = 0
     
-
-    
     labels_shape =  0
     data_shape = 0
     prediction_shape = 0
@@ -43,41 +41,16 @@ def train(args):
       model.train()
       
       print (f'Epoch {epoch}, loss is {loss_val}')
-      #print (f'The prediction shape  is {prediction_shape}, epoch {epoch}') #([32, 28, 250])
-      #print (f'The batch  data shape  is {data_shape}, epoch {epoch}') #[32, 28, 249])
-      #print (f'The batch  label shape  is {labels_shape}, epoch {epoch}') #([32, 250])
-
-      #print (f'Last two batch  labels {some_labels}')
-      #print (f'Last data input is {some_data}')
-      #print (f'Last two predictions {some_predictions}')
-      
-      
       
       for batch in train_data:
-
-        #batch is torch.Size([32, 28, 250])
 
         batch_data = batch[:, :, :-1]   #remove last column
         #batch_labels = batch[:,:,1:].argmax(dim=1)
         
         batch_labels = batch.argmax(dim=1)   
-             
-        #batch data is one hot encoded, so this gives you the index where the one's are, e.g
-        #the actual letter, but this label does not include the first column! so network
-        #must learn to recreate the last column INDICES
-        #so that batch_label 32,249 contains the indices corresponding to the letter
-
 
         prediction = model(batch_data)  #[32, 28, 249] input--->[32, 28, 250] prediction
-        #prediction = model(batch)
 
-        #print (f'The prediction type  is {prediction.dtype}')        
-        #print (f'3    The batch_labels shape  is {batch_labels.shape}')
-        
-        #If we have Input: “abcd”
-        #then the output is: P( next | “”), P( next | “a”), P( next | “ab”), P( next | “abc”), P( next | “abcd”)
-        #The P( next | “”) is the parameter you defined, and will learn from the data later.
-      
         labels_shape =  batch_labels.shape    #([32, 250])
         data_shape = batch_data.shape         #[32, 28, 249])
         prediction_shape = prediction.shape   #([32, 28, 250])
@@ -108,7 +81,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--log_dir')
     # Put custom arguments here
-    parser.add_argument('-n', '--num_epoch', type=int, default=120)
+    parser.add_argument('-n', '--num_epoch', type=int, default=20)
     parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3)
     parser.add_argument('-c', '--continue_training', action='store_true')
     parser.add_argument('-t', '--transform',

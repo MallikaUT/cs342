@@ -66,11 +66,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
                           
          
         def forward(self, x):
-            return F.relu(self.c1(self.pad1d(x)))
-
-    
-    
-    
+            return F.relu(self.c1(self.pad1d(x))) 
     
     #--------------->TCN INIT
 
@@ -107,41 +103,15 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
 
         return output
         
-        
-        
-
     def predict_all(self, some_text):
-        """
-        Your code here
-
-        @some_text: a string
-        @return torch.Tensor((vocab_size, len(some_text)+1)) of log-likelihoods (not logits!)
-        
-        RETURN  (28,  L+1)  - Log Likelikelyhoods
-
-        """
-        
-        #one_hotx = one_hot(some_text)[:, :-1]
         one_hotx = one_hot(some_text)
-
         one_hotx = one_hotx.unsqueeze(0)
-
-        #print (f'Dec 2 in predict_all, sometext is {some_text}')
-        #print (f'Dec 2 in predict all one_hotx shape is {one_hotx.shape}')
 
         output = self.forward(one_hotx)
 
-        output = output[0, :, :]
+        output = F.log_softmax(output, dim=1)
 
-        #print (f'1.......in predict all output.t shape is {output.t().shape}')
-        #print (f'1.......in predict all ONEHOT shape is {one_hotx.shape}')
-        #output = output.t() @ one_hotx
-        #print (f'2.......in predict all output shape is {output.shape}')
-        #output = output.diag()
-        #print (f'3.......in predict all output shape is {output.shape}')
-        #return (output)
-
-        return(output)        
+        return output    
         
         
 

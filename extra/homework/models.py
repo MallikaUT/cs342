@@ -94,43 +94,17 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         
     #--------------------------TCN FORWARD()
     
-    def forward(self, x):  #x is a sequence of any length
+    def forward(self, x):
+        if x.shape[2] < 3:  # Adjust the condition based on your requirements
+            raise ValueError("Input sequence is too short for the given kernel size.")
 
-        """
-        Return the logit for the next character for prediction for any substring of x
-
-        @x: torch.Tensor((B, vocab_size, L)) a batch of one-hot encodings, (32,28, L)
-        @return torch.Tensor((B, vocab_size, L+1)) a batch of log-likelihoods or logits
-
-        """
         first_char_distribution = torch.nn.Parameter(torch.rand(x.shape[0], x.shape[1], 1))
-
-        #this EXPLAINS IT ALL!!!!!!!!!!!!!!:  NOV 28 2021
-        #https://piazza.com/class/ksjhagmd59d6sg?cid=1229
-        #https://piazza.com/class/ksjhagmd59d6sg?cid=1229
-        #Then concatenate it with the output of TCN.
-        #Then concatenate it with the output of TCN.
-        #The P( next | “”) is the parameter you defined, and will learn from the data later.
-        #x = torch.cat((x,self.param),dim=2)
-        #print(f'Nov 21, the NEW shape of x is {x.shape}')   #([32, 28, 1])
         total_dilation = self.total_dilation
-        output = self.network(x)  #x is  [32,28, L]
+        output = self.network(x)
         output = self.classifier(output)
+        output = torch.cat((first_char_distribution, output), dim=2)
 
-        output = torch.cat((first_char_distribution, output),dim=2) 
-        #first_char_distribution is [32, 28, 1]
-        
-        #print(f'Nov 19, shape of CLASSIFICATION is {output.shape}')
-        #print ("END FORWARD()")
-        #print("-----------------------------------------------------------------")
-        
-        #output = output + torch.cat((output, self.prob[0,:]), dim=0)
-        
-        #print(f'Nov 200000, shape of second output is {output.shape}')
-
-        
-        return    output  # shape ([128, 29, 256]), 128 batches, 29 character alphabet or vocab_size, 256 letters in the string
-        
+        return output
         
         
         
@@ -148,7 +122,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         
         #one_hotx = one_hot(some_text)[:, :-1]
 
-        one_hotx = one_hot(some_text)
+        one_hotx = one_hotx.unsqueeze(0)
 
         #print (f'Dec 2 in predict_all, sometext is {some_text}')
         #print (f'Dec 2 in predict all one_hotx shape is {one_hotx.shape}')

@@ -20,7 +20,7 @@ class Bigram(LanguageModel):
             print(f"Error loading 'bigram.th': {e}")
         print("Shape of self.first:", self.first.shape)
         print("Shape of self.transition:", self.transition.shape)
-            
+
     def predict_all(self, some_text):
         print("some_text:", some_text)
         
@@ -33,13 +33,10 @@ class Bigram(LanguageModel):
         # Concatenate the first character and transition matrix with the adjusted range
         result = torch.cat((self.first[:, None], self.transition.t().matmul(one_hot_last_char)), dim=1)
         print("Result shape:", result.shape)
-        return result[:, :last_char_index + 2]  # Adjust the range to include the correct number of characters
-
-    def predict_next(self, some_text):
-        # Use predict_all for consistent implementation
-        log_probs = self.predict_all(some_text)
-        return log_probs[:, -1]
         
+        # Adjust the result to include the correct number of characters
+        return result[:, :last_char_index + 2]  # Include the correct number of characters
+
 class AdjacentLanguageModel(LanguageModel):
     def predict_all(self, some_text):
         prob = 1e-3 * torch.ones(len(utils.vocab), len(some_text) + 1)

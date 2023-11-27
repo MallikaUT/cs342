@@ -31,7 +31,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
         sampled_index = utils.index_to_char(sampled_index)
 
         # Adjust likelihood threshold
-        if log_probs[0][utils.char_to_index(sampled_index)] < float(min_likelihood):
+        if log_probs[0][utils.index_to_char(sampled_index)] < float(min_likelihood):
             continue
 
         result += sampled_index

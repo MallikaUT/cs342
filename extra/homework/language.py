@@ -27,20 +27,17 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
         probabilities = torch.exp(log_probs[:, -1])  # Convert log probabilities to probabilities
         sampled_index = utils.sample_from_distribution(probabilities)
 
-        # Convert sampled_index to integer
-        sampled_index = utils.sample_from_distribution(probabilities)
-
         # Adjust likelihood threshold
-        if log_probs[sampled_index, -1] < float(min_likelihood):
+        if log_probs[0][sampled_index] < float(min_likelihood):
             continue
 
+        # Convert sampled_index to character and append to result
         result += utils.index_to_char(sampled_index)
 
         if len(result) >= max_length:
             break
 
     return result
-
 
 
 class TopNHeap:

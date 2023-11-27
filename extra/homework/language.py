@@ -56,16 +56,6 @@ class TopNHeap:
 
 
 def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_length: int = 100, average_log_likelihood: bool = False):
-    """
-    Use beam search to find the highest likelihood generations.
-
-    :param model: A LanguageModel
-    :param beam_size: The size of the beam in beam search (number of sentences to keep around)
-    :param n_results: The number of results to return
-    :param max_length: The maximum sentence length
-    :param average_log_likelihood: Pick the best beams according to the average log-likelihood, not the sum
-    :return: A list of strings of size n_results
-    """
     heap = TopNHeap(n_results)
     beam = [{'text': '', 'log_likelihood': 0.0}]
 
@@ -74,7 +64,7 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
         for candidate in beam:
             current_text = candidate['text']
 
-            # Compute log_probs only once for the initial state of current_text
+            # Handle the case where current_text is empty
             if not current_text:
                 log_probs = model.predict_all(current_text)
             else:
@@ -84,8 +74,11 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                 new_char = utils.index_to_char(char_index)
                 new_text = current_text + new_char
 
-                # Update log_probs with the predicted probabilities for the next character
-                log_probs = model.predict_next(new_text)
+                # Compute log_probs only once
+                if not current_text:
+                    log_probs = model.predict_all(current_text)
+                else:
+                    log_probs = model.predict_next(current_text)
 
                 new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[char_index]).item()
 
@@ -95,8 +88,12 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                     heap.add((new_log_likelihood, new_text))
                 else:
                     new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
+                    
         new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
         beam = new_beam[:beam_size]
+
+    result_sentences = [item[1] for item in heap.elements]
+    return result_sentences
 
 
 

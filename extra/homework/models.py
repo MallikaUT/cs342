@@ -13,13 +13,20 @@ class Bigram(LanguageModel):
     def __init__(self):
         from os import path
         try:
+            print("Loading 'bigram.th'...")
             self.first, self.transition = torch.load(path.join(path.dirname(path.abspath(__file__)), 'bigram.th'))
+            print("Successfully loaded 'bigram.th'")
         except Exception as e:
             print(f"Error loading 'bigram.th': {e}")
+        print("Shape of self.first:", self.first.shape)
+        print("Shape of self.transition:", self.transition.shape)
             
     def predict_all(self, some_text):
-        return torch.cat((self.first[:, None], self.transition.t().matmul(utils.one_hot(some_text))), dim=1)
-
+        print("some_text:", some_text)
+        result = torch.cat((self.first[:, None], self.transition.t().matmul(utils.one_hot(some_text))), dim=1)
+        print("Result shape:", result.shape)
+        return result
+        
 class AdjacentLanguageModel(LanguageModel):
     def predict_all(self, some_text):
         prob = 1e-3 * torch.ones(len(utils.vocab), len(some_text) + 1)
@@ -82,8 +89,8 @@ def save_model(model):
     from os import path
     return torch.save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'tcn.th'))
 
-def load_model():
+def load_model(vocab_size):
     from os import path
-    r = TCN()
+    r = TCN(vocab_size=vocab_size)
     r.load_state_dict(torch.load(path.join(path.dirname(path.abspath(__file__)), 'tcn.th'), map_location='cpu'))
     return r

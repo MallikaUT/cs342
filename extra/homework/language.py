@@ -71,13 +71,21 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
             for char_index in range(len(utils.vocab)):
                 new_char = utils.index_to_char(char_index)
                 new_text = current_text + new_char
-
+                if not current_text:
+                    log_probs = model.predict_all(current_text)
+                else:
+                    log_probs = model.predict_next(current_text)
+                    
+                new_log_likelihood = 0.0
                 # Update the accumulation of log likelihood
                 if not current_text:
                     new_log_likelihood = log_probs[char_index].item()
                 else:
                     new_log_likelihood = candidate['log_likelihood'] + log_probs[char_index].item()
+            
 
+                print(f"Char: {new_char}, Log Likelihood: {new_log_likelihood}")
+            
                 if new_char == '.' or len(new_text) >= max_length:
                     heap.add((new_log_likelihood, new_text))
                 else:
@@ -90,14 +98,20 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
     return result_sentences
 
 
-
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('-m', '--model', choices=['Adjacent', 'Bigram', 'TCN'], default='Adjacent')
     args = parser.parse_args()
 
-    lm = AdjacentLanguageModel() if args.model == 'Adjacent' else (load_model() if args.model == 'TCN' else Bigram())
+    # Compute vocab_size (you need to adjust this part based on your actual implementation)
+    vocab_size = len(utils.vocab)
+
+    if args.model == 'Adjacent':
+        lm = AdjacentLanguageModel()
+    elif args.model == 'TCN':
+        lm = load_model(vocab_size)
+    else:
+        lm = Bigram()
 
     for s in ['abcdefg', 'abcgdef', 'abcbabc', '.abcdef', 'fedcba.']:
         print(s, float(log_likelihood(lm, s)))
@@ -114,3 +128,4 @@ if __name__ == "__main__":
 
     for s in beam_search(lm, 100, average_log_likelihood=True):
         print(s, float(log_likelihood(lm, s)) / len(s))
+

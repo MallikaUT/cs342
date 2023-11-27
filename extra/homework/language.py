@@ -20,12 +20,17 @@ def log_likelihood(model: LanguageModel, some_text: str):
     return total_log_likelihood
 
 
-def sample_random(model: LanguageModel, max_length: int = 100):
+def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: float = -0.05):
     result = ""
     for _ in range(max_length):
         log_probs = model.predict_all(result)
         probabilities = torch.exp(log_probs[:, -1])  # Convert log probabilities to probabilities
         sampled_index = utils.sample_from_distribution(probabilities)
+
+        # Adjust likelihood threshold
+        if log_probs[sampled_index, -1] < min_likelihood:
+            continue
+
         result += utils.index_to_char(sampled_index)
 
         if len(result) >= max_length:

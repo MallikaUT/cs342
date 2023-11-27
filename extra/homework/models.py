@@ -106,6 +106,6 @@ def save_model(model):
 
 def load_model(vocab_size):
     from os import path
-    r = TCN(vocab_size=vocab_size)
+    r = TCN(vocab_size=vocab_size)  # Pass vocab_size to TCN constructor
     r.load_state_dict(torch.load(path.join(path.dirname(path.abspath(__file__)), 'tcn.th'), map_location='cpu'))
     return r

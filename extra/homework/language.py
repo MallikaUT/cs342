@@ -14,8 +14,15 @@ def log_likelihood(model: LanguageModel, some_text: str):
     """
     some_text = some_text.lower()
     log_probs = model.predict_all(some_text)
+
+    print("Log Probabilities:")
+    for char_index, log_prob in enumerate(log_probs.squeeze().tolist()):
+        char = utils.index_to_char(char_index)
+        print(f"Char: {char}, Log Probability: {log_prob}")
+
     total_log_likelihood = log_probs.sum().item()
     return total_log_likelihood
+
 
 
 def sample_random(model: LanguageModel, max_length: int = 100):

@@ -25,17 +25,25 @@ class Bigram(LanguageModel):
         print("some_text:", some_text)
         result = torch.cat((self.first[:, None], self.transition.t().matmul(utils.one_hot(some_text))), dim=1)
         print("Result shape:", result.shape)
-        return result
-        
+
+        # Adjust the index to include probabilities for the last character
+        last_char_index = min(len(some_text), self.transition.shape[1] - 1)
+        return result[:, :last_char_index + 2]  # Return the correct range
+
 class AdjacentLanguageModel(LanguageModel):
     def predict_all(self, some_text):
         prob = 1e-3 * torch.ones(len(utils.vocab), len(some_text) + 1)
         if len(some_text):
             one_hot = utils.one_hot(some_text)
-            prob[-1, 1:] += 0.5 * one_hot[0]
-            prob[:-1, 1:] += 0.5 * one_hot[1:]
-            prob[0, 1:] += 0.5 * one_hot[-1]
-            prob[1:, 1:] += 0.5 * one_hot[:-1]
+
+            # Adjust the index to include probabilities for the last character
+            last_char_index = min(len(some_text) - 1, prob.shape[1] - 1)
+
+            prob[-1, 1:last_char_index + 2] += 0.5 * one_hot[0]
+            prob[:-1, 1:last_char_index + 2] += 0.5 * one_hot[1:]
+            prob[0, 1:last_char_index + 2] += 0.5 * one_hot[-1]
+            prob[1:, 1:last_char_index + 2] += 0.5 * one_hot[:-1]
+
         return (prob / prob.sum(dim=0, keepdim=True)).log()
 
 class TCN(nn.Module, LanguageModel):

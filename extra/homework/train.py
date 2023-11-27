@@ -10,15 +10,16 @@ def train(args):
     import torch.utils.tensorboard as tb
 
     # Instantiate your TCN model
-    model = TCN()
+    vocab_size = len(one_hot('abcdefghijklmnopqrstuvwxyz .'))  # Adjust this line based on your actual implementation
+    model = TCN(vocab_size=vocab_size)
 
     # Define your optimizer and loss function
     optimizer = optim.SGD(model.parameters(), lr=0.01)
     criterion = nn.CrossEntropyLoss()
 
     # Assuming you have training and validation datasets
-    train_dataset = SpeechDataset('path_to_train_dataset')
-    valid_dataset = SpeechDataset('path_to_valid_dataset')
+    train_dataset = SpeechDataset('path_to_train_dataset')  # Adjust the path
+    valid_dataset = SpeechDataset('path_to_valid_dataset')  # Adjust the path
 
     # Define data loaders
     train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
@@ -41,6 +42,7 @@ def train(args):
             output = model(batch)
 
             # Assuming labels is a tensor containing your target data
+            labels = torch.argmax(batch, dim=1)  # Adjust this line based on your actual implementation
             loss = criterion(output, labels)
 
             loss.backward()
@@ -54,6 +56,7 @@ def train(args):
                 output = model(batch)
 
                 # Assuming labels is a tensor containing your target data
+                labels = torch.argmax(batch, dim=1)  # Adjust this line based on your actual implementation
                 loss = criterion(output, labels)
 
         # Log training and validation losses to TensorBoard

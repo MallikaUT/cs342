@@ -20,7 +20,6 @@ def log_likelihood(model: LanguageModel, some_text: str):
     return total_log_likelihood
 
 
-
 def sample_random(model: LanguageModel, max_length: int = 100):
     result = ""
     for _ in range(max_length):
@@ -47,6 +46,7 @@ class TopNHeap:
         elif self.elements[0][0] < e[0]:
             heapreplace(self.elements, e)
 
+
 def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_length: int = 100, average_log_likelihood: bool = False):
     heap = TopNHeap(n_results)
     beam = [{'text': '', 'log_likelihood': 0.0}]
@@ -61,7 +61,7 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
             if not current_text:
                 log_probs = model.predict_all(current_text)
             else:
-                log_probs = model.predict_next(current_text)
+                log_probs = model.predict_all(current_text)  # Use predict_all instead of predict_next
 
             for char_index in range(len(utils.vocab)):
                 new_char = utils.index_to_char(char_index)
@@ -69,13 +69,13 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
 
                 # Compute log_probs only once
                 if not current_text or len(new_text) == 1:
-                    log_probs = model.predict_all(current_text)
+                    log_probs = model.predict_all(new_text)
                 else:
-                    log_probs = model.predict_next(current_text)
+                    log_probs = model.predict_all(new_text)  # Use predict_all instead of predict_next
 
                 # Adjust the index based on the length of new_text
                 last_char_index = min(len(new_text) - 1, log_probs.shape[-1] - 1)
-                new_log_likelihood = candidate['log_likelihood'] + torch.exp(log_probs[:, last_char_index]).item()
+                new_log_likelihood = candidate['log_likelihood'] + log_probs[char_index, last_char_index].item()
 
                 print(f"Char: {new_char}, Log Likelihood: {new_log_likelihood}")
                 if new_text not in seen_texts:
@@ -122,4 +122,3 @@ if __name__ == "__main__":
 
     for s in beam_search(lm, 100, average_log_likelihood=True):
         print(s, float(log_likelihood(lm, s)) / len(s))
-

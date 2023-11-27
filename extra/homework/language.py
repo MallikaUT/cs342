@@ -28,7 +28,6 @@ def log_likelihood(model: LanguageModel, some_text: str):
     return last_log_prob
 
 
-
 def sample_random(model: LanguageModel, max_length: int = 100):
     result = ""
     for _ in range(max_length):
@@ -36,8 +35,10 @@ def sample_random(model: LanguageModel, max_length: int = 100):
         probabilities = torch.exp(log_probs[:, -1])  # Convert log probabilities to probabilities
         sampled_index = utils.sample_from_distribution(probabilities)
         result += utils.index_to_char(sampled_index)
-        if result[-1] == '.':
+
+        if result[-1] == '.' or len(result) >= max_length:
             break
+
     return result
 
 

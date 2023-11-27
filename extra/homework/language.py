@@ -71,7 +71,12 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
             for char_index in range(len(utils.vocab)):
                 new_char = utils.index_to_char(char_index)
                 new_text = current_text + new_char
-                new_log_likelihood = candidate['log_likelihood'] + log_probs[char_index].item()
+
+                # Update the accumulation of log likelihood
+                if not current_text:
+                    new_log_likelihood = log_probs[char_index].item()
+                else:
+                    new_log_likelihood = candidate['log_likelihood'] + log_probs[char_index].item()
 
                 if new_char == '.' or len(new_text) >= max_length:
                     heap.add((new_log_likelihood, new_text))
@@ -83,6 +88,8 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
 
     result_sentences = [item[1] for item in heap.elements]
     return result_sentences
+
+
 
 
 if __name__ == "__main__":

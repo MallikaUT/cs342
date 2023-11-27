@@ -71,7 +71,7 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                     continue
 
                 # Compute log_probs only once
-                if not current_text:
+                if not current_text or len(new_text) == 1:
                     log_probs = model.predict_all(current_text)
                 else:
                     log_probs = model.predict_next(current_text)
@@ -86,8 +86,9 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                 else:
                     new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
 
-        new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
-        beam = new_beam[:beam_size]
+    new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
+    beam = new_beam[:beam_size]
+
 
     result_sentences = [item[1] for item in heap.elements]
     return result_sentences

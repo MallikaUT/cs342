@@ -72,18 +72,31 @@ class TCN(torch.nn.Module, LanguageModel):
         self.classifier = torch.nn.Conv1d(c, 28, 1)
 
     def forward(self, x):
-        print("Input sequence size:", x.size())
+        """
+        Forward pass of the TCN model.
 
-        if x.size(2) < 3:
-            return torch.zeros(x.size(0), 28, 1)
-
-        first_char_distribution = torch.nn.Parameter(torch.rand(x.size(0), x.size(1), 1))
-        total_dilation = self.total_dilation
-        output = self.network(x)
-        output = self.classifier(output)
-        output = torch.cat((first_char_distribution, output), dim=2)
-
-        return output
+        :param x: Input tensor representing one-hot encoded characters.
+        :return: Output tensor with log-likelihoods for the next character.
+        """
+        B, S, L = x.shape
+        if L == 0:
+            # If input sequence is empty, return the initial probability parameter
+            init = (
+                self.init_prob.view(len(self.char_set), 1)
+                .expand(-1, B)
+                .view(-1, len(self.char_set), 1)
+            )
+            return init
+        else:
+            # Apply the CausalConv1dBlocks and the 1x1 classifier
+            prob = self.classifier(self.network(x))
+            init = (
+                self.init_prob.view(len(self.char_set), 1)
+                .expand(-1, B)
+                .view(-1, len(self.char_set), 1)
+            )
+            output = torch.cat((init, prob), dim=2)
+            return output
 
     def predict_all(self, some_text):
         one_hotx = one_hot(some_text)

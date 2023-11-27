@@ -35,6 +35,11 @@ class Bigram(LanguageModel):
         print("Result shape:", result.shape)
         return result[:, :last_char_index + 2]  # Adjust the range to include the correct number of characters
 
+    def predict_next(self, some_text):
+        # Use predict_all for consistent implementation
+        log_probs = self.predict_all(some_text)
+        return log_probs[:, -1]
+        
 class AdjacentLanguageModel(LanguageModel):
     def predict_all(self, some_text):
         prob = 1e-3 * torch.ones(len(utils.vocab), len(some_text) + 1)

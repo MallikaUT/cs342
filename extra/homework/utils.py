@@ -22,7 +22,7 @@ def one_hot(s: str):
 def sample_from_distribution(log_probs):
     probs = torch.exp(log_probs)
     sampled_index = torch.multinomial(probs, 1).item()
-    return index_to_char(sampled_index)
+    return sampled_index
 
 def index_to_char(index):
     if isinstance(index, int):
@@ -31,7 +31,7 @@ def index_to_char(index):
         return [vocab[i.item()] for i in index]
     else:
         return index
-        
+
 class SpeechDataset(Dataset):
     """
     Creates a dataset of strings from a text file.

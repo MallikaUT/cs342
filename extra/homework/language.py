@@ -47,7 +47,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
 
         # Debug prints
         print(f"log_probs shape: {log_probs.shape}, sampled_index: {sampled_index}, min_likelihood: {min_likelihood}")
-        print(f"sampled_index: {sampled_index}, log_probs[0, sampled_index]: {log_probs[0, sampled_index]}")
+        
         # Adjust likelihood threshold
         dynamic_threshold = np.percentile(log_probs[0].detach().numpy(), 10)
         if 0 <= sampled_index < log_probs.size(1) and log_probs[0, sampled_index] < dynamic_threshold and log_probs[0, sampled_index] > 0:

@@ -98,9 +98,6 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
     result_sentences = [item[1] for item in heap.elements]
     return result_sentences
 
-
-
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('-m', '--model', choices=['Adjacent', 'Bigram', 'TCN'], default='Adjacent')

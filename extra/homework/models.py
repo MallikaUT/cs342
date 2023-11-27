@@ -92,6 +92,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
     #--------------------------TCN FORWARD()
     
     def forward(self, x):
+        print("Input sequence size:", x.size())  # or x.shape
         if x.shape[2] < 3:
             raise ValueError("Input sequence is too short for the given kernel size.")
 

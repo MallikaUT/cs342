@@ -113,8 +113,9 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
 
         # Check if the input sequence is too short
         if one_hotx.size(2) < 3:
-            # Handle short sequences, for example, return a default value
-            return torch.zeros(len(utils.vocab), len(some_text) + 1)  # Modify the shape as needed
+            # Handle short sequences by returning a default value
+            default_value = -torch.ones(len(utils.vocab), len(some_text) + 1)
+            return F.log_softmax(default_value, dim=0)
 
         output = self.forward(one_hotx)
 
@@ -123,7 +124,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         # Squeeze the extra dimension
         output = output.squeeze(0)
 
-        return output 
+        return output
         
         
 

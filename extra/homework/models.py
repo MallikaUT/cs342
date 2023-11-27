@@ -82,8 +82,9 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         L = []
 
         for l in layers:
-            L.append(torch.nn.ConstantPad1d((2 * total_dilation, 0), 0))
-            L.append(torch.nn.Conv1d(c, l, kernel_size=3, dilation=total_dilation))
+            
+            L.append(torch.nn.ConstantPad1d((total_dilation, 0), 0))
+            L.append(torch.nn.Conv1d(c, l, kernel_size=2, dilation=total_dilation))
             L.append(torch.nn.ReLU())
             total_dilation *= 2
             c = l

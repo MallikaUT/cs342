@@ -95,7 +95,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
     #--------------------------TCN FORWARD()
     
     def forward(self, x):
-        if x.shape[2] < 3:  # Adjust the condition based on your requirements
+        if x.shape[2] < 3:
             raise ValueError("Input sequence is too short for the given kernel size.")
 
         first_char_distribution = torch.nn.Parameter(torch.rand(x.shape[0], x.shape[1], 1))
@@ -121,6 +121,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         """
         
         #one_hotx = one_hot(some_text)[:, :-1]
+        one_hotx = one_hot(some_text)
 
         one_hotx = one_hotx.unsqueeze(0)
 

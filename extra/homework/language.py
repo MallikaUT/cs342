@@ -74,10 +74,7 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                 new_text = current_text + new_char
 
                 # Compute log_probs only once
-                if not current_text or len(new_text) == 1:
-                    log_probs = model.predict_all(new_text)
-                else:
-                    log_probs = model.predict_all(new_text)  # Use predict_all instead of predict_next
+                log_probs = model.predict_all(new_text)  # Use predict_all instead of predict_next
 
                 # Adjust the index based on the length of new_text
                 last_char_index = min(len(new_text) - 1, log_probs.shape[-1] - 1)
@@ -96,6 +93,7 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
 
     result_sentences = [item[1] for item in heap.elements]
     return result_sentences
+
 
 
 if __name__ == "__main__":

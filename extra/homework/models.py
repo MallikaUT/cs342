@@ -23,13 +23,18 @@ class Bigram(LanguageModel):
             
     def predict_all(self, some_text):
         print("some_text:", some_text)
-        result = torch.cat((self.first[:, None], self.transition.t().matmul(utils.one_hot(some_text))), dim=1)
-        print("Result shape:", result.shape)
-
-        # Adjust the index to include probabilities for the last character
+        
+        # Adjust the index based on the length of some_text
         last_char_index = min(len(some_text), self.transition.shape[1] - 1)
-        return result[:, :last_char_index + 2]  # Return the correct range
-
+        
+        # Use one_hot for the last character in some_text
+        one_hot_last_char = utils.one_hot(some_text[-1]) if last_char_index > 0 else utils.one_hot('')
+        
+        # Concatenate the first character and transition matrix with the adjusted range
+        result = torch.cat((self.first[:, None], self.transition.t().matmul(one_hot_last_char)), dim=1)
+        print("Result shape:", result.shape)
+        return result
+        
 class AdjacentLanguageModel(LanguageModel):
     def predict_all(self, some_text):
         prob = 1e-3 * torch.ones(len(utils.vocab), len(some_text) + 1)

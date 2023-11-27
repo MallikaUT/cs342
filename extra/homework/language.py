@@ -48,7 +48,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
         print(f"log_probs shape: {log_probs.shape}, sampled_index: {sampled_index}, min_likelihood: {min_likelihood}")
 
         # Adjust likelihood threshold
-        if log_probs[0, sampled_index.item()] < float(min_likelihood):
+        if log_probs[0, torch.tensor(sampled_index)] < float(min_likelihood):  # Convert to tensor here
             print("Skipping due to low likelihood")
             continue
 
@@ -58,6 +58,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
             break
 
     return result
+
 
 
 

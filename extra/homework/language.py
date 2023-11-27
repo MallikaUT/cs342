@@ -18,18 +18,11 @@ def log_likelihood(model: LanguageModel, some_text: str):
 
 
 def sample_random(model: LanguageModel, max_length: int = 100):
-    """
-    Sample a random sentence from the language model.
-    Terminate once you reach a period '.'
-
-    :param model: A LanguageModel
-    :param max_length: The maximum sentence length
-    :return: A string
-    """
     result = ""
     for _ in range(max_length):
         log_probs = model.predict_all(result)
-        sampled_index = utils.sample_from_distribution(log_probs[:, -1])
+        probabilities = torch.exp(log_probs[:, -1])  # Convert log probabilities to probabilities
+        sampled_index = utils.sample_from_distribution(probabilities)
         result += utils.index_to_char(sampled_index)
         if result[-1] == '.':
             break

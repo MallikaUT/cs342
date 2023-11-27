@@ -12,8 +12,11 @@ class LanguageModel(object):
 class Bigram(LanguageModel):
     def __init__(self):
         from os import path
-        self.first, self.transition = torch.load(path.join(path.dirname(path.abspath(__file__)), 'bigram.th'))
-
+        try:
+            self.first, self.transition = torch.load(path.join(path.dirname(path.abspath(__file__)), 'bigram.th'))
+        except Exception as e:
+            print(f"Error loading 'bigram.th': {e}")
+            
     def predict_all(self, some_text):
         return torch.cat((self.first[:, None], self.transition.t().matmul(utils.one_hot(some_text))), dim=1)
 
@@ -42,6 +45,7 @@ class TCN(nn.Module, LanguageModel):
 
     def __init__(self, vocab_size, hidden_channels=50, kernel_size=2, num_layers=5, dilation_base=2):
         super(TCN, self).__init__()
+        self.vocab_size = vocab_size  # Add vocab_size attribute
         self.embedding = nn.Embedding(vocab_size, hidden_channels)
         self.conv_blocks = nn.ModuleList([
             self.CausalConv1dBlock(hidden_channels, hidden_channels, kernel_size, dilation_base**i)

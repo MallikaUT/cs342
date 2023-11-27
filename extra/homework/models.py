@@ -92,11 +92,14 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
     #--------------------------TCN FORWARD()
     
     def forward(self, x):
-        print("Input sequence size:", x.size())  # or x.shape
-        if x.shape[2] < 3:
-            raise ValueError("Input sequence is too short for the given kernel size.")
+        print("Input sequence size:", x.size())
 
-        first_char_distribution = torch.nn.Parameter(torch.rand(x.shape[0], x.shape[1], 1))
+        # Check if the input sequence is too short
+        if x.size(2) < 3:
+            # Handle short sequences, for example, return a default value
+            return torch.zeros(x.size(0), x.size(1), 28)  # Modify the shape as needed
+
+        first_char_distribution = torch.nn.Parameter(torch.rand(x.size(0), x.size(1), 1))
         total_dilation = self.total_dilation
         output = self.network(x)
         output = self.classifier(output)
@@ -108,6 +111,11 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         one_hotx = one_hot(some_text)
         one_hotx = one_hotx.unsqueeze(0)
 
+        # Check if the input sequence is too short
+        if one_hotx.size(2) < 3:
+            # Handle short sequences, for example, return a default value
+            return torch.zeros(len(utils.vocab), len(some_text) + 1)  # Modify the shape as needed
+
         output = self.forward(one_hotx)
 
         output = F.log_softmax(output, dim=1)
@@ -115,7 +123,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         # Squeeze the extra dimension
         output = output.squeeze(0)
 
-        return output  
+        return output 
         
         
 

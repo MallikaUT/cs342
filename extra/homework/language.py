@@ -40,6 +40,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
 
     return result
 
+
 class TopNHeap:
     def __init__(self, N):
         self.elements = []

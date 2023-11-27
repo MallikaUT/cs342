@@ -111,22 +111,17 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         one_hotx = one_hot(some_text)
         one_hotx = one_hotx.unsqueeze(0)
 
-        # Check if the input sequence is too short
         if one_hotx.size(2) < 3:
-            # Handle short sequences by returning a default value
             default_value = -torch.ones(len(utils.vocab), len(some_text) + 1)
             return F.log_softmax(default_value, dim=0)
 
         output = self.forward(one_hotx)
 
-        # Apply log_softmax along the sequence dimension (dim=2)
+        # Remove the permute operation, as it's not necessary
         output = F.log_softmax(output, dim=2)
-
-        # Sum along the vocabulary dimension (dim=1) to get log probabilities for each position
         log_probs = output.sum(dim=1)
 
-        # Transpose the dimensions to match the expected shape
-        return log_probs.squeeze().permute(1, 0)
+        return log_probs.squeeze()
 
             
         

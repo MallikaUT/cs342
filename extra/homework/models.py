@@ -125,10 +125,10 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         # Sum along the vocabulary dimension (dim=1) to get log probabilities for each position
         log_probs = output.sum(dim=1)
 
-        return log_probs.permute(1, 0)  # Transpose the dimensions to match the expected shape
+        # Transpose the dimensions to match the expected shape
+        return log_probs.squeeze().permute(1, 0)
 
-
-        
+            
         
 
 def save_model(model):

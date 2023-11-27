@@ -85,11 +85,12 @@ def beam_search(model: LanguageModel, beam_size: int, n_results: int = 10, max_l
                     heap.add((new_log_likelihood, new_text))
                 else:
                     new_beam.append({'text': new_text, 'log_likelihood': new_log_likelihood})
-                    new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
-                    beam = new_beam[:beam_size]
 
-                result_sentences = [item[1] for item in heap.elements]
-                return result_sentences
+        new_beam.sort(key=lambda x: x['log_likelihood'], reverse=True)
+        beam = new_beam[:beam_size]
+
+    result_sentences = [item[1] for item in heap.elements]
+    return result_sentences
 
 
 if __name__ == "__main__":

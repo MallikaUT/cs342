@@ -56,21 +56,22 @@ class AdjacentLanguageModel(LanguageModel):
 
 class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES NOT inherit from Language Model
     class CausalConv1dBlock(torch.nn.Module):
-        
-        
         def __init__(self, in_channels, out_channels, kernel_size, dilation):
-          
-            self.pad1d = torch.nn.ConstantPad1d((2*dilation,0), 0)
-            self.c1 = torch.nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2, dilation=total_dilation)
-            #self.b1 = torch.nn.BatchNorm2d(out_channels)               
-         
-        def forward(self, x):
-            return F.relu(self.c1(self.pad1d(x)))
+            super().__init__()
+            self.pad1d = torch.nn.ConstantPad1d((dilation * (kernel_size - 1), 0), 0)
+            self.c1 = torch.nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, dilation=dilation)
 
-    
-    
-    
-    
+        def forward(self, x):
+            first_char_distribution = torch.nn.Parameter(torch.rand(x.shape[0], x.shape[1], 1))
+
+            output = x  # initial input before TCN
+            for layer in self.network:
+                output = layer(output)
+
+            output = self.classifier(output)
+            output = torch.cat((first_char_distribution, output), dim=2)
+
+            return output
     #--------------->TCN INIT
 
     def __init__(self, layers=[28,16,8], char_set="string"):   #<---------------------------added char_set 11/16/2021
@@ -166,15 +167,7 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         #return (output)
 
         return(output)
-
-        
-        
-        
-        
-        
-        
-        
-        
+       
 
 def save_model(model):
     from os import path

@@ -20,7 +20,7 @@ def log_likelihood(model: LanguageModel, some_text: str):
         char = utils.index_to_char(char_index)
         print(f"Char: {char}, Log Probability: {log_prob}")
 
-    total_log_likelihood = torch.sum(log_probs).item()
+    total_log_likelihood = torch.sum(log_probs[:, -1]).item()
     return total_log_likelihood
 
 

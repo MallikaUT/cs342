@@ -123,12 +123,10 @@ class TCN(torch.nn.Module, LanguageModel):     #MY WARNING:  TCN in example DOES
         output = F.log_softmax(output, dim=2)
 
         # Sum along the vocabulary dimension (dim=1) to get log probabilities for each position
-        log_probs = output.sum(dim=1, keepdim=True)
+        log_probs = output.sum(dim=1)
 
-        # Squeeze the extra dimension
-        log_probs = log_probs.squeeze(0)
+        return log_probs.permute(1, 0)  # Transpose the dimensions to match the expected shape
 
-        return log_probs
 
         
         

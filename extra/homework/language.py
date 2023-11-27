@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from .models import LanguageModel, AdjacentLanguageModel, Bigram, load_model
 from . import utils
 import torch
+import numpy as np
 
 
 def log_likelihood(model: LanguageModel, some_text: str):
@@ -48,7 +49,8 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
         print(f"log_probs shape: {log_probs.shape}, sampled_index: {sampled_index}, min_likelihood: {min_likelihood}")
 
         # Adjust likelihood threshold
-        if 0 <= sampled_index < log_probs.size(1) and log_probs[0, sampled_index] < -10.0:
+        dynamic_threshold = np.percentile(log_probs[0].detach().numpy(), 10)
+        if 0 <= sampled_index < log_probs.size(1) and log_probs[0, sampled_index] < dynamic_threshold:
             print("Skipping due to low likelihood")
             continue
 

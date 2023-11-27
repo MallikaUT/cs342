@@ -50,7 +50,7 @@ def sample_random(model: LanguageModel, max_length: int = 100, min_likelihood: f
         print(f"Log Probabilities: {log_probs[:, -1]}")
 
         # Adjust likelihood threshold
-        if log_probs[sampled_index, 0] < float(min_likelihood):
+        if log_probs.view(-1)[sampled_index] < float(min_likelihood):
             print("Skipping due to low likelihood")
             continue
 

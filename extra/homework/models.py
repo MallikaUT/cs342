@@ -89,11 +89,12 @@ class TCN(torch.nn.Module, LanguageModel):
         one_hotx = one_hot(some_text)
         one_hotx = one_hotx.unsqueeze(0)
 
-        if one_hotx.size(2) < 3:
+        output = self.forward(one_hotx)
+
+        if output.size(2) < len(some_text) + 1:
+            # Handle short sequences by returning a default value
             default_value = -torch.ones(len(utils.vocab), len(some_text) + 1)
             return F.log_softmax(default_value, dim=0)
-
-        output = self.forward(one_hotx)
 
         if output.size(1) != len(utils.vocab) or output.size(2) != len(some_text) + 1:
             output = output.permute(0, 2, 1)
@@ -101,7 +102,10 @@ class TCN(torch.nn.Module, LanguageModel):
         output = F.log_softmax(output, dim=2)
         log_probs = output.squeeze(0)  # Squeeze the batch dimension
 
-        return log_probs
+        # Ensure that the log likelihoods sum to 1 along the vocabulary dimension (dim=0)
+        normalized_log_probs = log_probs - torch.logsumexp(log_probs, dim=0, keepdim=True)
+
+        return normalized_log_probs
 
 def save_model(model):
     from os import path

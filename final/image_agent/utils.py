@@ -25,10 +25,17 @@ class SuperTuxDataset(Dataset):
         # Print the files in the dataset_path
         print(f"Files in {dataset_path}: {glob(path.join(dataset_path, '**', '*.csv'), recursive=True)}")
 
-        for f in glob(path.join(dataset_path, '**', '*.csv'), recursive=True):
-            data_image = Image.open(f.replace('.csv', '.png'))
+        for csv_file in glob(path.join(dataset_path, '**', '*.csv'), recursive=True):
+            image_file = csv_file.replace('.csv', '.png')
+
+            # Check if the corresponding image file exists
+            if not path.exists(image_file):
+                print(f"Image file not found: {image_file}")
+                continue
+
+            data_image = Image.open(image_file)
             data_image.load()
-            self.data.append((data_image, np.loadtxt(f, dtype=np.float32, delimiter=',')))
+            self.data.append((data_image, np.loadtxt(csv_file, dtype=np.float32, delimiter=',')))
 
         self.transform = transform
 

@@ -72,7 +72,7 @@ class TCN(torch.nn.Module, LanguageModel):
         self.classifier = torch.nn.Conv1d(c, 28, 1)
 
     def forward(self, x):
-        print("Input sequence size:", x.size())
+        #print("Input sequence size:", x.size())
 
         if x.size(2) < 3:
             return torch.zeros(x.size(0), 28, 1)

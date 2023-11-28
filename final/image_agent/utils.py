@@ -19,13 +19,13 @@ class SuperTuxDataset(Dataset):
         from PIL import Image
         from glob import glob
         from os import path
-        
+
         self.data = []
-        
+
         # Print the files in the dataset_path
-        print(f"Files in {dataset_path}: {glob(path.join(dataset_path, '*'))}")
-        
-        for f in glob(path.join(dataset_path, '*.csv')):
+        print(f"Files in {dataset_path}: {glob(path.join(dataset_path, '**', '*.csv'), recursive=True)}")
+
+        for f in glob(path.join(dataset_path, '**', '*.csv'), recursive=True):
             data_image = Image.open(f.replace('.csv', '.png'))
             data_image.load()
             self.data.append((data_image, np.loadtxt(f, dtype=np.float32, delimiter=',')))

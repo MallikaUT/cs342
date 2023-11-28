@@ -1,5 +1,6 @@
 import numpy as np
 import pystk
+import torch
 
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms.functional as TF
@@ -7,27 +8,50 @@ from . import dense_transforms
 
 RESCUE_TIMEOUT = 30
 TRACK_OFFSET = 15
-DATASET_PATH = 'drive_data'
 
+DATASET_PATH = '/content/cs342/final/data'               
+#DATASET_PATH = '/content/cs342/final/data_instance'     #render_data instance path
+
+#Dec 9, 2021
+#data2 = torch.from_numpy(data.astype(int))
 
 class SuperTuxDataset(Dataset):
     def __init__(self, dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor()):
         from PIL import Image
         from glob import glob
         from os import path
+        
         self.data = []
-        for f in glob(path.join(dataset_path, '*.csv')):
-            i = Image.open(f.replace('.csv', '.png'))
-            i.load()
-            self.data.append((i, np.loadtxt(f, dtype=np.float32, delimiter=',')))
+        
+        
+        for f in glob(path.join(dataset_path, '*.csv')):   #change to npy to load render_data instance
+            
+            data_image = Image.open(f.replace('.csv', '.png'))   #change to npy to load render_data instance
+            data_image.load()
+            self.data.append(( data_image,    np.loadtxt(f, dtype=np.float32, delimiter=',')  ))
+            
+            #uncomment below to load render_data instance
+            #data_instance = torch.from_numpy(np.load(f).astype(int)) # render_data instance
+            #self.data.append((     data_image,    data_instance  ))
+        
         self.transform = transform
-
+        #self.totensor = dense_transforms.ToTensor()
+    
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
+       
         data = self.data[idx]
         data = self.transform(*data)
+
+        #uncomment below to load render_data instance
+        #im = data[0]
+        #label = data[1]
+        #im = self.transform(im)
+        #im = self.totensor(im)
+        #return im[0], label
+      
         return data
 
 
@@ -78,19 +102,31 @@ class PyTux:
                               data
         :return: Number of steps played
         """
+        print ("INSIDE OF ROLLOUT")
+        print (f'self.k is {self.k}')
         if self.k is not None and self.k.config.track == track:
             self.k.restart()
             self.k.step()
+            print ("Line 85")
         else:
+            print ("Line 87")
+            print (f'self.k is {self.k}')
             if self.k is not None:
+                print ("Stopping")
                 self.k.stop()
                 del self.k
             config = pystk.RaceConfig(num_kart=1, laps=1, track=track)
             config.players[0].controller = pystk.PlayerConfig.Controller.PLAYER_CONTROL
+            config.mode = config.RaceMode.SOCCER
 
+            print ("Line 96")
             self.k = pystk.Race(config)
+            print (f'self.k is {self.k}')
+            print ("Line 98")
             self.k.start()
+            print ("Line 99")
             self.k.step()
+            print ("END OF WHILE LOOP IN ROLLOUT")
 
         state = pystk.WorldState()
         track = pystk.Track()
@@ -101,17 +137,20 @@ class PyTux:
             import matplotlib.pyplot as plt
             fig, ax = plt.subplots(1, 1)
 
+        print ("UPDATING STATE LINE 116 utils.py")
         for t in range(max_frames):
-
-            state.update()
-            track.update()
-
+            print ("Inside FOR loop line 118")
+            state.update()  
+            print ("Updated state")
+            #track.update()  #rollout calls this method and exits (Nov 23, 2021)
+            print ("Did updates")
             kart = state.players[0].kart
-
-            if np.isclose(kart.overall_distance / track.length, 1.0, atol=2e-3):
-                if verbose:
-                    print("Finished at t=%d" % t)
-                break
+            print (track.length)
+            #if np.isclose(kart.overall_distance / track.length, 1.0, atol=2e-3):
+             #   print ("inside loop at 125")
+              #  if verbose:
+               #     print("Finished at t=%d" % t)
+                #break
 
             proj = np.array(state.players[0].camera.projection).T
             view = np.array(state.players[0].camera.view).T
@@ -119,6 +158,7 @@ class PyTux:
             aim_point_world = self._point_on_track(kart.distance_down_track+TRACK_OFFSET, track)
             aim_point_image = self._to_image(aim_point_world, proj, view)
             if data_callback is not None:
+                print ("Calling data_callback, or collect(), to generate data, L135")
                 data_callback(t, np.array(self.k.render_data[0].image), aim_point_image)
 
             if planner:
@@ -126,6 +166,7 @@ class PyTux:
                 aim_point_image = planner(TF.to_tensor(image)[None]).squeeze(0).cpu().detach().numpy()
 
             current_vel = np.linalg.norm(kart.velocity)
+            print ("CALLING THE CONTROLLER LINE 142")
             action = controller(aim_point_image, current_vel)
 
             if current_vel < 1.0 and t - last_rescue > RESCUE_TIMEOUT:
@@ -181,6 +222,8 @@ if __name__ == '__main__':
         makedirs(args.output)
     except OSError:
         pass
+    print ("In main line 198, creating pytux object")
+    print (args.track)
     pytux = PyTux()
     for track in args.track:
         n, images_per_track = 0, args.n_images // len(args.track)
@@ -191,6 +234,7 @@ if __name__ == '__main__':
             from PIL import Image
             from os import path
             global n
+            print ("Collect() has been called to generate images")
             id = n if n < images_per_track else np.random.randint(0, n + 1)
             if id < images_per_track:
                 fn = path.join(args.output, track + '_%05d' % id)
@@ -201,6 +245,7 @@ if __name__ == '__main__':
 
 
         while n < args.steps_per_track:
+            print ("In while loop calling rollout()")
             steps, how_far = pytux.rollout(track, noisy_control, max_frames=1000, verbose=args.verbose, data_callback=collect)
             print(steps, how_far)
             # Add noise after the first round

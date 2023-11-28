@@ -35,7 +35,7 @@ def train(args):
 
         for batch_data in train_loader:
             batch_data = batch_data[:, :, :-1]   # remove last column
-            batch_labels = batch_data[:, :, 3:].argmax(dim=1)
+            batch_labels = batch_data[:, :, 0:].argmax(dim=1)
             prediction = model(batch_data)
 
             loss_val = Crossloss(prediction, batch_labels)

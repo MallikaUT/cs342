@@ -22,20 +22,16 @@ class SuperTuxDataset(Dataset):
         
         self.data = []
         
+        # Print the files in the dataset_path
+        print(f"Files in {dataset_path}: {glob(path.join(dataset_path, '*'))}")
         
-        for f in glob(path.join(dataset_path, '*.csv')):   #change to npy to load render_data instance
-            
-            data_image = Image.open(f.replace('.csv', '.png'))   #change to npy to load render_data instance
+        for f in glob(path.join(dataset_path, '*.csv')):
+            data_image = Image.open(f.replace('.csv', '.png'))
             data_image.load()
-            self.data.append(( data_image,    np.loadtxt(f, dtype=np.float32, delimiter=',')  ))
-            
-            #uncomment below to load render_data instance
-            #data_instance = torch.from_numpy(np.load(f).astype(int)) # render_data instance
-            #self.data.append((     data_image,    data_instance  ))
-        
+            self.data.append((data_image, np.loadtxt(f, dtype=np.float32, delimiter=',')))
+
         self.transform = transform
-        #self.totensor = dense_transforms.ToTensor()
-    
+
     def __len__(self):
         return len(self.data)
 

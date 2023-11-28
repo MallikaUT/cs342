@@ -12,7 +12,6 @@ TRACK_OFFSET = 15
 DATASET_PATH = '/content/cs342/final/data'               
 #DATASET_PATH = '/content/cs342/final/data_instance'     #render_data instance path
 
-#Dec 9, 2021
 #data2 = torch.from_numpy(data.astype(int))
 
 class SuperTuxDataset(Dataset):

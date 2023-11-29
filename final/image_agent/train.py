@@ -1,124 +1,61 @@
+from .planner import Planner, save_model 
 import torch
-import numpy as np
-import time
-
-from torchvision import transforms
-
-from .models import Detector, save_model
-from .utils import load_detection_data
-from . import dense_transforms
 import torch.utils.tensorboard as tb
-
+import numpy as np
+from .utils import load_data
+from . import dense_transforms
 
 def train(args):
     from os import path
-    model = Detector()
-    train_logger, valid_logger = None, None
-    if args.log_dir is not None:
-        train_logger = tb.SummaryWriter(path.join(
-            args.log_dir, 'train' + '/{}'.format(time.strftime('%H-%M-%S'))), flush_secs=1)
-        valid_logger = tb.SummaryWriter(path.join(
-            args.log_dir, 'valid' + '/{}'.format(time.strftime('%H-%M-%S'))), flush_secs=1)
+    model = Planner()
 
-    lr = args.learning_rate
-    train_dir = args.train
-    valid_dir = args.valid
-    epochs = args.epochs
-    batch_size = args.batch
+    """
+    Your code here, modify your HW4 code
+    Hint: Use the log function below to debug and visualize your model
+    """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-    print(device)
-
     model = model.to(device)
+    
     if args.continue_training:
-        model.load_state_dict(torch.load(
-            path.join(path.dirname(path.abspath(__file__)), 'det.th')))
+        model.load_state_dict(torch.load(path.join(path.dirname(path.abspath(__file__)), 'planner.th')))
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=1e-5)
+    #w = torch.as_tensor(DENSE_CLASS_DISTRIBUTION)**(-args.gamma)
+    loss = torch.nn.MSELoss()  #(weight=w / w.mean()).to(device)
 
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=args.learning_rate, weight_decay=1e-4)
-
-    loss = torch.nn.BCEWithLogitsLoss(weight=torch.tensor(2.0)).to(device)
-
-    augmentation = transforms.Compose([
-        transforms.Resize([128, 128]),
-        transforms.ToTensor()]
-    )
-
-    valid_transform = transforms.Compose([
-        transforms.Resize([128, 128]),
-        transforms.ToTensor()]
-    )
-
-    train_data = load_detection_data(
-        train_dir, num_workers=0, batch_size=batch_size, transform=augmentation)
-    valid_data = load_detection_data(
-        valid_dir, num_workers=0, batch_size=batch_size, transform=augmentation)
+    import inspect
+    transform = eval(args.transform, {k: v for k, v in inspect.getmembers(dense_transforms) if inspect.isclass(v)})
+    train_data = load_data(num_workers=4, transform=transform)
 
     global_step = 0
-    for epoch in range(args.epochs):
-        print(epoch)
+    for epoch in range(args.num_epoch):
         model.train()
-
+        losst = 0
         for img, label in train_data:
             img, label = img.to(device), label.to(device)
 
-            logit = model(img).view(-1, 1, 128, 128)
+            logit = model(img)
             loss_val = loss(logit, label)
-
-            if train_logger is not None and global_step % 100 == 0:
-                log(train_logger, img, label, logit, global_step)
-
-            if train_logger is not None:
-                train_logger.add_scalar('train/loss_heat', loss_val, global_step)
-
+            losst += loss_val
             optimizer.zero_grad()
             loss_val.backward()
             optimizer.step()
             global_step += 1
+        print('\nEpoch: ' + str(epoch + 1) + " Loss: " + str(losst))
 
-        model.eval()
-        running_loss = 0
-        for img, label in valid_data:
-            img, label = img.to(device), label.to(device)
-            logit = model(img).view(-1, 1, 128, 128)
-            running_loss += loss(logit, label).item()
-            
-        if valid_logger is not None:
-            valid_logger.add_scalar('valid/loss', running_loss/len(valid_data), global_step)
-
-        if valid_logger is not None:
-            log(valid_logger, img, label, logit, global_step)
-
-        save_model(model)
-
-
-def log(logger, imgs, gt_det, det, global_step):
-    """
-    logger: train_logger/valid_logger
-    imgs: image tensor from data loader
-    gt_det: ground-truth object-center maps
-    det: predicted object-center heatmaps
-    global_step: iteration
-    """
-    logger.add_images('image', imgs[:16], global_step)
-    logger.add_images('label', gt_det[:16], global_step)
-    logger.add_images('pred', torch.sigmoid(det[:16]), global_step)
-
+    save_model(model)
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-log', '--log_dir', type=str, default='runs')
+
+    parser.add_argument('--log_dir')
     # Put custom arguments here
-    parser.add_argument('-e', '--epochs', type=int, default=20)
-    parser.add_argument('-t', '--train', type=str, default='data/train')
-    parser.add_argument('-v', '--valid', type=str, default='data/valid')
-    parser.add_argument('-lr', '--learning_rate', type=float, default=1e-4)
-    parser.add_argument('-mo', '--momentum', type=float, default=0.9)
-    parser.add_argument('-d', '--decay', type=float, default=0.01)
-    parser.add_argument('-b', '--batch', type=int, default=50)
+    parser.add_argument('-n', '--num_epoch', type=int, default=20)
+    parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3)
+    parser.add_argument('-g', '--gamma', type=float, default=0, help="class dependent weight for cross entropy")
     parser.add_argument('-c', '--continue_training', action='store_true')
+    parser.add_argument('-t', '--transform',
+                        default='Compose([ColorJitter(0.4, 0.4, 0.4, 0.1), RandomHorizontalFlip(), ToTensor()])')
     args = parser.parse_args()
     train(args)

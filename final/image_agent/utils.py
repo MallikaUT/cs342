@@ -24,10 +24,10 @@ class SuperTuxDataset(Dataset):
         self.data = []
 
         for f in glob(path.join(dataset_path, '*.csv')):
+            print("Processing file:", f)
             data_image = Image.open(f.replace('.csv', '.png'))
             data_image.load()
             self.data.append((data_image, np.loadtxt(f, dtype=np.float32, delimiter=',')))
-
         print("Length of self.data:", len(self.data))  # Add this line
 
         self.transform = transform

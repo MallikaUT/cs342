@@ -2,6 +2,8 @@
 import torch
 import torch.nn.functional as F
 
+
+
 def spatial_argmax(logit):
     
     weights = F.softmax(logit.view(logit.size(0), -1), dim=-1).view_as(logit)

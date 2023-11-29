@@ -12,6 +12,7 @@ TRACK_OFFSET = 15
 DATASET_PATH = '/content/cs342/final/data'               
 #DATASET_PATH = '/content/cs342/final/data_instance'     #render_data instance path
 
+#Dec 9, 2021
 #data2 = torch.from_numpy(data.astype(int))
 
 class SuperTuxDataset(Dataset):
@@ -19,27 +20,23 @@ class SuperTuxDataset(Dataset):
         from PIL import Image
         from glob import glob
         from os import path
-
+        
         self.data = []
-
-        # Print the files in the dataset_path
-        print(f"Files in {dataset_path}: {glob(path.join(dataset_path, '**', '*.csv'), recursive=True)}")
-
-        for csv_file in glob(path.join(dataset_path, '**', '*.csv'), recursive=True):
-            image_file = csv_file.replace('.csv', '.png')
-
-            # Check if the corresponding image file exists
-            if not path.exists(image_file):
-                print(f"Image file not found: {image_file}")
-                continue
-
-            data_image = Image.open(image_file)
+        
+        
+        for f in glob(path.join(dataset_path, '*.csv')):   #change to npy to load render_data instance
+            
+            data_image = Image.open(f.replace('.csv', '.png'))   #change to npy to load render_data instance
             data_image.load()
-            self.data.append((data_image, np.loadtxt(csv_file, dtype=np.float32, delimiter=',')))
-
+            self.data.append(( data_image,    np.loadtxt(f, dtype=np.float32, delimiter=',')  ))
+            
+            #uncomment below to load render_data instance
+            #data_instance = torch.from_numpy(np.load(f).astype(int)) # render_data instance
+            #self.data.append((     data_image,    data_instance  ))
+        
         self.transform = transform
-
-
+        #self.totensor = dense_transforms.ToTensor()
+    
     def __len__(self):
         return len(self.data)
 
@@ -60,8 +57,6 @@ class SuperTuxDataset(Dataset):
 
 def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128):
     dataset = SuperTuxDataset(dataset_path, transform=transform)
-    print(f"Dataset path: {DATASET_PATH}")
-    print(f"Dataset size: {len(dataset)}")
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 

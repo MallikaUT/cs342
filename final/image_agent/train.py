@@ -1,5 +1,6 @@
 from .planner import Planner, save_model 
 import torch
+import torch.utils.tensorboard as tb
 import numpy as np
 from .utils import load_data
 from . import dense_transforms
@@ -32,7 +33,7 @@ def train(args):
     import inspect
     transform = eval(args.transform, {k: v for k, v in inspect.getmembers(dense_transforms) if inspect.isclass(v)})
 
-    train_data = load_data(transform=transform, num_workers=2)
+    train_data = load_data(transform=transform, num_workers=args.num_workers)
    
     global_step = 0
     for epoch in range(args.num_epoch):

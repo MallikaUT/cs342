@@ -70,11 +70,12 @@ class Team:
 
 
     def new_match(self, team: int, num_players: int) -> list:
-
         self.team, self.num_players = team, num_players
 
-        print ("\n\n new-match() was called STARTING NEW MATCH (message from player.py-newmatch() \n\n")
-        #print (['tux']* num_players)
+        print("\n\n new-match() was called STARTING NEW MATCH (message from player.py-newmatch()) \n\n")
+        print("Team:", self.team, "Num Players:", self.num_players)
+
+        # Verify other initialization steps if needed
 
         return ['tux', 'tux']
 

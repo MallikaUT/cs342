@@ -1,124 +1,86 @@
-import torch
-import numpy as np
-import time
-
-from torchvision import transforms
-
-from .models import Detector, save_model
-
+from PIL import Image
+from torch.utils import data
+from torch.utils.data import Dataset, DataLoader
+import torchvision
 from . import dense_transforms
-import torch.utils.tensorboard as tb
 
 
-def train(args):
-    from os import path
-    model = Detector()
-    train_logger, valid_logger = None, None
-    if args.log_dir is not None:
-        train_logger = tb.SummaryWriter(path.join(
-            args.log_dir, 'train' + '/{}'.format(time.strftime('%H-%M-%S'))), flush_secs=1)
-        valid_logger = tb.SummaryWriter(path.join(
-            args.log_dir, 'valid' + '/{}'.format(time.strftime('%H-%M-%S'))), flush_secs=1)
+class DetectionSuperTuxDataset(Dataset):
+    def __init__(self, dataset_path, transform=torchvision.transforms.ToTensor(), min_size=20):
+        from glob import glob
+        import os
+        from os import path
+        self.files = []
+        self.masks = []
+        for im_f in glob(path.join(dataset_path, 'images', '*')):
+            self.files.append(im_f)
 
-    lr = args.learning_rate
-    train_dir = args.train
-    valid_dir = args.valid
-    epochs = args.epochs
-    batch_size = args.batch
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        for im_f in glob(path.join(dataset_path, 'masks', '*')):
+            self.masks.append(im_f)
+        self.transform = transform
+        self.min_size = min_size
 
+    def __len__(self):
+        return len(self.files)
 
-    print(device)
-
-    model = model.to(device)
-    if args.continue_training:
-        model.load_state_dict(torch.load(
-            path.join(path.dirname(path.abspath(__file__)), 'det.th')))
-
-    optimizer = torch.optim.Adam(
-        model.parameters(), lr=args.learning_rate, weight_decay=1e-4)
-
-    loss = torch.nn.BCEWithLogitsLoss(weight=torch.tensor(2.0)).to(device)
-
-    augmentation = transforms.Compose([
-        transforms.Resize([128, 128]),
-        transforms.ToTensor()]
-    )
-
-    valid_transform = transforms.Compose([
-        transforms.Resize([128, 128]),
-        transforms.ToTensor()]
-    )
-
-    train_data = load_detection_data(
-        train_dir, num_workers=0, batch_size=batch_size, transform=augmentation)
-    valid_data = load_detection_data(
-        valid_dir, num_workers=0, batch_size=batch_size, transform=augmentation)
-
-    global_step = 0
-    for epoch in range(args.epochs):
-        print(epoch)
-        model.train()
-
-        for img, label in train_data:
-            img, label = img.to(device), label.to(device)
-
-            logit = model(img).view(-1, 1, 128, 128)
-            loss_val = loss(logit, label)
-
-            if train_logger is not None and global_step % 100 == 0:
-                log(train_logger, img, label, logit, global_step)
-
-            if train_logger is not None:
-                train_logger.add_scalar('train/loss_heat', loss_val, global_step)
-
-            optimizer.zero_grad()
-            loss_val.backward()
-            optimizer.step()
-            global_step += 1
-
-        model.eval()
-        running_loss = 0
-        for img, label in valid_data:
-            img, label = img.to(device), label.to(device)
-            logit = model(img).view(-1, 1, 128, 128)
-            running_loss += loss(logit, label).item()
-            
-        if valid_logger is not None:
-            valid_logger.add_scalar('valid/loss', running_loss/len(valid_data), global_step)
-
-        if valid_logger is not None:
-            log(valid_logger, img, label, logit, global_step)
-
-        save_model(model)
+    def __getitem__(self, idx):
+        import numpy as np
+        b = self.files[idx]
+        c = self.masks[idx]
+        im = Image.open(b)
+        ma = Image.open(c)
+        data = im, ma
+        if self.transform is not None:
+            data = self.transform(data[0]), self.transform(data[1])
+        return data
 
 
-def log(logger, imgs, gt_det, det, global_step):
-    """
-    logger: train_logger/valid_logger
-    imgs: image tensor from data loader
-    gt_det: ground-truth object-center maps
-    det: predicted object-center heatmaps
-    global_step: iteration
-    """
-    logger.add_images('image', imgs[:16], global_step)
-    logger.add_images('label', gt_det[:16], global_step)
-    logger.add_images('pred', torch.sigmoid(det[:16]), global_step)
+def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
+    dataset = DetectionSuperTuxDataset(dataset_path, **kwargs)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 
 if __name__ == '__main__':
-    import argparse
+    dataset = DetectionSuperTuxDataset('dense_data/train')
+    import torchvision.transforms.functional as F
+    from pylab import show, subplots
+    import matplotlib.patches as patches
+    import numpy as np
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-log', '--log_dir', type=str, default='runs')
-    # Put custom arguments here
-    parser.add_argument('-e', '--epochs', type=int, default=20)
-    parser.add_argument('-t', '--train', type=str, default='data/train')
-    parser.add_argument('-v', '--valid', type=str, default='data/valid')
-    parser.add_argument('-lr', '--learning_rate', type=float, default=1e-4)
-    parser.add_argument('-mo', '--momentum', type=float, default=0.9)
-    parser.add_argument('-d', '--decay', type=float, default=0.01)
-    parser.add_argument('-b', '--batch', type=int, default=50)
-    parser.add_argument('-c', '--continue_training', action='store_true')
-    args = parser.parse_args()
-    train(args)
+    fig, axs = subplots(1, 2)
+    for i, ax in enumerate(axs.flat):
+        im, ma = dataset[100+i]
+        ax.imshow(F.to_pil_image(im), interpolation=None)
+        for k in kart:
+            ax.add_patch(
+                patches.Rectangle((k[0] - 0.5, k[1] - 0.5), k[2] - k[0], k[3] - k[1], fc='none', ec='r', lw=2))
+        for k in bomb:
+            ax.add_patch(
+                patches.Rectangle((k[0] - 0.5, k[1] - 0.5), k[2] - k[0], k[3] - k[1], fc='none', ec='g', lw=2))
+        for k in pickup:
+            ax.add_patch(
+                patches.Rectangle((k[0] - 0.5, k[1] - 0.5), k[2] - k[0], k[3] - k[1], fc='none', ec='b', lw=2))
+        ax.axis('off')
+    dataset = DetectionSuperTuxDataset('dense_data/train',
+                                       transform=dense_transforms.Compose([dense_transforms.RandomHorizontalFlip(0),
+                                                                           dense_transforms.ToTensor()]))
+    fig.tight_layout()
+    # fig.savefig('box.png', bbox_inches='tight', pad_inches=0, transparent=True)
+
+    fig, axs = subplots(1, 2)
+    for i, ax in enumerate(axs.flat):
+
+        im, *dets = dataset[100+i]
+        hm, size = dense_transforms.detections_to_heatmap(dets, im.shape[1:])
+        ax.imshow(F.to_pil_image(im), interpolation=None)
+        hm = hm.numpy().transpose([1, 2, 0])
+        alpha = 0.25*hm.max(axis=2) + 0.75
+        r = 1 - np.maximum(hm[:, :, 1], hm[:, :, 2])
+        g = 1 - np.maximum(hm[:, :, 0], hm[:, :, 2])
+        b = 1 - np.maximum(hm[:, :, 0], hm[:, :, 1])
+        ax.imshow(np.stack((r, g, b, alpha), axis=2), interpolation=None)
+        ax.axis('off')
+    fig.tight_layout()
+    # fig.savefig('heat.png', bbox_inches='tight', pad_inches=0, transparent=True)
+
+    show()

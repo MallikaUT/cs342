@@ -1,298 +1,253 @@
 import numpy as np
 import torch
-from torch.serialization import load
 import torchvision
-import time
 from PIL import Image
-from os import path
 
-from image_agent.models import load_model, Detector
+from agent.models import load_model
 
-GOALS = np.float32([[0, 75], [0, -75]])
+ALL_PLAYERS = ['adiumy', 'amanda', 'beastie', 'emule', 'gavroche', 'gnu', 'hexley', 'kiki', 'konqi', 'nolok',
+               'pidgin', 'puffy', 'sara_the_racer', 'sara_the_wizard', 'suzanne', 'tux', 'wilber', 'xue']
+# Filtered some of the players that are too big and do not give good images
+ALL_PLAYERS_FILTERED = ['adiumy', 'amanda', 'beastie', 'emule', 'gavroche', 'hexley', 'kiki', 'konqi', 'nolok',
+                        'pidgin', 'puffy', 'sara_the_racer', 'sara_the_wizard', 'suzanne', 'tux', 'wilber', 'xue']
+GOAL_POS = np.float32([[0, 75], [0, -75]])  # (0 and 2 coor) Blue, Red
 
+# Steps duration of lost status
 LOST_STATUS_STEPS = 10
 LOST_COOLDOWN_STEPS = 10
-START_STEPS = 25
+START_STEPS = 40
 LAST_PUCK_DURATION = 4
-MIN_SCORE = 0.2
-MAX_DET = 15
-MAX_DEV = 0.7
-MIN_ANGLE = 20
-MAX_ANGLE = 120
-TARGET_SPEED = 15
-STEER_YIELD = 15
-DRIFT_THRESH = 0.7
-TURN_CONE = 100
+# ALPHA_STEER = 0.95
 
-device = torch.device(
-    'cuda' if torch.cuda.is_available() else 'cpu')
+# True if testing to use HACK_DICT
+HACK_ON = True
+if HACK_ON:
+    from tournament.utils import HACK_DICT
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def norm(vector):
+    # return np.sqrt(np.sum(np.square(vector)))
     return np.linalg.norm(vector)
 
 
-class Team:
-    agent_type = 'image'
+class HockeyPlayer:
+    """
+       Your ice hockey player. You may do whatever you want here. There are three rules:
+        1. no calls to the pystk library (your code will not run on the tournament system if you do)
+        2. There needs to be a deep network somewhere in the loop
+        3. You code must run in 100 ms / frame on a standard desktop CPU (no for testing GPU)
 
-    def __init__(self):
-        self.kart = 'wilber'
-        self.initialize_vars()
-        self.model = torch.load(path.join(path.dirname(path.abspath(__file__)), 'detector.pt')).to(device)
-        self.model.eval()
+        Try to minimize library dependencies, nothing that does not install through pip on linux.
+    """
+
+    """
+       You may request to play with a different kart.
+       Call `python3 -c "import pystk; pystk.init(pystk.GraphicsConfig.ld()); print(pystk.list_karts())"` to see all values.
+    """
+    # ideas: find best kart
+    kart = "wilbert"
+
+    def __init__(self, player_id=0):
+        """
+        Set up a soccer player.
+        The player_id starts at 0 and increases by one for each player added. You can use the player id to figure out your team (player_id % 2), or assign different roles to different agents.
+        """
+        # For training select player at random
+        # self.kart = ALL_PLAYERS_FILTERED[np.random.choice(len(ALL_PLAYERS_FILTERED))]
+
+        # Player info variables
+        self.player_id = player_id
+        self.team = player_id % 2
+        self.position = player_id // 2
+
+        # Timing and status variables
+        self.initialize_status()
+
+        # Load model
+        self.model = load_model('det_final.th').to(device)
+        # Resize image to 128x128 and transform to tensor (same as in training)
         self.transform = torchvision.transforms.Compose([torchvision.transforms.Resize((128, 128)),
                                                          torchvision.transforms.ToTensor()])
 
-    def new_match(self, team: int, num_players: int) -> list:
-        self.team, self.num_players = team, num_players
-        self.initialize_vars()
-        print(f"Using {device} Match Started: {time.strftime('%H-%M-%S')}")
-        return [self.kart] * num_players
+        print(f"{self.kart}, {device}, team:{self.team}")
 
-    def initialize_vars(self):
+    def initialize_status(self):
+        # Timing variables
         self.step = 0
-        self.timer1 = 0
+        self.timer = 0
 
-        self.puck_prev1 = 0
-        self.last_seen1 = 0
-        self.recover_steps1 = 0
-        self.use_puck1 = True
-        self.cooldown1 = 0
+        # Status variables
+        self.puck_last_pos = 0
+        self.step_lost = 0
+        self.step_back = 0
+        self.normal = True
+        self.lost_cooldown = 0
+        # self.last_steer = 0
 
-        self.timer2 = 0
+    def act(self, image, player_info):
+        """
+        Set the action given the current image
+        :param image: numpy array of shape (300, 400, 3)
+        :param player_info: pystk.Player object for the current kart.
+        return: Dict describing the action
+        """
 
-        self.puck_prev2 = 0
-        self.last_seen2 = 0
-        self.recover_steps2 = 0
-        self.use_puck2 = True
-        self.cooldown2 = 0
+        # Get positions
+        front = np.float32(player_info.kart.front)[[0, 2]]
+        kart = np.float32(player_info.kart.location)[[0, 2]]
 
-    def act(self, player_state, player_image):
+        # Reset variables status if scored a goal
+        if norm(player_info.kart.velocity) < 1:
+            if self.timer == 0:
+                self.timer = self.step
+            elif self.step - self.timer > 20:
+                self.initialize_status()
+        else:
+            self.timer = 0
+        # cur_time = time.perf_counter()
+        # if norm(player_info.kart.velocity) < 1:
+        #     if self.timer == 0:
+        #         self.timer = cur_time
+        #     elif cur_time - self.timer > 3:
+        #         self.initialize_status()
+        # else:
+        #      self.timer = 0
 
-        player_info = player_state[0]
-        image = player_image[0]
+        # Get real puck position
+        # puck = np.float32(HACK_DICT['state'].soccer.ball.location)[[0, 2]]
+        # u = front - kart
+        # u = u / np.linalg.norm(u)
+        #
+        # v = puck - kart
+        # v = v / np.linalg.norm(v)
+        #
+        # theta_puck = np.arccos(np.dot(u, v))
+        # signed_theta_puck_deg = np.degrees(-np.sign(np.cross(u, v)) * theta_puck)
 
-        # predict puck position
+        # Get predicted puck position
         img = self.transform(Image.fromarray(image)).to(device)
-        pred = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
-        puck_found = len(pred) > 0
+        pred = self.model.detect(img, max_pool_ks=7, min_score=0.2, max_det=15)  # (score, cx, cy, w, h)
+        puck_visible = len(pred) > 0
+        if puck_visible:
+            # if self.step_lost + 1 == self.step:
+            #     puck_pos = np.mean([cx[1] for cx in pred]) * ALPHA_PUCK_POS + self.puck_last_pos * (1 - ALPHA_PUCK_POS)
+            # else:
+            #     puck_pos = np.mean([cx[1] for cx in pred])
 
-        # try and detect if goal scored so we can reset (only needs to be done for one of the players)
-        if norm(player_info['kart']['velocity']) < 1:
-            if self.timer1 == 0:
-                self.timer1 = self.step
-            elif self.step - self.timer1 > 20:
-                self.initialize_vars()
+            # Average predictions
+            puck_pos = np.mean([cx[1] for cx in pred])
+            puck_pos = puck_pos / 64 - 1  # [0, 128] -> [-1, 1]
+            puck_size = np.mean([cx[2] for cx in pred])
+            puck_size = puck_size / 128  # [0, 128] -> [0, 1]
+
+            # If vary large change, ignore this step
+            if self.normal and np.abs(puck_pos - self.puck_last_pos) > 0.5:
+                puck_pos = self.puck_last_pos
+                self.normal = False
+            else:
+                self.normal = True
+
+            # Update status variables
+            self.puck_last_pos = puck_pos
+            self.step_lost = self.step
+
+            # To show when testing
+            if HACK_ON and self.position == 0:
+                if HACK_DICT['show_mask']:
+                    HACK_DICT['pred_mask'] = self.model(img[None])[0].squeeze(0).unsqueeze(2)\
+                        .detach().repeat(1, 1, 3).cpu()
+                HACK_DICT['id'] = self.player_id
+                HACK_DICT['predicted'] = (puck_pos, (pred[0])[2] / 64 - 1)
+                HACK_DICT['predicted_width'] = puck_size
+        elif self.step - self.step_lost < LAST_PUCK_DURATION:
+            self.normal = False
+            puck_pos = self.puck_last_pos
         else:
-            self.timer1 = 0
+            puck_pos = None
+            self.step_back = LOST_STATUS_STEPS
 
-        # get location in game and direct of kart
-        front = np.float32(player_info['kart']['front'])[[0, 2]]
-        loc = np.float32(player_info['kart']['location'])[[0, 2]]
+        # Opposite goal theta
+        u = front - kart
+        u = u / np.linalg.norm(u)
+        v = GOAL_POS[self.team] - kart
+        dist_opp_goal = norm(v)
+        v = v / np.linalg.norm(v)
 
-        # execute when we find puck on screen
-        if puck_found:
-            # takes avg of peaks
-            puck_loc = np.mean([cx[1] for cx in pred])
-            puck_loc = puck_loc / 64 - 1
+        theta_goal = np.arccos(np.dot(u, v))
+        signed_theta_opp_goal_deg = np.degrees(-np.sign(np.cross(u, v)) * theta_goal)
 
-            # ignores puck detections whose change is too much so that we ignore bad detections
-            if self.use_puck1 and np.abs(puck_loc - self.puck_prev1) > MAX_DEV:
-                puck_loc = self.puck_prev1
-                self.use_puck1 = False
+        # Self goal theta
+        v = GOAL_POS[self.team - 1] - kart
+        dist_own_goal = norm(v)
+        v = v / np.linalg.norm(v)
+
+        theta_goal = np.arccos(np.dot(u, v))
+        signed_theta_self_goal_deg = np.degrees(-np.sign(np.cross(u, v)) * theta_goal)
+
+        # ideas: if closer to goal, more important to have angle of goal
+        # todo ideas: width can be used to know how close is the puck
+        # ideas: make the relation of closer and importance of the goal non linear (change when close not as impactful)
+        dist_opp_goal = ((np.clip(dist_opp_goal, 10, 100) - 10) / 90) + 1  # [1, 2]
+        if self.step_back == 0 and (self.lost_cooldown == 0 or puck_visible):
+            if 20 < np.abs(signed_theta_opp_goal_deg) < 120:
+                importance_dist = 1 / dist_opp_goal ** 3
+                aim_point = puck_pos + np.sign(puck_pos - signed_theta_opp_goal_deg / 100) * 0.3 * importance_dist
             else:
-                self.use_puck1 = True
-
-            # update vars
-            self.puck_prev1 = puck_loc
-            self.last_seen1 = self.step
-        # if puck not seen then use prev location or start lost actions
-        elif self.step - self.last_seen1 < LAST_PUCK_DURATION:
-            self.use_puck1 = False
-            puck_loc = self.puck_prev1
-        else:
-            puck_loc = None
-            self.recover_steps1 = LOST_STATUS_STEPS
-
-        # calcualate direction vector
-        dir = front - loc
-        dir = dir / norm(dir)
-
-        # calculate angle to own goal
-        goal_dir = GOALS[self.team - 1] - loc
-        dist_own_goal = norm(goal_dir)
-        goal_dir = goal_dir / norm(goal_dir)
-
-        goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
-        signed_own_goal_deg = np.degrees(
-            -np.sign(np.cross(dir, goal_dir)) * goal_angle)
-
-        # calculate angle to opp goal
-        goal_dir = GOALS[self.team] - loc
-        goal_dist = norm(goal_dir)
-        goal_dir = goal_dir / np.linalg.norm(goal_dir)
-
-        goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
-        signed_goal_angle = np.degrees(
-            -np.sign(np.cross(dir, goal_dir)) * goal_angle)
-
-        # restrict dist between [1,2] so we can use a weight function
-        goal_dist = (
-            (np.clip(goal_dist, 10, 100) - 10) / 90) + 1
-
-        # set aim point if not cooldown or in recovery
-        if (self.cooldown1 == 0 or puck_found) and self.recover_steps1 == 0:
-            # if angle isn't extreme then weight our attack angle by dist
-            if MIN_ANGLE < np.abs(signed_goal_angle) < MAX_ANGLE:
-                distW = 1 / goal_dist ** 3
-                aim_point = puck_loc + \
-                    np.sign(puck_loc - signed_goal_angle /
-                            TURN_CONE) * 0.3 * distW
-            # if two tight then just chase puck
-            else:
-                aim_point = puck_loc
-            # sets the speed as const if found
-            if self.last_seen1 == self.step:
+                aim_point = puck_pos
+            # print(f"{aim_point}, {puck_pos}")
+            # aim_point = puck_pos
+            if self.step_lost == self.step:
+                # If have vision of the puck
+                acceleration = 0.75 if norm(player_info.kart.velocity) < 15 else 0
                 brake = False
-                acceleration = 0.75 if norm(
-                    player_info['kart']['velocity']) < TARGET_SPEED else 0
             else:
-                brake = False
+                # If no vision of the puck
                 acceleration = 0
-        # cooldown actions
-        elif self.cooldown1 > 0:
-            self.cooldown1 -= 1
-            brake = False
+                brake = False
+        elif self.lost_cooldown > 0:
+            # If already in own goal, start going towards opposite goal
+            aim_point = signed_theta_opp_goal_deg / 100
             acceleration = 0.5
-            aim_point = signed_goal_angle / TURN_CONE
-        # recovery actions
+            brake = False
+            self.lost_cooldown -= 1
         else:
-            # if not a goal keep backing up
+            # If in lost status, back towards own goal
             if dist_own_goal > 10:
-                aim_point = signed_own_goal_deg / TURN_CONE
+                aim_point = signed_theta_self_goal_deg / 100  # [0, 1] aprox
                 acceleration = 0
                 brake = True
-                self.recover_steps1 -= 1
-            # if at goal then cooldown on reversing
+                self.step_back -= 1
             else:
-                self.cooldown1 = LOST_COOLDOWN_STEPS
-                aim_point = signed_goal_angle / TURN_CONE
-                acceleration = 0.5
-                brake = False
-                self.recover_steps1 = 0
-
-        # set steering/drift
-        steer = np.clip(aim_point * STEER_YIELD, -1, 1)
-        drift = np.abs(aim_point) > DRIFT_THRESH
-
-        p1 = {
-            'steer': signed_goal_angle if self.step < START_STEPS else steer,
-            'acceleration': 1 if self.step < START_STEPS else acceleration,
-            'brake': brake,
-            'drift': drift,
-            'nitro': False, 
-            'rescue': False
-        }
-
-        # player 2 (same agent for now)
-
-        player_info = player_state[1]
-        image = player_image[1]
-
-        img = self.transform(Image.fromarray(image)).to(device)
-        pred = self.model.detect(
-            img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
-
-        front = np.float32(player_info['kart']['front'])[[0, 2]]
-        loc = np.float32(player_info['kart']['location'])[[0, 2]]
-
-        puck_found = len(pred) > 0
-        if puck_found:
-            puck_loc = np.mean([cx[1] for cx in pred])
-            puck_loc = puck_loc / 64 - 1
-
-            if self.use_puck2 and np.abs(puck_loc - self.puck_prev2) > MAX_DEV:
-                puck_loc = self.puck_prev2
-                self.use_puck2 = False
-            else:
-                self.use_puck2 = True
-
-            self.puck_prev2 = puck_loc
-            self.last_seen2 = self.step
-
-        elif self.step - self.last_seen2 < LAST_PUCK_DURATION:
-            self.use_puck2 = False
-            puck_loc = self.puck_prev2
-        else:
-            puck_loc = None
-            self.recover_steps2 = LOST_STATUS_STEPS
-
-        dir = front - loc
-        dir = dir / norm(dir)
-
-        goal_dir = GOALS[self.team - 1] - loc
-        dist_own_goal = norm(goal_dir)
-        goal_dir = goal_dir / norm(goal_dir)
-
-        goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
-        signed_own_goal_deg = np.degrees(
-            -np.sign(np.cross(dir, goal_dir)) * goal_angle)
-
-        goal_dir = GOALS[self.team] - loc
-        goal_dist = norm(goal_dir)
-        goal_dir = goal_dir / norm(goal_dir)
-
-        goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
-        signed_goal_angle = np.degrees(
-            -np.sign(np.cross(dir, goal_dir)) * goal_angle)
-
-        goal_dist = (
-            (np.clip(goal_dist, 10, 100) - 10) / 90) + 1
-        if self.recover_steps2 == 0 and (self.cooldown2 == 0 or puck_found):
-            if MIN_ANGLE < np.abs(signed_goal_angle) < MAX_ANGLE:
-                distW = 1 / goal_dist ** 3
-                aim_point = puck_loc + \
-                    np.sign(puck_loc - signed_goal_angle /
-                            TURN_CONE) * 0.3 * distW
-            else:
-                aim_point = puck_loc
-            if self.last_seen2 == self.step:
-                brake = False
-                acceleration = 0.75 if norm(
-                    player_info['kart']['velocity']) < TARGET_SPEED else 0
-            else:
-                acceleration = 0
-                brake = False
-        elif self.cooldown2 > 0:
-            self.cooldown2 -= 1
-            brake = False
-            acceleration = 0.5
-            aim_point = signed_goal_angle / TURN_CONE
-        else:
-            if dist_own_goal > 10:
-                acceleration = 0
-                brake = True
-                aim_point = signed_own_goal_deg / TURN_CONE
-                self.recover_steps2 -= 1
-            else:
-                self.cooldown2 = LOST_COOLDOWN_STEPS
+                self.lost_cooldown = LOST_COOLDOWN_STEPS
                 self.step_back = 0
-                aim_point = signed_goal_angle / TURN_CONE
+                aim_point = signed_theta_opp_goal_deg / 100
                 acceleration = 0.5
                 brake = False
 
-        steer = np.clip(aim_point * STEER_YIELD, -1, 1)
-        drift = np.abs(aim_point) > DRIFT_THRESH
+        if self.position == 1 and self.step < 25:
+            # If second car, wait more until start
+            acceleration = 0
+            brake = False
+            # If second car, act as goalie
+            # if dist_own_goal > 80:
+            #     self.step_back = 15
+        # else:
+        #     acceleration = 1 if self.step < START_STEPS else acceleration
 
-        p2 = {
-            'steer': signed_goal_angle if self.step < START_STEPS else steer,
-            'acceleration': 1 if self.step < START_STEPS else acceleration,
-            'brake': brake,
-            'drift': drift,
-            'nitro': False, 
-            'rescue': False
-        }
-
+        # Steer and drift
+        steer = np.clip(aim_point * 15, -1, 1)
+        # steer = np.clip(aim_point * 5, -1, 1) * ALPHA_STEER + self.last_steer * (1 - ALPHA_STEER)
+        # self.last_steer = steer
+        drift = np.abs(aim_point) > 0.2
         self.step += 1
 
-        return [p1, p2]
+        # print(f"{acceleration}, {aim_point}, {steer}, {puck_visible}")
+
+        return {
+            'steer': signed_theta_opp_goal_deg if self.step < 25 else steer,
+            'acceleration': 1 if self.step < START_STEPS else acceleration,
+            'brake': brake,
+            'drift': drift,
+            'nitro': False, 'rescue': False
+        }

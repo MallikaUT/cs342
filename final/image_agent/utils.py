@@ -128,8 +128,7 @@ class PyTux:
             self.k.step()
             print ("END OF WHILE LOOP IN ROLLOUT")
 
-        state = pystk.WorldState()
-        track = pystk.Track()
+        state = self.k.world.state  # Get the world state directly
 
         last_rescue = 0
 
@@ -140,17 +139,17 @@ class PyTux:
         print ("UPDATING STATE LINE 116 utils.py")
         for t in range(max_frames):
             print ("Inside FOR loop line 118")
-            state.update()  
+            # state.update()  # Remove this line, as we already have the state
             print ("Updated state")
-            #track.update()  #rollout calls this method and exits (Nov 23, 2021)
+            # track.update()  # roll-out calls this method and exits (Nov 23, 2021)
             print ("Did updates")
             kart = state.players[0].kart
             print (track.length)
-            #if np.isclose(kart.overall_distance / track.length, 1.0, atol=2e-3):
-             #   print ("inside loop at 125")
-              #  if verbose:
-               #     print("Finished at t=%d" % t)
-                #break
+            # if np.isclose(kart.overall_distance / track.length, 1.0, atol=2e-3):
+            #   print ("inside loop at 125")
+            #  if verbose:
+            #     print("Finished at t=%d" % t)
+            #     break
 
             proj = np.array(state.players[0].camera.projection).T
             view = np.array(state.players[0].camera.view).T

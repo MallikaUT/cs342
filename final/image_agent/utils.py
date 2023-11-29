@@ -21,7 +21,9 @@ class DetectionSuperTuxDataset(Dataset):
         self.min_size = min_size
 
     def __len__(self):
+      
         return len(self.files)
+        return len(self.imgs_path)
 
     def __getitem__(self, idx):
         import numpy as np

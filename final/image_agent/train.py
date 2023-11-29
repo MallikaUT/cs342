@@ -1,7 +1,6 @@
 from .planner import Planner, save_model 
 import torch
 import torch.utils.tensorboard as tb
-import distutils
 import numpy as np
 from .utils import load_data
 from . import dense_transforms

@@ -3,7 +3,7 @@ import torch
 import torchvision
 from PIL import Image
 
-from agent.models import load_model
+from image_agent.models import load_model
 
 ALL_PLAYERS = ['adiumy', 'amanda', 'beastie', 'emule', 'gavroche', 'gnu', 'hexley', 'kiki', 'konqi', 'nolok',
                'pidgin', 'puffy', 'sara_the_racer', 'sara_the_wizard', 'suzanne', 'tux', 'wilber', 'xue']

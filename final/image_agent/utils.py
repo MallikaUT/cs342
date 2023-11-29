@@ -20,23 +20,20 @@ class SuperTuxDataset(Dataset):
         from PIL import Image
         from glob import glob
         from os import path
-        
+
+        print("Dataset Path:", dataset_path)  # Add this line
+
         self.data = []
-        
-        
-        for f in glob(path.join(dataset_path, '*.csv')):   #change to npy to load render_data instance
-            
-            data_image = Image.open(f.replace('.csv', '.png'))   #change to npy to load render_data instance
+
+        for f in glob(path.join(dataset_path, '*.csv')):
+            print("Processing file:", f)  # Add this line
+            data_image = Image.open(f.replace('.csv', '.png'))
             data_image.load()
-            self.data.append(( data_image,    np.loadtxt(f, dtype=np.float32, delimiter=',')  ))
-            
-            #uncomment below to load render_data instance
-            #data_instance = torch.from_numpy(np.load(f).astype(int)) # render_data instance
-            #self.data.append((     data_image,    data_instance  ))
-        
+            self.data.append((data_image, np.loadtxt(f, dtype=np.float32, delimiter=',')))
+
+        print("Length of self.data:", len(self.data))  # Add this line
+
         self.transform = transform
-        #self.totensor = dense_transforms.ToTensor()
-    
     def __len__(self):
         return len(self.data)
 

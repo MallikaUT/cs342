@@ -47,7 +47,8 @@ def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 if __name__ == '__main__':
-    dataset = DetectionSuperTuxDataset('/content/dense_data/data')
+    dataset_path = '/content/dense_data/data'
+    dataset = DetectionSuperTuxDataset(dataset_path)
     import torchvision.transforms.functional as F
     from pylab import show, subplots
     import matplotlib.patches as patches
@@ -67,7 +68,7 @@ if __name__ == '__main__':
             ax.add_patch(
                 patches.Rectangle((k[0] - 0.5, k[1] - 0.5), k[2] - k[0], k[3] - k[1], fc='none', ec='b', lw=2))
         ax.axis('off')
-    dataset = DetectionSuperTuxDataset('/content/dense_data/data',
+    dataset = DetectionSuperTuxDataset(dataset_path,
                                        transform=dense_transforms.Compose([dense_transforms.RandomHorizontalFlip(0),
                                                                            dense_transforms.ToTensor()]))
     fig.tight_layout()

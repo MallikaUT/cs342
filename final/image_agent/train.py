@@ -29,7 +29,7 @@ def train(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-    print(device)
+    #print(device)
 
     model = model.to(device)
     if args.continue_training:

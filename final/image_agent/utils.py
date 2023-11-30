@@ -8,14 +8,12 @@ import os
 from glob import glob
 
 
-
-
-
 class DetectionSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=None):
         self.image_files = sorted(glob(os.path.join(dataset_path, 'images', '*.png')))
         self.csv_files = sorted(glob(os.path.join(dataset_path, 'data', '*.csv')))
         self.transform = transform
+        print(self.files)
 
     def __len__(self):
         return len(self.image_files)
@@ -28,7 +26,7 @@ class DetectionSuperTuxDataset(Dataset):
 
         # Load corresponding CSV file if available
         base_name = os.path.splitext(os.path.basename(image_path))[0]
-        csv_path = os.path.join(dataset_path, 'data', f'{base_name}.csv')
+        csv_path = os.path.join('/content/dense_data/data', 'data', f'{base_name}.csv')
         if csv_path in self.csv_files:
             csv_data = pd.read_csv(csv_path)  # Adjust the read_csv parameters as needed
         else:

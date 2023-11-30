@@ -71,7 +71,10 @@ def train(args):
 
             # Assuming label is a binary mask with dimensions [batch_size, height, width]
             label_resized = label.unsqueeze(1).float()  # Add channel dimension
-            label_resized = torch.nn.functional.interpolate(label_resized.unsqueeze(1), size=(logit_reshaped.shape[2], logit_reshaped.shape[3]), mode='nearest').squeeze(1)
+            label_resized = torch.nn.functional.interpolate(
+                label_resized.unsqueeze(1),
+                size=(logit_reshaped.size(2), logit_reshaped.size(3)),
+                mode='nearest').squeeze(1)
 
 
             # Ensure that label_resized is in the range [0, 1]

@@ -12,6 +12,7 @@ class DetectionSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=None):
         self.data_files = sorted(glob(os.path.join(dataset_path, '*.png')))
         self.transform = transform
+        print(dataset_path)
 
     def __len__(self):
         return len(self.data_files)

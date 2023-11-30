@@ -1,15 +1,10 @@
 import torch
 import numpy as np
 import time
-
-
 from torchvision import transforms
-
 from .models import Detector, save_model
 from .utils import load_detection_data
-from . import dense_transforms
 import torch.utils.tensorboard as tb
-
 
 def train(args):
     from os import path
@@ -27,7 +22,6 @@ def train(args):
     epochs = args.epochs
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
     print(device)
 
@@ -82,16 +76,21 @@ def train(args):
         running_loss = 0
         for img, label in valid_data:
             img, label = img.to(device), label.to(device)
-            logit = model(img).view(-1, 1, 128, 128)
-            running_loss += loss(logit, label).item()
+            logit = model(img)
             
+            # Resize label to match the size of logit
+            label_resized = torch.nn.functional.interpolate(label.unsqueeze(1), size=logit.shape[2:], mode='nearest').squeeze(1)
+            
+            running_loss += loss(logit, label_resized).item()
+
         if valid_logger is not None:
-            valid_logger.add_scalar('valid/loss', running_loss/len(valid_data), global_step)
+            valid_logger.add_scalar('valid/loss', running_loss / len(valid_data), global_step)
 
         if valid_logger is not None:
             log(valid_logger, img, label, logit, global_step)
 
         save_model(model)
+
 
 
 def log(logger, imgs, gt_det, det, global_step):

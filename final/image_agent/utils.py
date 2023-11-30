@@ -25,7 +25,7 @@ class DetectionSuperTuxDataset(Dataset):
 
         # Load corresponding CSV file if available
         base_name = os.path.splitext(os.path.basename(data_path))[0]
-        csv_path = os.path.join(dataset_path, f'{base_name}.csv')
+        csv_path = os.path.join(data_path, f'{base_name}.csv')
         if os.path.exists(csv_path):
             csv_data = pd.read_csv(csv_path)  # Adjust the read_csv parameters as needed
         else:

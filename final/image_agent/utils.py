@@ -18,15 +18,15 @@ class DetectionSuperTuxDataset(Dataset):
         return len(self.data_files)
 
     def __getitem__(self, idx):
-        data_path = self.data_files[idx]
+        image_path = self.image_files[idx]
 
         # Load image
-        image = Image.open(data_path).convert('RGB')
+        image = Image.open(image_path).convert('RGB')
 
         # Load corresponding CSV file if available
-        base_name = os.path.splitext(os.path.basename(data_path))[0]
-        csv_path = os.path.join(data_path, f'{base_name}.csv')
-        if os.path.exists(csv_path):
+        base_name = os.path.splitext(os.path.basename(image_path))[0]
+        csv_path = os.path.join('/content/dense_data/data', 'data', f'{base_name}.csv')
+        if csv_path in self.csv_files:
             csv_data = pd.read_csv(csv_path)  # Adjust the read_csv parameters as needed
         else:
             csv_data = None
@@ -35,7 +35,7 @@ class DetectionSuperTuxDataset(Dataset):
         if self.transform is not None:
             image = self.transform(image)
 
-        return image, csv_data
+        return image, csv_data if csv_data is not None else 0
 
 def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
     transform = transforms.Compose([

@@ -1,9 +1,7 @@
 from PIL import Image
-from torch.utils import data
 from torch.utils.data import Dataset, DataLoader
 import torchvision
-from . import dense_transforms
-
+from . import dense_transforms  # Replace with your actual module
 
 class DetectionSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=torchvision.transforms.ToTensor(), min_size=20):
@@ -34,14 +32,14 @@ class DetectionSuperTuxDataset(Dataset):
             data = self.transform(data[0]), self.transform(data[1])
         return data
 
-
 def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
+    # Use your custom dataset class
     dataset = DetectionSuperTuxDataset(dataset_path, **kwargs)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 
 if __name__ == '__main__':
-    dataset = DetectionSuperTuxDataset('dense_data/train')
+    dataset = DetectionSuperTuxDataset('test.pkl')
     import torchvision.transforms.functional as F
     from pylab import show, subplots
     import matplotlib.patches as patches

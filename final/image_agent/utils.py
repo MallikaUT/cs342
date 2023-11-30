@@ -14,6 +14,7 @@ class DetectionSuperTuxDataset(Dataset):
         self.csv_files = sorted(glob(os.path.join(dataset_path, 'data', '*.csv')))
         self.transform = transform
         print(self.image_files)
+        print(dataset_path)
 
     def __len__(self):
         return len(self.image_files)

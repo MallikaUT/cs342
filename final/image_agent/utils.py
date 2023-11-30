@@ -25,7 +25,7 @@ class DetectionSuperTuxDataset(Dataset):
 
         # Load corresponding CSV file if available
         base_name = os.path.splitext(os.path.basename(data_path))[0]
-        csv_path = os.path.join('/content/drive/MyDrive/Colab Notebooks/dense_data', 'data', f'{base_name}.csv')
+        csv_path = os.path.join('/content/drive/MyDrive/Colab Notebooks/dense_data/data', 'data', f'{base_name}.csv')
         if os.path.exists(csv_path):
             csv_data = pd.read_csv(csv_path)  # Adjust the read_csv parameters as needed
         else:
@@ -47,7 +47,7 @@ def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 if __name__ == '__main__':
-    dataset_path = '/content/drive/MyDrive/Colab Notebooks/dense_data'
+    dataset_path = '/content/drive/MyDrive/Colab Notebooks/dense_data/data'
     dataset = DetectionSuperTuxDataset(dataset_path)
     import torchvision.transforms.functional as F
     from pylab import show, subplots

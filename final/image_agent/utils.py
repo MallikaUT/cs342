@@ -4,39 +4,42 @@ import torchvision
 from . import dense_transforms  # Replace with your actual module
 
 class DetectionSuperTuxDataset(Dataset):
-    def __init__(self, dataset_path, transform=torchvision.transforms.ToTensor(), min_size=20):
-        from glob import glob
-        import os
-        from os import path
-        self.files = []
-        self.masks = []
-        for im_f in glob(path.join(dataset_path, 'images', '*')):
-            self.files.append(im_f)
-
-        for im_f in glob(path.join(dataset_path, 'masks', '*')):
-            self.masks.append(im_f)
+    def __init__(self, dataset_path, transform=None):
+        self.image_files = sorted(glob(os.path.join(dataset_path, 'images', '*.png')))
+        self.csv_files = sorted(glob(os.path.join(dataset_path, 'data', '*.csv')))
         self.transform = transform
-        self.min_size = min_size
 
     def __len__(self):
-        return len(self.files)
+        return len(self.image_files)
 
     def __getitem__(self, idx):
-        import numpy as np
-        b = self.files[idx]
-        c = self.masks[idx]
-        im = Image.open(b)
-        ma = Image.open(c)
-        data = im, ma
+        image_path = self.image_files[idx]
+
+        # Load image
+        image = Image.open(image_path).convert('RGB')
+
+        # Load corresponding CSV file if available
+        base_name = os.path.splitext(os.path.basename(image_path))[0]
+        csv_path = os.path.join(dataset_path, 'data', f'{base_name}.csv')
+        if csv_path in self.csv_files:
+            csv_data = pd.read_csv(csv_path)  # Adjust the read_csv parameters as needed
+        else:
+            csv_data = None
+
+        # Apply transformations
         if self.transform is not None:
-            data = self.transform(data[0]), self.transform(data[1])
-        return data
+            image = self.transform(image)
+
+        return image, csv_data
 
 def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
-    # Use your custom dataset class
-    dataset = DetectionSuperTuxDataset(dataset_path, **kwargs)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),  # Adjust the size as needed
+        transforms.ToTensor(),
+    ])
 
+    dataset = DetectionSuperTuxDataset(dataset_path, transform=transform, **kwargs)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 if __name__ == '__main__':
     dataset = DetectionSuperTuxDataset('/content/dense_data/data')

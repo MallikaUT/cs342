@@ -5,7 +5,7 @@ import numpy as np
 
 RESCUE_TIMEOUT = 30
 TRACK_OFFSET = 15
-DATASET_PATH = 'drive_data'
+DATASET_PATH = '/content/cs342/final/test.pkl'
 
 
 class SuperTuxDataset(Dataset):

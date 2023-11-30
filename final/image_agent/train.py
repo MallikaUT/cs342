@@ -64,11 +64,22 @@ def train(args):
         for img, label in train_data:
             img, label = img.to(device), label.to(device)
 
-            logit = model(img)[0].view(-1, 1, 128, 128)
-            loss_val = loss(logit, label)
+            logit, _ = model(img)
+
+            # Assuming logit is a 4D tensor (B, C, H, W), adjust the view accordingly
+            logit_reshaped = logit.view(img.size(0), 1, img.size(2), img.size(3))
+
+            # Assuming label is a binary mask, convert it to a 2D tensor with spatial dimensions
+            label_resized = label.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions
+            label_resized = torch.nn.functional.interpolate(label_resized, size=logit_reshaped.shape[2:], mode='nearest').squeeze(0).squeeze(0)
+
+            # Ensure that label_resized is in the range [0, 1]
+            label_resized = label_resized.clamp(0, 1)
+
+            loss_val = loss(logit_reshaped, label_resized)
 
             if train_logger is not None and global_step % 100 == 0:
-                log(train_logger, img, label, logit, global_step)
+                log(train_logger, img, label_resized, logit_reshaped, global_step)
 
             if train_logger is not None:
                 train_logger.add_scalar('train/loss_heat', loss_val, global_step)
@@ -77,6 +88,7 @@ def train(args):
             loss_val.backward()
             optimizer.step()
             global_step += 1
+
 
         model.eval()
         running_loss = 0

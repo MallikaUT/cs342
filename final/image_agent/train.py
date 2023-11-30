@@ -28,9 +28,6 @@ def train(args):
     batch_size = args.batch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-    #print(device)
-
     model = model.to(device)
     if args.continue_training:
         model.load_state_dict(torch.load(
@@ -75,8 +72,6 @@ def train(args):
                 label_resized.unsqueeze(1),
                 size=(logit_reshaped.size(2), logit_reshaped.size(3)),
                 mode='nearest').squeeze(1).squeeze(1)
-
-
 
             # Ensure that label_resized is in the range [0, 1]
             label_resized = label_resized.clamp(0, 1)

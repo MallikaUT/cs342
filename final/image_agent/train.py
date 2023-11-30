@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import time
 
+
 from torchvision import transforms
 
 from .models import Detector, save_model

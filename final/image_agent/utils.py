@@ -39,7 +39,7 @@ def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
 
 
 if __name__ == '__main__':
-    dataset = DetectionSuperTuxDataset('dense_data/train')
+    dataset = DetectionSuperTuxDataset('/content/drive/MyDrive/Colab Notebooks/dense_data/train')
     import torchvision.transforms.functional as F
     from pylab import show, subplots
     import matplotlib.patches as patches

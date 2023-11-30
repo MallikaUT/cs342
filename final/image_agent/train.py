@@ -77,6 +77,7 @@ def train(args):
                 mode='nearest').squeeze(2).squeeze(2)
 
 
+
             # Ensure that label_resized is in the range [0, 1]
             label_resized = label_resized.clamp(0, 1)
 

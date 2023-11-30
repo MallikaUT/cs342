@@ -74,7 +74,7 @@ def train(args):
             label_resized = torch.nn.functional.interpolate(
                 label_resized.unsqueeze(1),
                 size=(logit_reshaped.size(2), logit_reshaped.size(3)),
-                mode='nearest').squeeze(2).squeeze(2)
+                mode='nearest').squeeze(1).squeeze(1)
 
 
 

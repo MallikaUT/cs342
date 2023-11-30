@@ -64,7 +64,7 @@ def train(args):
         for img, label in train_data:
             img, label = img.to(device), label.to(device)
 
-            logit = model(img)[0].view(-1, 1, 128, 128)
+            logit, _ = model(img)
             loss_val = loss(logit, label)
 
             if train_logger is not None and global_step % 100 == 0:

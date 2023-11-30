@@ -58,13 +58,14 @@ def train(args):
         for img, label in train_data:
             img, label = img.to(device), label.to(device)
 
+            logit, _ = model(img)
+
             # Resize label to match the size of logit
             label_resized = torch.nn.functional.interpolate(label.unsqueeze(1), size=logit.shape[2:], mode='nearest').squeeze(1)
 
             # Ensure that label_resized is in the range [0, 1]
             label_resized = label_resized.clamp(0, 1)
 
-            logit, _ = model(img)
             loss_val = loss(logit, label_resized)
 
             if train_logger is not None and global_step % 100 == 0:
@@ -77,6 +78,7 @@ def train(args):
             loss_val.backward()
             optimizer.step()
             global_step += 1
+
 
         model.eval()
         running_loss = 0

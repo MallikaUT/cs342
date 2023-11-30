@@ -66,12 +66,12 @@ def train(args):
 
             logit, _ = model(img)
 
-            # Assuming logit is a 4D tensor (B, C, H, W), adjust the view accordingly
+            # Assuming logit is a 4D tensor (batch_size, channels, height, width)
             logit_reshaped = logit.view(img.size(0), 1, img.size(2), img.size(3))
 
-            # Assuming label is a binary mask, convert it to a 2D tensor with spatial dimensions
-            label_resized = label.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions
-            label_resized = torch.nn.functional.interpolate(label_resized, size=logit_reshaped.shape[2:], mode='nearest').squeeze(0).squeeze(0)
+            # Assuming label is a binary mask with dimensions [batch_size, height, width]
+            label_resized = label.unsqueeze(1).float()  # Add channel dimension
+            label_resized = torch.nn.functional.interpolate(label_resized, size=logit_reshaped.shape[2:], mode='nearest').squeeze(1)
 
             # Ensure that label_resized is in the range [0, 1]
             label_resized = label_resized.clamp(0, 1)

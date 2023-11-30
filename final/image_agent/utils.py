@@ -18,7 +18,7 @@ class DetectionSuperTuxDataset(Dataset):
         return len(self.data_files)
 
     def __getitem__(self, idx):
-        image_path = self.image_files[idx]
+        image_path = self.data_files[idx]
 
         # Load image
         image = Image.open(image_path).convert('RGB')

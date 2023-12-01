@@ -150,19 +150,14 @@ class Detector(torch.nn.Module):
                 for peak in extract_peak(heatmap, max_pool_ks, min_score, max_det)]
 
 def save_model(model, name: str = 'detector.pt'):
-    import torch
+    from torch import save
     from os import path
+    return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), name))
 
-    torch.save({'model_state_dict': model.state_dict()}, path.join(path.dirname(path.abspath(__file__)), name))
 
-def load_model(model_class, name: str = 'detector.pt'):
-    import torch
+def load_model(name: str = 'detector.pt'):
+    from torch import load
     from os import path
-
-    checkpoint = torch.load(path.join(path.dirname(path.abspath(__file__)), name), map_location='cpu')
-    
-    model = model_class()
-    model.load_state_dict(checkpoint['model_state_dict'])
-    model.eval()  # Set the model to evaluation mode
-    
-    return model
+    r = Detector()
+    r.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), name), map_location='cpu'))
+    return r

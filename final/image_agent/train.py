@@ -51,9 +51,9 @@ def train(args):
     )
     
     train_data = load_detection_data(
-        train_dir, num_workers=0, batch_size=batch_size, transform=augmentation)
+        train_dir, num_workers=2, batch_size=batch_size, transform=augmentation)
     valid_data = load_detection_data(
-        valid_dir, num_workers=0, batch_size=batch_size, transform=augmentation)
+        valid_dir, num_workers=2, batch_size=batch_size, transform=augmentation)
 
     global_step = 0
     for epoch in range(args.epochs):

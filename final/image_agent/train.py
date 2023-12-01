@@ -64,7 +64,7 @@ def train(args):
             x,y = label.chunk(2, dim=1)
 
             #xy = torch.cat((x, y),  dim=1)  #for -1...1 coords prediction
-            xy = torch.cat((x.clamp(min=0.0,max_var=w),y.clamp(min=0.0,max_var=h)),dim=1) #for 300..400
+            xy = torch.cat((x.clamp(min=0.0,max=w),y.clamp(min=0.0,max=h)),dim=1) #for 300..400
 
             xy = xy.to(device)
 

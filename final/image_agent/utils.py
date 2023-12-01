@@ -68,6 +68,8 @@ class SuperTuxDataset(Dataset):
         return data
 
 
+
+
 def collate_fn(batch):
     images, labels_list = zip(*batch)
     images = torch.stack(images)
@@ -75,15 +77,14 @@ def collate_fn(batch):
     # Find the maximum label size
     max_label_size = max(labels.size(0) for labels in labels_list)
 
-    # Pad labels to the same size
-    padded_labels = [
+    # Create a list of tensors with varying sizes
+    labels = [
         F.pad(labels, (0, 0, 0, max_label_size - labels.size(0)))
         for labels in labels_list
     ]
 
-    labels = torch.stack(padded_labels)
-
     return images, labels
+
 
 
 

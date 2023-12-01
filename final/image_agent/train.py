@@ -7,10 +7,12 @@ from . import dense_transforms as DT
 import torch.nn.functional as F
 from torchvision.transforms import Resize
 
+
+
 def custom_collate_fn(batch):
     images, labels = zip(*batch)
-    images = torch.stack(images, dim=0)
-    labels = torch.stack(labels, dim=0)
+    images = [img for img in images]
+    labels = [lbl for lbl in labels]
     return images, labels
 
 def train(args):
@@ -34,7 +36,7 @@ def train(args):
     ])
 
     print("Loading data ...")
-    train_data = load_data(transform=transform, num_workers=args.num_workers)
+    train_data = load_data(transform=transform, num_workers=args.num_workers, collate_fn=custom_collate_fn)
 
     global_step = 0
     print("Begin Training =================================")

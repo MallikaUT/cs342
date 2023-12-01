@@ -12,9 +12,6 @@ TRACK_OFFSET = 15
 DATASET_PATH = '/content/drive/MyDrive/Colab Notebooks/dense_data/data'               
 #DATASET_PATH = '/content/cs342/final/data_instance'     #render_data instance path
 
-#Dec 9, 2021
-#data2 = torch.from_numpy(data.astype(int))
-
 class SuperTuxDataset(Dataset):
     def __init__(self, dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor()):
         from PIL import Image
@@ -22,7 +19,7 @@ class SuperTuxDataset(Dataset):
         from os import path
         
         self.data = []
-        print(self.data)
+        
         
         for f in glob(path.join(dataset_path, '*.csv')):   #change to npy to load render_data instance
             
@@ -53,28 +50,12 @@ class SuperTuxDataset(Dataset):
         #return im[0], label
       
         return data
-def collate_custom(batch):
-    # Your collate logic here
-    # ...
-
-    # Ensure that tensors have the same size along the specified dimensions
-    # Example: Resize all tensors to the same size
-    imgs_resized = [resize_tensor(img, target_size) for img in imgs]
-    labels_resized = [resize_tensor(label, target_size) for label in labels]
-
-    # Stack tensors
-    imgs_stacked = torch.stack(imgs_resized)
-    labels_stacked = torch.stack(labels_resized)
-
-    return imgs_stacked, labels_stacked
-
-def resize_tensor(tensor, size):
-    return torch.nn.functional.interpolate(tensor, size=size, mode='bilinear', align_corners=False)
 
 
 def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128):
     dataset = SuperTuxDataset(dataset_path, transform=transform)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=collate_custom)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+
 
 class PyTux:
     _singleton = None
@@ -258,6 +239,7 @@ if __name__ == '__main__':
                 with open(fn + '.csv', 'w') as f:
                     f.write('%0.1f,%0.1f' % tuple(pt))
             n += 1
+
 
         while n < args.steps_per_track:
             print ("In while loop calling rollout()")

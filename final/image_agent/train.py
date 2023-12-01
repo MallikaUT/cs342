@@ -84,11 +84,6 @@ def train(args):
             logit = model(img).view(-1, 1, 128, 128)
             running_loss += loss(logit, label).item()
             
-        if valid_logger is not None:
-            valid_logger.add_scalar('valid/loss', running_loss/len(valid_data), global_step)
-
-        if valid_logger is not None:
-            log(valid_logger, img, label, logit, global_step)
 
         save_model(model)
 

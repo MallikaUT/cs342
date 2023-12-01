@@ -9,7 +9,7 @@ from . import dense_transforms
 RESCUE_TIMEOUT = 30
 TRACK_OFFSET = 15
 
-DATASET_PATH = '/content/cs342/final/data'               
+DATASET_PATH = '/content/drive/MyDrive/Colab Notebooks/dense_data/data'               
 #DATASET_PATH = '/content/cs342/final/data_instance'     #render_data instance path
 
 #Dec 9, 2021

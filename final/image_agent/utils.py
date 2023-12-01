@@ -10,7 +10,7 @@ from glob import glob
 
 class DetectionSuperTuxDataset(Dataset):
     def __init__(self, dataset_path, transform=torchvision.transforms.ToTensor(), min_size=20):
-        self.dataset_path = pathlib.Path(dataset_path)
+        self.dataset_path = pathlib.Path('/content/drive/MyDrive/Colab Notebooks/dense_data/data')
 
         self.transform = transform
         self.tokens = []
@@ -52,5 +52,5 @@ def accuracy(pred, label):
     return (pred == label).float().mean().cpu().detach().numpy()
 
 def load_detection_data(dataset_path, num_workers=0, batch_size=32, drop_last=True, **kwargs):
-    dataset = DetectionSuperTuxDataset(dataset_path, **kwargs)
+    dataset = DetectionSuperTuxDataset('/content/drive/MyDrive/Colab Notebooks/dense_data/data', **kwargs)
     return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=drop_last)

@@ -11,9 +11,12 @@ from torchvision.transforms import Resize
 
 def custom_collate_fn(batch):
     images, labels = zip(*batch)
-    images = [img for img in images]
-    labels = [lbl for lbl in labels]
-    return images, labels
+    
+    # Pad labels to the maximum size in the batch
+    max_size = max(label.size(0) for label in labels)
+    labels = [F.pad(label, (0, max_size - label.size(0)), value=-1) for label in labels]
+    
+    return torch.stack(images), torch.stack(labels)
 
 def train(args):
     from os import path

@@ -1,93 +1,56 @@
+import pathlib
+
+import torchvision
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
-import torchvision
-import torchvision.transforms as transforms 
-from . import dense_transforms  # Replace with your actual module
-import pandas as pd
-import os
+import torch
+import numpy as np
 from glob import glob
 
 
 class DetectionSuperTuxDataset(Dataset):
-    def __init__(self, dataset_path, transform=None):
-        self.data_files = sorted(glob(os.path.join(dataset_path, '*.png')))
+    def __init__(self, dataset_path, transform=torchvision.transforms.ToTensor(), min_size=20):
+        self.dataset_path = pathlib.Path(dataset_path)
+
         self.transform = transform
-        print(dataset_path)
+        self.tokens = []
+
+        for run_path in sorted(self.dataset_path.glob('*')):
+            for image_path in sorted(self.dataset_path.glob(f'{run_path.name}/images/*.png')):
+                # 0_1.png
+                self.tokens.append(f'{run_path.name}:{image_path.name}')
 
     def __len__(self):
-        return len(self.data_files)
+        return len(self.tokens)
 
     def __getitem__(self, idx):
-        data_path = self.data_files[idx]
+        # Get data
+        token = self.tokens[idx].split(':')
+        run = token[0]
+        token = token[1]
 
-        # Load image
-        image = Image.open(data_path).convert('RGB')
+        img = Image.open(self.dataset_path / f"{run}/images/{token}")
+        img = self.transform(img)
 
-        # Load corresponding CSV file if available
-        base_name = os.path.splitext(os.path.basename(data_path))[0]
-        csv_path = os.path.join('/content/drive/MyDrive/Colab Notebooks/dense_data/data', 'data', f'{base_name}.csv')
-        if os.path.exists(csv_path):
-            csv_data = pd.read_csv(csv_path)  # Adjust the read_csv parameters as needed
-        else:
-            csv_data = None
+        mask = Image.open(self.dataset_path / f"{run}/masks/{token}")
+        mask = self.transform(mask)
+        mask = torch.clamp(torch.round(mask), 0, 1)
 
-        # Apply transformations
-        if self.transform is not None:
-            image = self.transform(image)
+        # Calculate masks for width and height
+        width = torch.max(torch.sum(img, 1))
+        width_mask = mask.clone()
+        width_mask[width_mask == 1] = width
+        # height = torch.max(torch.sum(img, 0))
+        # height_mask = mask.clone()
+        # height_mask[width_mask == 1] = height
 
-        return image, csv_data if csv_data is not None else 0  # Replace 0 with an appropriate placeholder
+        # return img, mask.squeeze(0), np.concatenate([width_mask, height_mask], 0)
+        return img, mask.squeeze(0), width_mask.squeeze(0)
 
-def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),  # Adjust the size as needed
-        transforms.ToTensor(),
-    ])
 
-    dataset = DetectionSuperTuxDataset(dataset_path, transform=transform, **kwargs)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+def accuracy(pred, label):
+    return (pred == label).float().mean().cpu().detach().numpy()
 
-if __name__ == '__main__':
-    dataset_path = '/content/drive/MyDrive/Colab Notebooks/dense_data/data'
-    dataset = DetectionSuperTuxDataset(dataset_path)
-    import torchvision.transforms.functional as F
-    from pylab import show, subplots
-    import matplotlib.patches as patches
-    import numpy as np
-
-    fig, axs = subplots(1, 2)
-    for i, ax in enumerate(axs.flat):
-        im, ma = dataset[100+i]
-        ax.imshow(F.to_pil_image(im), interpolation=None)
-        for k in kart:
-            ax.add_patch(
-                patches.Rectangle((k[0] - 0.5, k[1] - 0.5), k[2] - k[0], k[3] - k[1], fc='none', ec='r', lw=2))
-        for k in bomb:
-            ax.add_patch(
-                patches.Rectangle((k[0] - 0.5, k[1] - 0.5), k[2] - k[0], k[3] - k[1], fc='none', ec='g', lw=2))
-        for k in pickup:
-            ax.add_patch(
-                patches.Rectangle((k[0] - 0.5, k[1] - 0.5), k[2] - k[0], k[3] - k[1], fc='none', ec='b', lw=2))
-        ax.axis('off')
-    dataset = DetectionSuperTuxDataset(dataset_path,
-                                       transform=dense_transforms.Compose([dense_transforms.RandomHorizontalFlip(0),
-                                                                           dense_transforms.ToTensor()]))
-    fig.tight_layout()
-    # fig.savefig('box.png', bbox_inches='tight', pad_inches=0, transparent=True)
-
-    fig, axs = subplots(1, 2)
-    for i, ax in enumerate(axs.flat):
-
-        im, *dets = dataset[100+i]
-        hm, size = dense_transforms.detections_to_heatmap(dets, im.shape[1:])
-        ax.imshow(F.to_pil_image(im), interpolation=None)
-        hm = hm.numpy().transpose([1, 2, 0])
-        alpha = 0.25*hm.max(axis=2) + 0.75
-        r = 1 - np.maximum(hm[:, :, 1], hm[:, :, 2])
-        g = 1 - np.maximum(hm[:, :, 0], hm[:, :, 2])
-        b = 1 - np.maximum(hm[:, :, 0], hm[:, :, 1])
-        ax.imshow(np.stack((r, g, b, alpha), axis=2), interpolation=None)
-        ax.axis('off')
-    fig.tight_layout()
-    # fig.savefig('heat.png', bbox_inches='tight', pad_inches=0, transparent=True)
-
-    show()
+def load_detection_data(dataset_path, num_workers=0, batch_size=32, drop_last=True, **kwargs):
+    dataset = DetectionSuperTuxDataset(dataset_path, **kwargs)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=drop_last)

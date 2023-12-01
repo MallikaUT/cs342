@@ -1,1 +1,1 @@
-from .player import Team
+from .player import HockeyPlayer

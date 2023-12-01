@@ -1,75 +1,67 @@
-from .controller import control
-from .planner import load_model
-from PIL import Image
-from torchvision.transforms import functional as F
 
-class Team:
-    agent_type = 'image'
+import torch
+import torch.nn.functional as F
 
-    def __init__(self):
-        """
-          TODO: Load your agent here. Load network parameters, and other parts of our model
-          We will call this function with default arguments only
-        """
-        self.team = None
-        self.num_players = None
-        self.model = load_model().eval()
 
-    def new_match(self, team: int, num_players: int) -> list:
-        """
-        Let's start a new match. You're playing on a `team` with `num_players` and have the option of choosing your kart
-        type (name) for each player.
-        :param team: What team are you playing on RED=0 or BLUE=1
-        :param num_players: How many players are there on your team
-        :return: A list of kart names. Choose from 'adiumy', 'amanda', 'beastie', 'emule', 'gavroche', 'gnu', 'hexley',
-                 'kiki', 'konqi', 'nolok', 'pidgin', 'puffy', 'sara_the_racer', 'sara_the_wizard', 'suzanne', 'tux',
-                 'wilber', 'xue'. Default: 'tux'
-        """
-        """
-           TODO: feel free to edit or delete any of the code below
-        """
-        self.team, self.num_players = team, num_players
-        return ['tux'] * num_players
 
-    def act(self, player_state, player_image):
-        """
-        This function is called once per timestep. You're given a list of player_states and images.
+def spatial_argmax(logit):
+    
+    weights = F.softmax(logit.view(logit.size(0), -1), dim=-1).view_as(logit)
+    return torch.stack(((weights.sum(1) * torch.linspace(-1, 1, logit.size(2)).to(logit.device)[None]).sum(1),
+                        (weights.sum(2) * torch.linspace(-1, 1, logit.size(1)).to(logit.device)[None]).sum(1)), 1)
+    
+                        
+class Planner(torch.nn.Module):
+    def __init__(self, channels=[16, 32, 64, 32]):
+        super().__init__()
 
-        DO NOT CALL any pystk functions here. It will crash your program on your grader.
+        conv_block = lambda c, h: [torch.nn.BatchNorm2d(h), torch.nn.Conv2d(h, c, 5, 2, 2), torch.nn.ReLU(True)]
+        upconv_block = lambda c, h: [torch.nn.BatchNorm2d(h), torch.nn.ConvTranspose2d(h, c, 4, 2, 1),
+                                     torch.nn.ReLU(True)]
 
-        :param player_state: list[dict] describing the state of the players of this team. The state closely follows
-                             the pystk.Player object <https://pystk.readthedocs.io/en/latest/state.html#pystk.Player>.
-                             See HW5 for some inspiration on how to use the camera information.
-                             camera:  Camera info for each player
-                               - aspect:     Aspect ratio
-                               - fov:        Field of view of the camera
-                               - mode:       Most likely NORMAL (0)
-                               - projection: float 4x4 projection matrix
-                               - view:       float 4x4 view matrix
-                             kart:  Information about the kart itself
-                               - front:     float3 vector pointing to the front of the kart
-                               - location:  float3 location of the kart
-                               - rotation:  float4 (quaternion) describing the orientation of kart (use front instead)
-                               - size:      float3 dimensions of the kart
-                               - velocity:  float3 velocity of the kart in 3D
+        h, _conv, _upconv = 3, [], []
+        for c in channels:
+            _conv += conv_block(c, h)
+            h = c
 
-        :param player_image: list[np.array] showing the rendered image from the viewpoint of each kart. Use
-                             player_state[i]['camera']['view'] and player_state[i]['camera']['projection'] to find out
-                             from where the image was taken.
+        for c in channels[:-3:-1]:
+            _upconv += upconv_block(c, h)
+            h = c
 
-        :return: dict  The action to be taken as a dictionary. For example `dict(acceleration=1, steer=0.25)`.
-                 acceleration: float 0..1
-                 brake:        bool Brake will reverse if you do not accelerate (good for backing up)
-                 drift:        bool (optional. unless you want to turn faster)
-                 fire:         bool (optional. you can hit the puck with a projectile)
-                 nitro:        bool (optional)
-                 rescue:       bool (optional. no clue where you will end up though.)
-                 steer:        float -1..1 steering angle
-        """
-        # TODO: Change me. I'm just cruising straight
-        actions = [] 
-        for i, pstate in enumerate(player_state):
-            coord = self.model(F.to_tensor(Image.fromarray(player_image[i])).unsqueeze(0))
-            acceleration, steer, brake = control(coord.detach().numpy(), pstate)
-            actions.append(dict(acceleration=acceleration, steer=steer, brake=brake))
-        return actions
+        _upconv += [torch.nn.BatchNorm2d(h), torch.nn.Conv2d(h, 1, 1, 1, 0)]
+
+        self._conv = torch.nn.Sequential(*_conv)
+        self._upconv = torch.nn.Sequential(*_upconv)   
+        self._mean = torch.FloatTensor([0.4519, 0.5590, 0.6204])
+        self._std = torch.FloatTensor([0.0012, 0.0018, 0.0020])
+
+    def forward(self, img):
+        
+        img = (img - self._mean[None, :, None, None].to(img.device)) / self._std[None, :, None, None].to(img.device)
+        h = self._conv(img)
+        x = self._upconv(h)
+
+        output = (1 + spatial_argmax(x.squeeze(1))) 
+        width = img.size(3)
+        height = img.size(2)
+        output = output * torch.as_tensor([width - 1,    height - 1]).float().to(
+            img.device)
+
+        return  output #300/400 range
+
+        #return(x)
+
+def save_model(model):
+    from torch import save
+    from os import path
+    if isinstance(model, Planner):
+        return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), 'planner.th'))
+    raise ValueError("model type '%s' not supported!" % str(type(model)))
+
+
+def load_model():
+    from torch import load
+    from os import path
+    r = Planner()
+    r.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), 'planner.th'), map_location='cpu'))
+    return r

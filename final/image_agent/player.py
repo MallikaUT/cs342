@@ -1,253 +1,556 @@
+import math 
+from .planner import Planner, load_model
+import torchvision.transforms.functional as TF 
 import numpy as np
 import torch
-import torchvision
-from PIL import Image
-
-from image_agent.models import load_model
-
-ALL_PLAYERS = ['adiumy', 'amanda', 'beastie', 'emule', 'gavroche', 'gnu', 'hexley', 'kiki', 'konqi', 'nolok',
-               'pidgin', 'puffy', 'sara_the_racer', 'sara_the_wizard', 'suzanne', 'tux', 'wilber', 'xue']
-# Filtered some of the players that are too big and do not give good images
-ALL_PLAYERS_FILTERED = ['adiumy', 'amanda', 'beastie', 'emule', 'gavroche', 'hexley', 'kiki', 'konqi', 'nolok',
-                        'pidgin', 'puffy', 'sara_the_racer', 'sara_the_wizard', 'suzanne', 'tux', 'wilber', 'xue']
-GOAL_POS = np.float32([[0, 75], [0, -75]])  # (0 and 2 coor) Blue, Red
-
-# Steps duration of lost status
-LOST_STATUS_STEPS = 10
-LOST_COOLDOWN_STEPS = 10
-START_STEPS = 40
-LAST_PUCK_DURATION = 4
-# ALPHA_STEER = 0.95
-
-# True if testing to use HACK_DICT
-HACK_ON = True
-if HACK_ON:
-    from tournament.utils import HACK_DICT
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#aim_point_image_Player1  is Predicted from planner
+#aim_point_image_Player2  is Predicted from planner
+#aim_point_image_actual_1  is the *image* coord for *actual* soccer coords, temporary hack just for player 1
+#xyz and xz  contains  actual soccer coords, hack
+#x,y,z contain actual soccer coords as well
 
 
-def norm(vector):
-    # return np.sqrt(np.sum(np.square(vector)))
-    return np.linalg.norm(vector)
+class Team:
+    agent_type = 'image'
+
+    def __init__(self):
+
+        self.team = None
+        self.num_players = None
+        self.frame = 1
+        self.forward_next = False
+
+        self.planner = True     #set to true to use the planner, debugging purposes
+        self.DEBUG = False      #SET TO TRUE TO DEBUG
 
 
-class HockeyPlayer:
-    """
-       Your ice hockey player. You may do whatever you want here. There are three rules:
-        1. no calls to the pystk library (your code will not run on the tournament system if you do)
-        2. There needs to be a deep network somewhere in the loop
-        3. You code must run in 100 ms / frame on a standard desktop CPU (no for testing GPU)
+        self.MSEloss = torch.nn.MSELoss()  #for DEBUGGING 
+        self.total_loss_puck = 0           #for DEBUGGING
+        self.total_loss_No_puck = 0        #for DEBUGGING
+        self.total_loss_puck_count = 0     #for DEBUGGING
+        self.total_loss_No_puck_count = 0  #for DEBUGGING
+      
 
-        Try to minimize library dependencies, nothing that does not install through pip on linux.
-    """
+        #Dec 8, 2021
 
-    """
-       You may request to play with a different kart.
-       Call `python3 -c "import pystk; pystk.init(pystk.GraphicsConfig.ld()); print(pystk.list_karts())"` to see all values.
-    """
-    # ideas: find best kart
-    kart = "wilbert"
+        self.team = None
+        self.num_players = None
+        self.current_team = 'not_sure'
+        self.rescue_count = [0,0]
+        self.rescue_steer = [1,1]
+        self.recovery = [False,False]
+        self.prev_loc = [[0,0],[0,0]]
 
-    def __init__(self, player_id=0):
-        """
-        Set up a soccer player.
-        The player_id starts at 0 and increases by one for each player added. You can use the player id to figure out your team (player_id % 2), or assign different roles to different agents.
-        """
-        # For training select player at random
-        # self.kart = ALL_PLAYERS_FILTERED[np.random.choice(len(ALL_PLAYERS_FILTERED))]
+        #Dec 8, 2021 (END)
 
-        # Player info variables
-        self.player_id = player_id
-        self.team = player_id % 2
-        self.position = player_id // 2
+        
+        if not self.planner:
+          print ("\n\n NOT USING PLANNER \n\n")
 
-        # Timing and status variables
-        self.initialize_status()
+        if self.planner:
 
-        # Load model
-        self.model = load_model('det_final.th').to(device)
-        # Resize image to 128x128 and transform to tensor (same as in training)
-        self.transform = torchvision.transforms.Compose([torchvision.transforms.Resize((128, 128)),
-                                                         torchvision.transforms.ToTensor()])
+          print ("\n\n     Player (TEAM) INIT: USING PLANNER \n\n")
+          
+          self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+          self.Planner = load_model()
+          self.Planner.eval()
+          self.Planner = self.Planner.to(self.device)
+          print (self.Planner)
+          
+        #self.prior_state = [] 
+        #self.prior_soccer_state1 = []
+        #self.prior_soccer_state2 = []
+        
+        if self.DEBUG:
+          print ("\n\n DEBUG MODE IS ON \n\n")
 
-        print(f"{self.kart}, {device}, team:{self.team}")
+        if self.DEBUG==False:
+          print ("\n\n DEBUG MODE IS OFF \n\n")
 
-    def initialize_status(self):
-        # Timing variables
-        self.step = 0
-        self.timer = 0
 
-        # Status variables
-        self.puck_last_pos = 0
-        self.step_lost = 0
-        self.step_back = 0
-        self.normal = True
-        self.lost_cooldown = 0
-        # self.last_steer = 0
 
-    def act(self, image, player_info):
-        """
-        Set the action given the current image
-        :param image: numpy array of shape (300, 400, 3)
-        :param player_info: pystk.Player object for the current kart.
-        return: Dict describing the action
-        """
+    def new_match(self, team: int, num_players: int) -> list:
 
-        # Get positions
-        front = np.float32(player_info.kart.front)[[0, 2]]
-        kart = np.float32(player_info.kart.location)[[0, 2]]
+        self.team, self.num_players = team, num_players
 
-        # Reset variables status if scored a goal
-        if norm(player_info.kart.velocity) < 1:
-            if self.timer == 0:
-                self.timer = self.step
-            elif self.step - self.timer > 20:
-                self.initialize_status()
+        print ("\n\n new-match() was called STARTING NEW MATCH (message from player.py-newmatch() \n\n")
+        #print (['tux']* num_players)
+
+        return ['tux', 'tux']
+
+    
+    def to_numpy(self, location):
+        return np.float32([location[0], location[2]])
+
+    def _to_image300_400(self, coords, proj, view):
+        W, H = 400, 300
+        p = proj @ view @ np.array(list(coords) + [1])
+        return np.array([W / 2 * (p[0] / p[-1] + 1), H / 2 * (1 - p[1] / p[-1])])
+
+    def _to_image(self, x, proj, view, normalization=True):  #FOR DEBUGGING
+
+        out_of_frame = False
+        op = np.array(list(x) + [1])
+        p = proj @ view @ op
+        x = p[0] / p[-1]   #p is [float, float, float, float]
+        y = -p[1] / p[-1]
+        aimpoint = np.array([x, y])
+
+        if abs(x) > 1 or abs(y)>1:
+          print ("Coordinate > 1, POSSIBLE PUCK NOT IN IMAGE")
+          print (x,y)
+
+        if normalization:
+          print("NORMALIZING -1...1...........................NORMALIZING")
+          aimpoint = np.clip(aimpoint, -1, 1) 
+
+        if normalization == False:
+          print ("NO -1...1 NORMALIZATION!!!!!!!!!!!!")
+        
+        return aimpoint
+
+    def x_intersect(self, kart_loc, kart_front):
+        slope = (kart_loc[1] - kart_front[1])/(kart_loc[0] - kart_front[0])
+        intersect = kart_loc[1] - (slope*kart_loc[0])
+        facing_up_grid = kart_front[1] > kart_loc[1]
+        if slope == 0:
+            x_intersect = kart_loc[1]
         else:
-            self.timer = 0
-        # cur_time = time.perf_counter()
-        # if norm(player_info.kart.velocity) < 1:
-        #     if self.timer == 0:
-        #         self.timer = cur_time
-        #     elif cur_time - self.timer > 3:
-        #         self.initialize_status()
-        # else:
-        #      self.timer = 0
-
-        # Get real puck position
-        # puck = np.float32(HACK_DICT['state'].soccer.ball.location)[[0, 2]]
-        # u = front - kart
-        # u = u / np.linalg.norm(u)
-        #
-        # v = puck - kart
-        # v = v / np.linalg.norm(v)
-        #
-        # theta_puck = np.arccos(np.dot(u, v))
-        # signed_theta_puck_deg = np.degrees(-np.sign(np.cross(u, v)) * theta_puck)
-
-        # Get predicted puck position
-        img = self.transform(Image.fromarray(image)).to(device)
-        pred = self.model.detect(img, max_pool_ks=7, min_score=0.2, max_det=15)  # (score, cx, cy, w, h)
-        puck_visible = len(pred) > 0
-        if puck_visible:
-            # if self.step_lost + 1 == self.step:
-            #     puck_pos = np.mean([cx[1] for cx in pred]) * ALPHA_PUCK_POS + self.puck_last_pos * (1 - ALPHA_PUCK_POS)
-            # else:
-            #     puck_pos = np.mean([cx[1] for cx in pred])
-
-            # Average predictions
-            puck_pos = np.mean([cx[1] for cx in pred])
-            puck_pos = puck_pos / 64 - 1  # [0, 128] -> [-1, 1]
-            puck_size = np.mean([cx[2] for cx in pred])
-            puck_size = puck_size / 128  # [0, 128] -> [0, 1]
-
-            # If vary large change, ignore this step
-            if self.normal and np.abs(puck_pos - self.puck_last_pos) > 0.5:
-                puck_pos = self.puck_last_pos
-                self.normal = False
+            if facing_up_grid:
+                x_intersect = (65-intersect)/slope
             else:
-                self.normal = True
+                x_intersect = (-65-intersect)/slope
+        return (x_intersect, facing_up_grid)
 
-            # Update status variables
-            self.puck_last_pos = puck_pos
-            self.step_lost = self.step
 
-            # To show when testing
-            if HACK_ON and self.position == 0:
-                if HACK_DICT['show_mask']:
-                    HACK_DICT['pred_mask'] = self.model(img[None])[0].squeeze(0).unsqueeze(2)\
-                        .detach().repeat(1, 1, 3).cpu()
-                HACK_DICT['id'] = self.player_id
-                HACK_DICT['predicted'] = (puck_pos, (pred[0])[2] / 64 - 1)
-                HACK_DICT['predicted_width'] = puck_size
-        elif self.step - self.step_lost < LAST_PUCK_DURATION:
-            self.normal = False
-            puck_pos = self.puck_last_pos
+    def front_flag(self, puck_loc, threshold=2.0):
+        #puck_loc => puck_loc -- model output
+
+        x=puck_loc[0]
+        return (x>(200-threshold)) and (x<(200+threshold))
+
+
+    def model_controller(self, puck_loc, location,front,velocity,index):
+
+        action = {'acceleration': 1, 'brake': False, 'drift': False, 'nitro': False, 'rescue': False, 'steer': 0}
+
+        pos_me = location
+        front_me = front
+        kart_velocity = velocity
+        velocity_mag = np.sqrt(kart_velocity[0] ** 2 + kart_velocity[2] ** 2)
+
+        x = puck_loc[0]  # 0-400
+        y = puck_loc[1]  # 0-300
+
+        # clipping x and y values
+        if x < 0:
+            x = 0
+        if x > 400:
+            x = 400
+
+        if y < 0:
+            y = 0
+        if y > 300:
+            y = 300
+
+        if self.current_team == 'not_sure':
+            if -58 < pos_me[1] < -50:
+                self.current_team = 'red'
+            else:
+                self.current_team = 'blue'
+            print('Current Team:', self.current_team)
+
+        x_intersect, facing_up_grid = self.x_intersect(pos_me, front_me)
+        
+        lean_val = 2
+        if -10 < pos_me[0] < 10:
+            lean_val = 0
+        if facing_up_grid and 9 < x_intersect < 40:
+            # if red team
+            if self.current_team == 'red':
+                x += lean_val
+            else:
+                x -= lean_val
+        if facing_up_grid and -40 < x_intersect < -9:
+            # if red team
+            if self.current_team == 'red':
+                x -= lean_val
+            else:
+                x += lean_val
+
+        # facing inside goal
+        if (not facing_up_grid) and 0 < x_intersect < 10:
+            # if red team
+            if self.current_team == 'red':
+                x += lean_val
+            else:
+                x -= lean_val
+        if (not facing_up_grid) and -10 < x_intersect < 0:
+            # if red team
+            if self.current_team == 'red':
+                x -= lean_val
+            else:
+                x += lean_val
+
+        if velocity_mag > 20:
+            action['acceleration'] = 0.2
+
+        if x < 200:
+            action['steer'] = -1
+        elif x > 200:
+            action['steer'] = 1
         else:
-            puck_pos = None
-            self.step_back = LOST_STATUS_STEPS
+            action['steer'] = 0
 
-        # Opposite goal theta
-        u = front - kart
-        u = u / np.linalg.norm(u)
-        v = GOAL_POS[self.team] - kart
-        dist_opp_goal = norm(v)
-        v = v / np.linalg.norm(v)
-
-        theta_goal = np.arccos(np.dot(u, v))
-        signed_theta_opp_goal_deg = np.degrees(-np.sign(np.cross(u, v)) * theta_goal)
-
-        # Self goal theta
-        v = GOAL_POS[self.team - 1] - kart
-        dist_own_goal = norm(v)
-        v = v / np.linalg.norm(v)
-
-        theta_goal = np.arccos(np.dot(u, v))
-        signed_theta_self_goal_deg = np.degrees(-np.sign(np.cross(u, v)) * theta_goal)
-
-        # ideas: if closer to goal, more important to have angle of goal
-        # todo ideas: width can be used to know how close is the puck
-        # ideas: make the relation of closer and importance of the goal non linear (change when close not as impactful)
-        dist_opp_goal = ((np.clip(dist_opp_goal, 10, 100) - 10) / 90) + 1  # [1, 2]
-        if self.step_back == 0 and (self.lost_cooldown == 0 or puck_visible):
-            if 20 < np.abs(signed_theta_opp_goal_deg) < 120:
-                importance_dist = 1 / dist_opp_goal ** 3
-                aim_point = puck_pos + np.sign(puck_pos - signed_theta_opp_goal_deg / 100) * 0.3 * importance_dist
-            else:
-                aim_point = puck_pos
-            # print(f"{aim_point}, {puck_pos}")
-            # aim_point = puck_pos
-            if self.step_lost == self.step:
-                # If have vision of the puck
-                acceleration = 0.75 if norm(player_info.kart.velocity) < 15 else 0
-                brake = False
-            else:
-                # If no vision of the puck
-                acceleration = 0
-                brake = False
-        elif self.lost_cooldown > 0:
-            # If already in own goal, start going towards opposite goal
-            aim_point = signed_theta_opp_goal_deg / 100
-            acceleration = 0.5
-            brake = False
-            self.lost_cooldown -= 1
+        if x < 50 or x > 350:
+            action['drift'] = True
+            action['acceleration'] = 0.2
         else:
-            # If in lost status, back towards own goal
-            if dist_own_goal > 10:
-                aim_point = signed_theta_self_goal_deg / 100  # [0, 1] aprox
-                acceleration = 0
-                brake = True
-                self.step_back -= 1
+            action['drift'] = False
+
+        if x < 100 or x > 300:
+            action['acceleration'] = 0.5
+
+        if self.recovery[index] == True:
+            action['steer'] = self.rescue_steer[index]
+            action['acceleration'] = 0
+            action['brake'] = True
+            self.rescue_count[index] -= 2
+            # print('rescue_count',self.rescue_count)
+            # no rescue if initial condition
+            if self.rescue_count[index] < 1 or ((-57 < pos_me[1] < 57 and -7 < pos_me[0] < 1) and velocity_mag < 5):
+                self.rescue_count[index] = 0
+                self.recovery[index] = False
+        else:
+            if self.prev_loc[index][0] == np.int32(pos_me)[0] and self.prev_loc[index][1] == np.int32(pos_me)[1]:
+                self.rescue_count[index] += 5
             else:
-                self.lost_cooldown = LOST_COOLDOWN_STEPS
-                self.step_back = 0
-                aim_point = signed_theta_opp_goal_deg / 100
-                acceleration = 0.5
-                brake = False
+                if self.recovery[index] == False:
+                    self.rescue_count[index] = 0
 
-        if self.position == 1 and self.step < 25:
-            # If second car, wait more until start
-            acceleration = 0
-            brake = False
-            # If second car, act as goalie
-            # if dist_own_goal > 80:
-            #     self.step_back = 15
-        # else:
-        #     acceleration = 1 if self.step < START_STEPS else acceleration
+            if self.rescue_count[index] < 2:
+                if x < 200:
+                    self.rescue_steer[index] = 1
+                else:
+                    self.rescue_steer[index] = -1
+            if self.rescue_count[index] > 30 or (y > 200):
+                # case of puck near bottom left/right
+                if velocity_mag > 10:
+                    self.rescue_count[index] = 30
+                    self.rescue_steer[index] = 0
+                else:
+                    self.rescue_count[index] = 20
+                self.recovery[index] = True
 
-        # Steer and drift
-        steer = np.clip(aim_point * 15, -1, 1)
-        # steer = np.clip(aim_point * 5, -1, 1) * ALPHA_STEER + self.last_steer * (1 - ALPHA_STEER)
-        # self.last_steer = steer
-        drift = np.abs(aim_point) > 0.2
-        self.step += 1
+        self.prev_loc[index] = np.int32(pos_me)
 
-        # print(f"{acceleration}, {aim_point}, {steer}, {puck_visible}")
+        return action
 
-        return {
-            'steer': signed_theta_opp_goal_deg if self.step < 25 else steer,
-            'acceleration': 1 if self.step < START_STEPS else acceleration,
-            'brake': brake,
-            'drift': drift,
-            'nitro': False, 'rescue': False
-        }
+
+    def get_instance_coords (instance, object=8):
+
+      x=1
+      y=1
+      Flag = False
+
+      for i in range (300):
+        for j in range (400):
+          if instance[i][j]  == object:
+            x = i
+            y = j
+            Flag = True
+            return Flag, x, y
+
+      return Flag, x,y
+
+    def act(self, player_state, player_image, soccer_state = None, heatmap1=None, heatmap2=None):  #REMOVE SOCCER STATE!!!!!!!!
+        
+        use_soccer_world_coords = False  #USES SOCCER COORDS
+        use_actual_coords = False    #USES ACTUAL COORDS FOR SOCCER BALL *ACTION*
+        use_image_coords = True
+       
+        
+        #Dec 7 2021:
+        action_P1 = {'acceleration': 1, 'brake': False, 'drift': False, 'nitro': False, 'rescue': False, 'steer': 0}
+        action_P2 = {'acceleration': 1, 'brake': False, 'drift': False, 'nitro': False, 'rescue': False, 'steer': 0}
+
+
+
+
+        if use_soccer_world_coords:
+          use_image_coords = False
+
+        self.my_team = player_state[0]['kart']['player_id']%2
+
+        goal_post = [[-10.449999809265137, 0.07000000029802322, -64.5], 
+                     [10.449999809265137, 0.07000000029802322, -64.5]] 
+
+        goal_width = goal_post[1][0]-goal_post[0][0]  
+        y_goal = -64.5
+
+
+        if self.my_team == 0:  #RED TEAM
+          goal_post = [[10.460000038146973, 0.07000000029802322, 64.5], 
+                     [-10.510000228881836, 0.07000000029802322, 64.5]] 
+          y_goal = 64.5
+
+        current_kart1_dir = -64.5
+        current_kart2_dir  = -64.5
+
+        if (player_state[0]['kart']['front'][2] - player_state[0]['kart']['location'][2]) > 0:
+          current_kart1_dir = 64.5 
+        
+        if (player_state[1]['kart']['front'][2] - player_state[1]['kart']['location'][2]) > 0:
+          current_kart2_dir = 64.5 
+                
+        wrong_direction_kart1 = False
+        wrong_direction_kart2 = False
+
+        if (current_kart1_dir != y_goal):
+          wrong_direction_kart1 = True
+
+        if (current_kart2_dir != y_goal):
+          wrong_direction_kart2 = True
+ 
+              
+        if self.planner:
+          
+          image1 = TF.to_tensor(player_image[0])[None]
+          image2 = TF.to_tensor(player_image[1])[None]
+          
+          #aim_point_image_Player1, _ = self.Planner(image1)
+          #aim_point_image_Player2, _ = self.Planner(image2)
+
+          if self.frame >= 30:  #call the planner
+            
+            image1 = image1.to(self.device)
+            image2 = image2.to(self.device)
+            
+
+            
+            aim_point_image_Player1 = self.Planner(image1)
+            aim_point_image_Player2 = self.Planner(image2)
+            aim_point_image_Player1 = aim_point_image_Player1.squeeze(0)
+            aim_point_image_Player2 = aim_point_image_Player2.squeeze(0)
+            
+            #aim_point_image_Player1 = aim_point_image_Player1.detach().cpu().numpy()
+            #aim_point_image_Player2 = aim_point_image_Player2.detach().cpu().numpy()
+
+          if self.frame < 30:   #do not call planner, soccer cord is likely [0,0]
+            
+            proj1 = np.array(player_state[0]['camera']['projection']).T
+            view1 = np.array(player_state[0]['camera']['view']).T
+            proj2 = np.array(player_state[1]['camera']['projection']).T
+            view2 = np.array(player_state[1]['camera']['view']).T
+            x = np.float32([0,0,0]) 
+            aim_point_image_Player1 = self._to_image300_400(x, proj1, view1) 
+            aim_point_image_Player2 = self._to_image300_400(x, proj2, view2)
+            
+                    
+          x1 = aim_point_image_Player1[0]     
+          y1 = aim_point_image_Player1[1]     
+          x2 = aim_point_image_Player2[0]     
+          y2 = aim_point_image_Player2[1]
+          
+          
+          #self.prior_soccer_state1.append(aim_point_image_Player1)
+          #self.prior_soccer_state2.append(aim_point_image_Player2)
+        
+        #self.prior_state.append(player_state)
+        
+        if not self.planner:
+
+          #use random points, for debugging or testing, -1...1 coordinates, not 300/400          
+          x1 = x2 =  1     
+          y1 = y2 = -1     
+               
+          
+        is_behind_1 = False
+        is_behind_2 = False
+        
+        if y1 >= 1:
+          is_behind_1 = True
+
+        if y2 >= 1:
+          is_behind_2 = True
+
+        xyz = np.random.rand(3)
+        xz =  np.random.rand(2)
+        
+        xyz[0] = 1
+        xyz[1] = 1
+        xyz[2] = 1
+
+        if self.DEBUG:   #use soccer state only for debbugging 
+
+          xyz[0] =soccer_state['ball']['location'][0]
+          xyz[1] =soccer_state['ball']['location'][1] 
+          xyz[2] =soccer_state['ball']['location'][2]
+        
+        
+        xz[0] = xyz[0]
+        xz[1] = xyz[2]
+                
+        proj = np.array(player_state[0]['camera']['projection']).T
+        view = np.array(player_state[0]['camera']['view']).T
+        
+
+        if use_image_coords and self.DEBUG:
+          print ("USING  IMAGE COORDS FOR PUCK ACTUAL COORDS  HACK")
+          aim_point_image_actual_1 = self._to_image300_400(xyz, proj, view) 
+        if use_soccer_world_coords and self.DEBUG:
+          print("USING IMAGE COORDS FOR PUCK ACTUAL COORDS HACK")
+          aim_point_image_actual_1 = self._to_image300_400(xyz, proj, view)
+
+        if self.DEBUG:
+          if aim_point_image_actual_1[0] < 0:
+            aim_point_image_actual_1[0] = 0
+          if aim_point_image_actual_1[0] > 400:
+            aim_point_image_actual_1[0] = 400
+
+          if aim_point_image_actual_1[1] < 0:
+            aim_point_image_actual_1[1] = 0
+          if aim_point_image_actual_1[1] > 300:
+            aim_point_image_actual_1[1] = 300
+          
+          print("\n\n Player 1~~~~~~~~~~~ aimpoint predicted, aimpoint actual:", aim_point_image_Player1, 
+               aim_point_image_actual_1)
+          print("\nThe pure world socccer coords and frame are:  ", xyz, self.frame)
+          if (xz[0] == 0) and (xz[0]==1):
+            print ("\n\n\n *** ZERO COORDS AT FRAME ***", self.frame)
+         
+        
+        puck_flag = 0
+
+
+        if heatmap1 and self.DEBUG:
+          print ("\n\n\ DOING BITSHIFT ON INSTANCE \n\n")
+          heatmap1[0] = heatmap1[0] >> 24
+          for i in range (300):
+            for j in range (400):
+              if heatmap1[0][i][j]  == 8:
+                puck_flag = 1
+
+          
+          #aim_point_image_Player1  is Predicted from planner
+
+          ##xz has the actual (hacked) coords for the soccer ball. must convert to 300/400
+
+
+          if self.frame >= 30 and self.DEBUG:
+            xz_image = self._to_image300_400(xyz, proj, view) 
+            detached_p = aim_point_image_Player1.detach().cpu().numpy()
+            #loss_v_image = 0
+            loss_v_image = torch.mean(torch.abs(aim_point_image_Player1-xz_image))     #.mean()
+          if self.frame < 30 and self.DEBUG:
+            loss_v_image = abs(aim_point_image_Player1-xz).mean()
+
+          if self.DEBUG and self.frame >= 30:
+            print("\nPlayer 1~~~~~~~~~~~ CURRENT LOSS predicted/image coords and frame is", loss_v_image, self.frame)
+
+            loss_v_world = abs(detached_p-xz_image).mean()
+            print("\nPlayer 1~~~~~~~~~~~ CURRENT LOSS predicted/world, and frame is", loss_v_world, self.frame)
+
+            if puck_flag:
+              print("\n    *******THERE IS A PUCK IN THE IMAGE!!!!!!!!!!!!!!!!! <-------------")
+         
+              self.total_loss_puck += loss_v_world          
+              self.total_loss_puck_count += 1
+              print("\nPlayer 1~~~~~~~~~~~RUNNING AVERAGE LOSS (WORLD COORDS) FOR PUCK *IN IMAGE*", self.total_loss_puck/self.total_loss_puck_count)
+              if self.total_loss_No_puck_count > 0:
+                print("\nPlayer 1~~~~~~~~~~~RUNNING AVERAGE LOSS (WORLD COORDS)  NO PUCK", self.total_loss_No_puck/self.total_loss_No_puck_count)
+
+
+          if puck_flag==0 and self.DEBUG:
+            print ("\n   WARNING:   NO PUCK IN IMAGE...................................]]]]]]]]]]")
+            self.total_loss_No_puck += loss_v_world 
+            self.total_loss_No_puck_count += 1
+            print("\nPlayer 1~~~~~~~~~~~RUNNING AVERAGE LOSS (WORLD) NO PUCK", self.total_loss_No_puck/self.total_loss_No_puck_count)  
+            if self.total_loss_puck_count >0:
+              print("\nPlayer 1~~~~~~~~~~~RUNNING AVERAGE LOSS (WORLD) FOR PUCK *IN IMAGE*", self.total_loss_puck/self.total_loss_puck_count)
+
+        
+
+        if use_actual_coords:
+          x1 = aim_point_image_actual_1[0]     
+          y1 = aim_point_image_actual_1[1]
+        
+
+        #ERASE END DEC 1, 2021-------------------------------------------
+
+
+
+
+        forward_drive =  dict(acceleration=1, steer=0, brake = False)
+        backward_drive = dict(acceleration=0, steer=0, brake = True)
+        turn_left = dict(acceleration=1, steer=-1, brake = False)
+        turn_right =dict(acceleration=1, steer=1, brake = False)
+   
+        forward_aimpoint_1 = dict(acceleration=1, steer=x1, brake = False, drift=True)
+        backward_aimpoint_1 = dict(acceleration=0, steer=x1, brake = True)
+        forward_aimpoint_2 = dict(acceleration=1, steer=x2, brake = False, drift=True)
+        backward_aimpoint_2 = dict(acceleration=0, steer=x2, brake = True)
+
+        goal_aim_point = dict(acceleration=0, steer=x2, brake = True)
+      
+        
+        output1 = forward_aimpoint_1
+        output2 = forward_aimpoint_2
+
+
+        if player_state[0]['kart']['velocity'][2] > 5:
+          output1 = backward_aimpoint_1
+
+
+        if player_state[0]['kart']['velocity'][2] > 3:
+          output2 = backward_aimpoint_2
+
+        self.frame += 1
+
+        if self.frame > 500 and self.DEBUG:
+          print ("\n\n STATS STATS STATS STATS STATS STATS STATS STATS STATS STATS STATS STATS STATS ")
+          print("\nPlayer 1~~~~~~~~~~~RUNNING AVERAGE LOSS NO PUCK", self.total_loss_No_puck/self.total_loss_No_puck_count)
+          print("\nPlayer 1~~~~~~~~~~~RUNNING AVERAGE LOSS FOR PUCK *IN IMAGE*", self.total_loss_puck/self.total_loss_puck_count)
+          #print ("\n\n THESE ARE THE MINX, MAXX, MINY, MAXY:", self.min_x, self.max_x, self.min_y, self.max_y)
+          print ("-----------------------------------------------------------------------------------")
+       
+        Kart_A_front = player_state[0]['kart']['front']
+        Kart_A_location = player_state[0]['kart']['location']
+        Kart_A_vel = player_state[0]['kart']['velocity']
+        pos_A = self.to_numpy(Kart_A_location)
+        front_A =self.to_numpy(Kart_A_front)
+        
+        Kart_B_front = player_state[1]['kart']['front']
+        Kart_B_location = player_state[1]['kart']['location']
+        Kart_B_vel = player_state[0]['kart']['velocity']
+        pos_B = self.to_numpy(Kart_B_location)
+        front_B = self.to_numpy(Kart_B_front)
+
+        
+        #Dec 10, 2021:
+        
+        #Call the planner only if self.Frames > 40 or so:
+        """
+        if self.frame < 40:
+            action_A = self.model_controller(np.float32([0,0]),pos_A,front_A,Kart_A_vel,0)
+            action_B = self.model_controller(np.float32([0,0]),pos_B,front_B,Kart_B_vel,1)
+
+        if Self.frame>40:
+            aim_point_image_Player1 = self.Planner(image1)
+            aim_point_image_Player2 = self.Planner(image2)
+            action_A = self.model_controller(aim_point_image_Player1,pos_A,front_A,Kart_A_vel,0)
+            action_B = self.model_controller(aim_point_image_Player2,pos_B,front_B,Kart_B_vel,1)
+        
+        """
+        
+        action_A = self.model_controller(aim_point_image_Player1,pos_A,front_A,Kart_A_vel,0)
+        action_B = self.model_controller(aim_point_image_Player2,pos_B,front_B,Kart_B_vel,1)
+
+        #action_A = self.model_controller(np.float32([0,0]),pos_A,front_A,Kart_A_vel,0)
+        #action_B = self.model_controller(np.float32([0,0]),pos_B,front_B,Kart_B_vel,1)
+
+
+
+        ret = [action_A,action_B]
+
+        return ret

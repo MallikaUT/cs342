@@ -38,8 +38,9 @@ class Team:
     def __init__(self):
         self.kart = 'wilber'
         self.initialize_vars()
-        self.model = torch.load(path.join(path.dirname(path.abspath(__file__)), 'detector.pt'))
-        self.model.to(device) 
+        self.model_path = path.join(path.dirname(path.abspath(__file__)), 'detector.pt')
+        self.model = load_model(Detector, self.model_path, device='cpu')
+        self.model.to(device)
         self.model.eval()
         self.transform = torchvision.transforms.Compose([torchvision.transforms.Resize((128, 128)),
                                                          torchvision.transforms.ToTensor()])
@@ -50,7 +51,7 @@ class Team:
         # Make sure to import 'path' and 'torchvision'
         self.model_path = path.join(path.dirname(path.abspath(__file__)), 'detector.pt')
         try:
-            self.model = torch.load(self.model_path, map_location='cpu')
+            self.model = load_model(Detector, self.model_path, device='cpu')
             self.model.to(device)
             self.model.eval()
         except Exception as e:

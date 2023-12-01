@@ -159,5 +159,4 @@ def load_model(model_class, name: str = 'detector.pt', device='cpu'):
     model = model_class()
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()  # Set the model to evaluation mode
-    
     return model

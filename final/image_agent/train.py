@@ -46,41 +46,28 @@ def train(args):
         print (len(train_data))
 
         for img, labels_list in train_data:
-            img = img.to(device)
+            img, labels_list = img.to(device), [label.to(device) for label in labels_list]
 
-            # Initialize an empty list to store losses for each label in the batch
-            batch_losses = []
+            h, w = img.size()[2], img.size()[3]
+            pred = model(img)
 
-            for label in labels_list:
-                label = label.to(device)
+            # Assuming labels_list contains tensors of shape (2,) or (3,)
+            max_label_size = max(label.size(0) for label in labels_list)
+            padded_labels = [F.pad(label, (0, 0, 0, max_label_size - label.size(0))) for label in labels_list]
+            xy = torch.stack(padded_labels)
 
-                h, w = img.size()[2], img.size()[3]
+            loss_val = loss(pred, xy)
 
-                pred = model(img)
+            if train_logger is not None:
+                train_logger.add_scalar('loss', loss_val, global_step)
+                if global_step % 100 == 0:
+                    log(train_logger, img, xy, pred, global_step)
 
-                x, y = label.chunk(2, dim=1)
-
-                xy = torch.cat((x.clamp(min=0.0, max=w), y.clamp(min=0.0, max=h)), dim=1)
-
-                xy = xy.to(device)
-
-                loss_val = loss(pred, xy)
-
-                if train_logger is not None:
-                    train_logger.add_scalar('loss', loss_val, global_step)
-
-                optimizer.zero_grad()
-                loss_val.backward()
-                optimizer.step()
-
-                batch_losses.append(loss_val.detach().cpu().numpy())
-
-            # Calculate and print the average loss for the batch
-            avg_loss = np.mean(batch_losses)
-            print(f'Batch loss: {avg_loss}')
-
+            optimizer.zero_grad()
+            loss_val.backward()
+            optimizer.step()
             global_step += 1
-            
+
             losses.append(loss_val.detach().cpu().numpy())
         
         avg_loss = np.mean(losses)

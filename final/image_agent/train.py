@@ -16,9 +16,9 @@ def train(args):
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(
-            args.log_dir, 'train' + '/{}'.format(time.strftime('%H-%M-%S'))), flush_secs=1)
+            args.log_dir, 'data' + '/{}'.format(time.strftime('%H-%M-%S'))), flush_secs=1)
         valid_logger = tb.SummaryWriter(path.join(
-            args.log_dir, 'valid' + '/{}'.format(time.strftime('%H-%M-%S'))), flush_secs=1)
+            args.log_dir, 'data' + '/{}'.format(time.strftime('%H-%M-%S'))), flush_secs=1)
 
     lr = args.learning_rate
     train_dir = args.train

@@ -38,7 +38,8 @@ class Team:
     def __init__(self):
         self.kart = 'wilber'
         self.initialize_vars()
-        self.model_path = path.join(path.dirname(path.abspath(__file__)), 'detector.pt')
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model_path = torch.jit.load(path.join(path.dirname(path.abspath(__file__)), 'detector.pt'), map_location=device)
         self.model = load_model(Detector, self.model_path, device='cpu')
         self.model.to(device)
         self.model.eval()

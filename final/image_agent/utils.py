@@ -53,6 +53,23 @@ class SuperTuxDataset(Dataset):
         #return im[0], label
       
         return data
+def collate_custom(batch):
+    # Your collate logic here
+    # ...
+
+    # Ensure that tensors have the same size along the specified dimensions
+    # Example: Resize all tensors to the same size
+    imgs_resized = [resize_tensor(img, target_size) for img in imgs]
+    labels_resized = [resize_tensor(label, target_size) for label in labels]
+
+    # Stack tensors
+    imgs_stacked = torch.stack(imgs_resized)
+    labels_stacked = torch.stack(labels_resized)
+
+    return imgs_stacked, labels_stacked
+
+def resize_tensor(tensor, size):
+    return torch.nn.functional.interpolate(tensor, size=size, mode='bilinear', align_corners=False)
 
 
 def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128):
@@ -230,23 +247,18 @@ if __name__ == '__main__':
         aim_noise, vel_noise = 0, 0
 
 
-        def collate_custom(batch):
-            imgs, masks, widths = zip(*batch)
-
-            # Resize images to a common size
-            imgs_resized = [Resize((new_width, new_height))(img) for img in imgs]
-
-            # Pad masks and widths if necessary
-            masks_padded = [F.pad(mask, (0, pad_width)) for mask, pad_width in zip(masks, pad_widths)]
-            widths_padded = [F.pad(width, (0, pad_width)) for width, pad_width in zip(widths, pad_widths)]
-
-            # Stack tensors
-            imgs_stacked = torch.stack(imgs_resized)
-            masks_stacked = torch.stack(masks_padded)
-            widths_stacked = torch.stack(widths_padded)
-
-            return imgs_stacked, masks_stacked, widths_stacked
-
+        def collect(_, im, pt):
+            from PIL import Image
+            from os import path
+            global n
+            print ("Collect() has been called to generate images")
+            id = n if n < images_per_track else np.random.randint(0, n + 1)
+            if id < images_per_track:
+                fn = path.join(args.output, track + '_%05d' % id)
+                Image.fromarray(im).save(fn + '.png')
+                with open(fn + '.csv', 'w') as f:
+                    f.write('%0.1f,%0.1f' % tuple(pt))
+            n += 1
 
         while n < args.steps_per_track:
             print ("In while loop calling rollout()")

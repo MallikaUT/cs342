@@ -71,9 +71,9 @@ def collate_fn(batch):
     images = torch.stack(images)
     
     # Find the maximum label size
-    max_size = 0
+    max_label_size = 0
     for label in labels:
-        max_size = max(max_size, label.size(0))
+        max_label_size = max(max_label_size, label.size(0))
     
     # Pad labels to the same size
     padded_labels = [F.pad(label, (0, max_size - label.size(0))) for label in labels]

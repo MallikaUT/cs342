@@ -38,7 +38,8 @@ class Team:
     def __init__(self):
         self.kart = 'wilber'
         self.initialize_vars()
-        self.model = torch.load(path.join(path.dirname(path.abspath(__file__)), 'detector.pt')).to(device)
+        self.model = torch.load(path.join(path.dirname(path.abspath(__file__)), 'detector.pt'))
+        self.model.to(device) 
         self.model.eval()
         self.transform = torchvision.transforms.Compose([torchvision.transforms.Resize((128, 128)),
                                                          torchvision.transforms.ToTensor()])

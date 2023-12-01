@@ -3,9 +3,10 @@ import torch
 import torch.utils.tensorboard as tb
 import numpy as np
 from .utils import load_data
-from . import dense_transforms
+from . import dense_transforms as DT
 import torch.nn.functional as F
 from torchvision.transforms import Resize
+
 
 def train(args):
     from os import path

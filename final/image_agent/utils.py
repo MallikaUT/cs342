@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms.functional as TF
 from . import dense_transforms
+from . import max
 
 RESCUE_TIMEOUT = 30
 TRACK_OFFSET = 15

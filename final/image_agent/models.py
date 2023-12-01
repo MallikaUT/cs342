@@ -149,13 +149,13 @@ class Detector(torch.nn.Module):
         return [(peak[0], peak[1], peak[2], (sizes[peak[2], peak[1]]).item())
                 for peak in extract_peak(heatmap, max_pool_ks, min_score, max_det)]
 
-def save_model(model, name: str = 'det.th'):
+def save_model(model, name: str = 'detector.pt'):
     from torch import save
     from os import path
     return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), name))
 
 
-def load_model(name: str = 'det.th'):
+def load_model(name: str = 'detector.pt'):
     from torch import load
     from os import path
     r = Detector()

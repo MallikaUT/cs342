@@ -39,7 +39,7 @@ class DetectionSuperTuxDataset(Dataset):
 def load_detection_data(dataset_path, num_workers=0, batch_size=32, **kwargs):
     dataset = DetectionSuperTuxDataset('/content/drive/MyDrive/Colab Notebooks/dense_data/data', **kwargs)
     print(dataset_path)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, drop_last=True)
 
 
 if __name__ == '__main__':

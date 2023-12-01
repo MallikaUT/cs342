@@ -82,7 +82,7 @@ def collate_fn(batch):
     
     return images, labels
 
-def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128):
+def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128, collate_fn=None):
     dataset = SuperTuxDataset(dataset_path, transform=transform)
     return DataLoader(dataset, collate_fn=collate_fn, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 

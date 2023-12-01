@@ -22,7 +22,7 @@ class SuperTuxDataset(Dataset):
         from os import path
         
         self.data = []
-        
+        print(self.data)
         
         for f in glob(path.join(dataset_path, '*.csv')):   #change to npy to load render_data instance
             

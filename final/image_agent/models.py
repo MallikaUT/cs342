@@ -160,5 +160,5 @@ def load_model(model_class, name: str = 'detector.pt'):
     from os import path
     state_dict = load(path.join(path.dirname(path.abspath(__file__)), name), map_location='cpu')
     model = model_class()
-    model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict['model'])
     return model

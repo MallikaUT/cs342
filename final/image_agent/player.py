@@ -43,6 +43,30 @@ class Team:
         self.model.eval()
         self.transform = torchvision.transforms.Compose([torchvision.transforms.Resize((128, 128)),
                                                          torchvision.transforms.ToTensor()])
+    def __init__(self):
+        self.kart = 'wilber'
+        self.initialize_vars()
+
+        # Make sure to import 'path' and 'torchvision'
+        self.model_path = path.join(path.dirname(path.abspath(__file__)), 'detector.pt')
+        try:
+            self.model = torch.load(self.model_path, map_location='cpu')
+            self.model.to(device)
+            self.model.eval()
+        except Exception as e:
+            print(f"Error loading the model: {e}")
+            # Handle the error (e.g., provide a default model)
+
+        self.transform = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((128, 128)),
+            torchvision.transforms.ToTensor()
+        ])
+
+
+
+
+
+
 
     def new_match(self, team: int, num_players: int) -> list:
         self.team, self.num_players = team, num_players

@@ -49,7 +49,7 @@ def train(args):
         transforms.Resize([128, 128]),
         transforms.ToTensor()]
     )
-
+    
     train_data = load_detection_data(
         train_dir, num_workers=0, batch_size=batch_size, transform=augmentation)
     valid_data = load_detection_data(

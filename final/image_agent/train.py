@@ -9,65 +9,59 @@ from torchvision.transforms import Resize
 
 def train(args):
     from os import path
+    print("Initializing Model =================================")
     model = Planner()
     train_logger, valid_logger = None, None
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
 
+    """
+    Your code here, modify your HW4 code
+    
+    """
+    print("installing torch ...")
     import torch
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     model = model.to(device)
-
-    print(model)
-
-    if args.continue_training:
+    if args.use_existing:
         model.load_state_dict(torch.load(path.join(path.dirname(path.abspath(__file__)), 'planner.th')))
 
-    loss = torch.nn.L1Loss()   #mean?
-    #loss = torch.nn.MSELoss(reduce='mean')
-    #loss= torch.nn.CrossEntropyLoss()  #render_data instance
-    #loss = torch.nn.BCEWithLogitsLoss(reduction='none')  #render_data instance, tested
-
+    loss = torch.nn.L1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     
+    print("installing inspect ...")
     import inspect
-    transform = eval(args.transform, {k: v for k, v in inspect.getmembers(dense_transforms) if inspect.isclass(v)})
+    transform = DT.Compose([
+      DT.ColorJitter(brightness=0.2,contrast=0.5,saturation=0.5,hue=0.2),
+      DT.RandomHorizontalFlip(),
+      DT.ToTensor()
+    ])
+    print("loading data ...")
+    train_data = load_data(args.dataset_path, transform=transform, num_workers=2)
 
-    train_data = load_data(transform=transform, num_workers=args.num_workers)
-   
     global_step = 0
+    print("Begin Training =================================")
     for epoch in range(args.num_epoch):
-
         model.train()
         losses = []
+        for img, label in train_data:
+            img, label = img.to(device), label.to(device)
 
-        print (len(train_data))
-
-        for img, labels_list in train_data:
-            img, labels_list = img.to(device), [label.to(device) for label in labels_list]
-
-            h, w = img.size()[2], img.size()[3]
             pred = model(img)
-
-            # Assuming labels_list contains tensors of shape (2,) or (3,)
-            max_label_size = max(label.size(0) for label in labels_list)
-            padded_labels = [F.pad(label, (0, 0, 0, max_label_size - label.size(0))) for label in labels_list]
-            xy = torch.stack(padded_labels)
-
-            loss_val = loss(pred, xy)
+            loss_val = loss(pred, label)
 
             if train_logger is not None:
                 train_logger.add_scalar('loss', loss_val, global_step)
                 if global_step % 100 == 0:
-                    log(train_logger, img, xy, pred, global_step)
+                    log(train_logger, img, label, pred, global_step)
 
             optimizer.zero_grad()
             loss_val.backward()
             optimizer.step()
             global_step += 1
-
+            
             losses.append(loss_val.detach().cpu().numpy())
         
         avg_loss = np.mean(losses)

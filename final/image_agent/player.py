@@ -98,7 +98,7 @@ class Team:
         puck_found = len(pred_boxes) > 0
 
         # try and detect if goal scored so we can reset (only needs to be done for one of the players)
-        if norm(player_info['kart']['velocity']) < 1:
+        if np.linalg.norm(player_info['kart']['velocity']) < 1:
             if self.timer1 == 0:
                 self.timer1 = self.step
             elif self.step - self.timer1 > 20:

@@ -64,10 +64,6 @@ class Team:
 
 
 
-
-
-
-
     def new_match(self, team: int, num_players: int) -> list:
         self.team, self.num_players = team, num_players
         self.initialize_vars()
@@ -93,14 +89,12 @@ class Team:
         self.cooldown2 = 0
 
     def act(self, player_state, player_image):
-
         player_info = player_state[0]
         image = player_image[0]
 
-        # predict puck position
-        img = self.transform(Image.fromarray(image)).to(device)
-        pred = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
-        puck_found = len(pred) > 0
+        # Assuming self.model is an instance of Detector
+        pred_boxes = self.model.detect(image, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
+        puck_found = len(pred_boxes) > 0
 
         # try and detect if goal scored so we can reset (only needs to be done for one of the players)
         if norm(player_info['kart']['velocity']) < 1:

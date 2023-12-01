@@ -5,6 +5,8 @@ import numpy as np
 from .utils import load_data
 from . import dense_transforms
 
+
+
 def collate_tensor_fn(batch):
     # Find the maximum height and width in the batch
     max_height = max(img.shape[1] for img in batch)
@@ -13,7 +15,11 @@ def collate_tensor_fn(batch):
     # Pad each image to the maximum height and width
     padded_batch = [torch.nn.functional.pad(img, (0, max_width - img.shape[2], 0, max_height - img.shape[1])) for img in batch]
 
-    return torch.stack(padded_batch, dim=0)
+    # Stack the padded tensors
+    stacked_batch = torch.stack(padded_batch, dim=0)
+
+    return stacked_batch
+
 
 def train(args):
     from os import path

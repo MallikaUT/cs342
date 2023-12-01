@@ -73,7 +73,7 @@ def collate_fn(batch):
     # Find the maximum label size
     max_label_size = 0
     for label in labels:
-        max_label_size = max(max_label_size, label.size(0))
+        max_label_size = max_label_size if max_label_size >= label.size(0) else label.size(0)
     
     # Pad labels to the same size
     padded_labels = [F.pad(label, (0, max_label_size - label.size(0))) for label in labels]

@@ -158,6 +158,8 @@ def load_model(model_class, name: str = 'detector.pt'):
     from torch import load
     from os import path
     checkpoint = load(path.join(path.dirname(path.abspath(__file__)), name), map_location='cpu')
+    
     model = model_class()
     model.load_state_dict(checkpoint['model_state_dict'])
+    
     return model

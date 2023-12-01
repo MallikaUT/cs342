@@ -155,9 +155,10 @@ def save_model(model, name: str = 'detector.pt'):
     return save(model.state_dict(), path.join(path.dirname(path.abspath(__file__)), name))
 
 
-def load_model(name: str = 'detector.pt'):
+def load_model(model_class, name: str = 'detector.pt'):
     from torch import load
     from os import path
-    r = Detector()
-    r.load_state_dict(load(path.join(path.dirname(path.abspath(__file__)), name), map_location='cpu'))
-    return r
+    state_dict = load(path.join(path.dirname(path.abspath(__file__)), name), map_location='cpu')
+    model = model_class()
+    model.load_state_dict(state_dict)
+    return model

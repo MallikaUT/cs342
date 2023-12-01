@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms.functional as TF
 from . import dense_transforms
+import torch.nn.functional as F
 
 
 RESCUE_TIMEOUT = 30
@@ -68,17 +69,17 @@ class SuperTuxDataset(Dataset):
 def collate_fn(batch):
     images, labels = zip(*batch)
     images = torch.stack(images)
-
-    # Find the maximum label size manually
+    
+    # Find the maximum label size
     max_label_size = 0
     for label in labels:
         max_label_size = max(max_label_size, label.size(0))
-
+    
     # Pad labels to the same size
     padded_labels = [F.pad(label, (0, max_label_size - label.size(0))) for label in labels]
-
+    
     labels = torch.stack(padded_labels)
-
+    
     return images, labels
 
 def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128):

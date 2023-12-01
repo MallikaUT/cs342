@@ -45,47 +45,40 @@ def train(args):
 
         print (len(train_data))
 
-        for img, label in train_data:
-            
+        for img, labels_list in train_data:
+            img = img.to(device)
 
-            #print ("\n\n IN TRAIN, this is img,  label," , img.shape, label.shape)
+            # Initialize an empty list to store losses for each label in the batch
+            batch_losses = []
 
-            img, label = img.to(device), label.to(device)
+            for label in labels_list:
+                label = label.to(device)
 
-            
-            h, w = img.size()[2], img.size()[3]
+                h, w = img.size()[2], img.size()[3]
 
+                pred = model(img)
 
-            pred  = model(img)
+                x, y = label.chunk(2, dim=1)
 
-            #print ("\n\n\n GOT A PREDICTION............., size", pred.shape)
+                xy = torch.cat((x.clamp(min=0.0, max=w), y.clamp(min=0.0, max=h)), dim=1)
 
+                xy = xy.to(device)
 
-            x,y = label.chunk(2, dim=1)
+                loss_val = loss(pred, xy)
 
-            #xy = torch.cat((x, y),  dim=1)  #for -1...1 coords prediction
-            xy = torch.cat((x.clamp(min=0.0,max_var=w),y.clamp(min=0.0,max_var=h)),dim=1) #for 300..400
+                if train_logger is not None:
+                    train_logger.add_scalar('loss', loss_val, global_step)
 
-            xy = xy.to(device)
+                optimizer.zero_grad()
+                loss_val.backward()
+                optimizer.step()
 
-            loss_val = loss(pred, xy)
-           
-            #loss_val = loss(pred[:,0, :, :], label.float()).mean()   #use for render_data instance
-            #print ("\n\n SAMPLE RENDER_DATA PREDICTION, LABEL:", torch.ceil(pred[0, 0, :, :]), label[0])
-            #print ("\n\n SAMPLE RENDER_DATA MEAN DIFFERENCE", (torch.ceil(pred[0, 0, :, :])-label[0]).mean() )
-            #print ("\n\n\n LOSS VALUE.............", loss_val)
-   
-            #print ("\n Sample Predicted point is .....", pred[0])
-            #print ("Sample Actual point is: ", label[0])
+                batch_losses.append(loss_val.detach().cpu().numpy())
 
-            if train_logger is not None:
-                train_logger.add_scalar('loss', loss_val, global_step)
-                if global_step % 100 == 0:
-                    log(train_logger, img, label, pred, global_step)
+            # Calculate and print the average loss for the batch
+            avg_loss = np.mean(batch_losses)
+            print(f'Batch loss: {avg_loss}')
 
-            optimizer.zero_grad()
-            loss_val.backward()
-            optimizer.step()
             global_step += 1
             
             losses.append(loss_val.detach().cpu().numpy())

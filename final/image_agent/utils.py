@@ -71,10 +71,10 @@ def collate_fn(batch):
     images, labels = zip(*batch)
     images = torch.stack(images)
 
-    # Pad labels to the same size
-    labels = rnn_utils.pad_sequence(labels, batch_first=True, padding_value=0)
+    # Collect labels as a list
+    labels_list = [label for label in labels]
 
-    return images, labels
+    return images, labels_list
 
 def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128):
     dataset = SuperTuxDataset(dataset_path, transform=transform)

@@ -6,9 +6,7 @@ from .utils import load_data
 from . import dense_transforms
 
 def collate_tensor_fn(batch):
-    # Use torch.cat along the batch dimension
-    out = torch.cat(batch, dim=0)
-    return out
+    return batch
 
 def train(args):
     from os import path

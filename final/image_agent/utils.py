@@ -64,10 +64,21 @@ class SuperTuxDataset(Dataset):
       
         return data
 
+def collate_fn(batch):
+    images, labels = zip(*batch)
+    images = torch.stack(images)
+    
+    # Pad labels to the same size (assuming the maximum label size is 3)
+    max_label_size = max(label.size(0) for label in labels)
+    padded_labels = [F.pad(label, (0, max_label_size - label.size(0))) for label in labels]
+    
+    labels = torch.stack(padded_labels)
+    
+    return images, labels
 
 def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128):
     dataset = SuperTuxDataset(dataset_path, transform=transform)
-    return DataLoader(dataset, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
+    return DataLoader(dataset, collate_fn=collate_fn, num_workers=num_workers, batch_size=batch_size, shuffle=True, drop_last=True)
 
 
 class PyTux:

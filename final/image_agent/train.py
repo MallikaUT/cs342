@@ -4,6 +4,8 @@ import torch.utils.tensorboard as tb
 import numpy as np
 from .utils import load_data
 from . import dense_transforms
+import torch.nn.functional as F
+from torchvision.transforms import Resize
 
 def train(args):
     from os import path
@@ -33,7 +35,7 @@ def train(args):
     import inspect
     transform = eval(args.transform, {k: v for k, v in inspect.getmembers(dense_transforms) if inspect.isclass(v)})
 
-    train_data = load_data(transform=transform, num_workers=args.num_workers)
+    train_data = load_data(transform=transform, num_workers=args.num_workers, collate_fn=collate_custom)
    
     global_step = 0
     for epoch in range(args.num_epoch):

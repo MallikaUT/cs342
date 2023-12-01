@@ -7,6 +7,11 @@ from . import dense_transforms as DT
 import torch.nn.functional as F
 from torchvision.transforms import Resize
 
+def custom_collate_fn(batch):
+    images, labels = zip(*batch)
+    images = torch.stack(images, dim=0)
+    labels = torch.stack(labels, dim=0)
+    return images, labels
 
 def train(args):
     from os import path
@@ -16,28 +21,19 @@ def train(args):
     if args.log_dir is not None:
         train_logger = tb.SummaryWriter(path.join(args.log_dir, 'train'))
 
-    """
-    Your code here, modify your HW4 code
-    
-    """
-    print("installing torch ...")
     import torch
-
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
     model = model.to(device)
-
     loss = torch.nn.L1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    
-    print("installing inspect ...")
-    import inspect
+
     transform = DT.Compose([
-      DT.ColorJitter(brightness=0.2,contrast=0.5,saturation=0.5,hue=0.2),
-      DT.RandomHorizontalFlip(),
-      DT.ToTensor()
+        DT.ColorJitter(brightness=0.2, contrast=0.5, saturation=0.5, hue=0.2),
+        DT.RandomHorizontalFlip(),
+        DT.ToTensor()
     ])
-    print("loading data ...")
+
+    print("Loading data ...")
     train_data = load_data(transform=transform, num_workers=args.num_workers)
 
     global_step = 0
@@ -75,20 +71,17 @@ def log(logger, img, label, pred, global_step):
     import torchvision.transforms.functional as TF
     fig, ax = plt.subplots(1, 1)
     ax.imshow(TF.to_pil_image(img[0].cpu()))
-    WH2 = np.array([img.size(-1), img.size(-2)])/2
-    ax.add_artist(plt.Circle(WH2*(label[0].cpu().detach().numpy()+1), 2, ec='g', fill=False, lw=1.5))
-    ax.add_artist(plt.Circle(WH2*(pred[0].cpu().detach().numpy()+1), 2, ec='r', fill=False, lw=1.5))
+    WH2 = np.array([img.size(-1), img.size(-2)]) / 2
+    ax.add_artist(plt.Circle(WH2 * (label[0].cpu().detach().numpy() + 1), 2, ec='g', fill=False, lw=1.5))
+    ax.add_artist(plt.Circle(WH2 * (pred[0].cpu().detach().numpy() + 1), 2, ec='r', fill=False, lw=1.5))
     logger.add_figure('viz', fig, global_step)
     del ax, fig
-
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-
     parser.add_argument('--log_dir')
-    # Put custom arguments here
     parser.add_argument('-n', '--num_epoch', type=int, default=50)
     parser.add_argument('-w', '--num_workers', type=int, default=4)
     parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3)

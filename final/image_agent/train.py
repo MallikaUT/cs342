@@ -53,7 +53,7 @@ def train(args):
 
             # Assuming labels_list contains tensors of shape (2,) or (3,)
             max_label_size = max(label.size(0) for label in labels_list)
-            padded_labels = [F.pad(label, (0, 0, 0, max_label_size - label.size(0)))) for label in labels_list]
+            padded_labels = [F.pad(label, (0, 0, 0, max_label_size - label.size(0))) for label in labels_list]
             xy = torch.stack(padded_labels)
 
             loss_val = loss(pred, xy)

@@ -20,71 +20,20 @@ class SuperTuxDataset(Dataset):
         from PIL import Image
         from glob import glob
         from os import path
-        
         self.data = []
-        
-        
-        for f in glob(path.join(dataset_path, '*.csv')):   #change to npy to load render_data instance
-            
-               #change to npy to load render_data instance
-            image_path = f.replace('.csv', '.png')
-            print(f"Loading image: {image_path}")
-            data_image = Image.open(image_path)
-            data_image.load()
-            print(f"Image shape: {data_image.size}")
-            label_path = f
-            print(f"Loading label from: {label_path}")
-            labels = np.loadtxt(label_path, dtype=np.float32, delimiter=',')
-            print(f"Labels shape: {labels.shape}")
-
-            self.data.append(( data_image,    np.loadtxt(f, dtype=np.float32, delimiter=',')  ))
-            
-            #uncomment below to load render_data instance
-            #data_instance = torch.from_numpy(np.load(f).astype(int)) # render_data instance
-            #self.data.append((     data_image,    data_instance  ))
-        
+        for f in glob(path.join(dataset_path, '*.csv')):
+            i = Image.open(f.replace('.csv', '.png'))
+            i.load()
+            self.data.append((i, np.loadtxt(f, dtype=np.float32, delimiter=',')))
         self.transform = transform
-        #self.totensor = dense_transforms.ToTensor()
-    
+
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-       
         data = self.data[idx]
-        print(f"Before transformation - Image shape: {data[0].size}, Label shape: {data[1].shape}")
-
         data = self.transform(*data)
-        print(f"After transformation - Image shape: {data[0].shape}, Label shape: {data[1].shape}")
-
-
-        #uncomment below to load render_data instance
-        #im = data[0]
-        #label = data[1]
-        #im = self.transform(im)
-        #im = self.totensor(im)
-        #return im[0], label
-      
         return data
-
-
-def custom_collate(batch):
-    images, labels_list = zip(*batch)
-    images = torch.stack(images)
-
-    max_label_size = max(labels.size(0) for labels in labels_list)
-    
-    padded_labels = []
-    for labels in labels_list:
-        pad_size = max_label_size - labels.size(0)
-        padded_labels.append(F.pad(labels, (0, 0, 0, pad_size)))
-
-    labels = torch.stack(padded_labels)
-
-    return images, labels
-
-
-
 
 
 def load_data(dataset_path=DATASET_PATH, transform=dense_transforms.ToTensor(), num_workers=0, batch_size=128):

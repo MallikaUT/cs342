@@ -36,7 +36,7 @@ def train(args):
     ])
 
     print("Loading data ...")
-    train_data = load_data(transform=transform, num_workers=args.num_workers, collate_fn=custom_collate_fn)
+    train_data = load_data(transform=transform, num_workers=args.num_workers)
 
     global_step = 0
     print("Begin Training =================================")

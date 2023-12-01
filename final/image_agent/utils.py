@@ -23,8 +23,17 @@ class SuperTuxDataset(Dataset):
         
         for f in glob(path.join(dataset_path, '*.csv')):   #change to npy to load render_data instance
             
-            data_image = Image.open(f.replace('.csv', '.png'))   #change to npy to load render_data instance
+               #change to npy to load render_data instance
+            image_path = f.replace('.csv', '.png')
+            print(f"Loading image: {image_path}")
+            data_image = Image.open(image_path)
             data_image.load()
+            print(f"Image shape: {data_image.size}")
+            label_path = f
+            print(f"Loading label from: {label_path}")
+            labels = np.loadtxt(label_path, dtype=np.float32, delimiter=',')
+            print(f"Labels shape: {labels.shape}")
+
             self.data.append(( data_image,    np.loadtxt(f, dtype=np.float32, delimiter=',')  ))
             
             #uncomment below to load render_data instance
@@ -40,7 +49,11 @@ class SuperTuxDataset(Dataset):
     def __getitem__(self, idx):
        
         data = self.data[idx]
+        print(f"Before transformation - Image shape: {data[0].size}, Label shape: {data[1].shape}")
+
         data = self.transform(*data)
+        print(f"After transformation - Image shape: {data[0].shape}, Label shape: {data[1].shape}")
+
 
         #uncomment below to load render_data instance
         #im = data[0]

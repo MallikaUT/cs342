@@ -68,19 +68,18 @@ class SuperTuxDataset(Dataset):
         return data
 
 
-def collate_fn(batch):
+def custom_collate(batch):
     images, labels_list = zip(*batch)
     images = torch.stack(images)
 
-    # Pad labels to the same size
     max_label_size = max(labels.size(0) for labels in labels_list)
-    labels = [
-        F.pad(labels, (0, 0, 0, max_label_size - labels.size(0)))
-        for labels in labels_list
-    ]
+    
+    padded_labels = []
+    for labels in labels_list:
+        pad_size = max_label_size - labels.size(0)
+        padded_labels.append(F.pad(labels, (0, 0, 0, pad_size)))
 
-    # Stack labels into a single tensor
-    labels = torch.stack(labels)
+    labels = torch.stack(padded_labels)
 
     return images, labels
 

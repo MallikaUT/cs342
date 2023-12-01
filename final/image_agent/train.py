@@ -5,6 +5,13 @@ import numpy as np
 from .utils import load_data
 from . import dense_transforms
 
+def collate_tensor_fn(batch):
+    out = torch.stack(batch, 0)
+    # Ensure the storage is resizable
+    if not out.storage().resizeable():
+        out = torch.tensor(out)
+    return out
+    
 def train(args):
     from os import path
     model = Planner()

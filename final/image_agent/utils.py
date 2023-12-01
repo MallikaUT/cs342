@@ -12,6 +12,7 @@ class DetectionSuperTuxDataset(Dataset):
         from os import path
         self.files = []
         self.masks = []
+        print(dataset_path)
         for im_f in glob(path.join(dataset_path, 'images', '*')):
             self.files.append(im_f)
 

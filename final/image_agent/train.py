@@ -2,7 +2,7 @@ from .planner import Planner, save_model
 import torch
 import torch.utils.tensorboard as tb
 import numpy as np
-from .utils import load_data, collate_fn
+from .utils import load_data, custom_collate
 from . import dense_transforms
 import torch.nn.functional as F
 from torchvision.transforms import Resize

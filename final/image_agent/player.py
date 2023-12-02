@@ -103,8 +103,8 @@ class Team:
         pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
         print(f"Prediction boxes: {pred_boxes}")
 
-        front_raw = player_info['kart']['front']
-        loc_raw = player_info['kart']['location']
+        front_raw = np.array(player_info['kart']['front'])
+        loc_raw = np.array(player_info['kart']['location'])
 
         print(f"front_raw shape: {front_raw.shape}")
         print(f"front_raw values: {front_raw}")
@@ -115,10 +115,10 @@ class Team:
         front = torch.tensor(np.float32(front_raw)[[0, 2]])
         loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
 
-        print(f"front shape: {front.shape}")
-        print(f"front values: {front}")
-        print(f"loc shape: {loc.shape}")
-        print(f"loc values: {loc}")
+        print(f"front_raw shape: {front_raw.shape}")
+        print(f"front_raw values: {front_raw}")
+        print(f"loc_raw shape: {loc_raw.shape}")
+        print(f"loc_raw values: {loc_raw}")
 
         # execute when we find puck on screen
         if len(pred_boxes) > 0:

@@ -98,8 +98,8 @@ class Team:
         goal_dir = own_goal - loc
         dist_own_goal = torch.norm(goal_dir)
         goal_dir = goal_dir / torch.norm(goal_dir)
-        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
-        signed_goal_angle = torch.degrees(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
+        goal_angle = torch.rad2deg(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
+        signed_goal_angle = torch.rad2deg(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
 
         return dist_own_goal, signed_goal_angle
 

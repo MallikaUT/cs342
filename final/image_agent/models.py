@@ -52,7 +52,9 @@ class Detector(torch.nn.Module):
         def forward(self, x):
             if self.residual:
                 identity = x if self.upsample is None else self.upsample(x)
+                print("Size before upsample:", x.shape)
                 return self.net(x) + identity
+                print("Size after upsample:", x.shape)
             else:
                 return self.net(x)
 
@@ -85,7 +87,9 @@ class Detector(torch.nn.Module):
 
         def forward(self, x):
             if self.residual:
+                print("Size before downsample:", x.shape)
                 identity = x if self.downsample is None else self.downsample(x)
+                print("Size after downsample:", x.shape)
                 return self.net(x) + identity
             else:
                 return self.net(x)

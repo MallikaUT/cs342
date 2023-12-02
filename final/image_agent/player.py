@@ -94,12 +94,15 @@ class Team:
     # Assuming self.model is an instance of Detector
 
     def act(self, player_state, player_image):
+        print(f"player_state shape: {player_state.shape}")
+        print(f"player_image shape: {player_image.shape}")
         player_info = player_state[0]
         image = player_image[0]
 
         # Convert image to PyTorch tensor
         img = F.to_tensor(Image.fromarray(image)).to(device)
         pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
+        print(f"Prediction boxes: {pred_boxes}")
 
         # Convert NumPy array to PyTorch tensor for velocity
         velocity_numpy = player_info['kart']['velocity']

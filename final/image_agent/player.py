@@ -98,8 +98,12 @@ class Team:
         pred_boxes = self.model.detect(image, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
         puck_found = len(pred_boxes) > 0
 
+        # Convert NumPy array to PyTorch tensor for velocity
+        velocity_numpy = player_info['kart']['velocity']
+        velocity_torch = torch.from_numpy(velocity_numpy)
+
         # try and detect if goal scored so we can reset (only needs to be done for one of the players)
-        if np.linalg.norm(player_info['kart']['velocity']) < 1:
+        if torch.norm(velocity_torch) < 1:
             if self.timer1 == 0:
                 self.timer1 = self.step
             elif self.step - self.timer1 > 20:

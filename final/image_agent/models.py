@@ -130,29 +130,30 @@ class Detector(torch.nn.Module):
         w = x.shape[3]
 
         skip_con = []
-        for layers in self.net_conv:
+        for i, layers in enumerate(self.net_conv):
             x = layers(x)
-            print("After net_upconv layer:", x.shape)  # Add this line
+            print(f"After net_conv layer {i}:", x.shape)  # Print sizes after net_conv layers
             skip_con.append(x)
         skip_con.pop(-1)
         skip = False
-        for layers in self.net_upconv:
+        for i, layers in enumerate(self.net_upconv):
             if skip and len(skip_con) > 0:
-                print("Size of x before concatenation:", x.shape)
-                print("Size of tensor from skip_con:", skip_con[-1].shape)          
+                print(f"Size of x before concatenation in net_upconv layer {i}:", x.shape)
+                print(f"Size of tensor from skip_con in net_upconv layer {i}:", skip_con[-1].shape)
                 
                 x = torch.cat([x, skip_con.pop(-1)], 1)
-                print("Size of x after concatenation:", x.shape)
+                print(f"Size of x after concatenation in net_upconv layer {i}:", x.shape)
                 x = layers(x)
             else:
                 x = layers(x)
-                print("After net_upconv layer:", x.shape)  # Add this line
+                print(f"After net_upconv layer {i}:", x.shape)  # Print sizes after net_upconv layers
                 skip = self.skip_connections
 
         pred = x[:, 0, :h, :w]
         boxes = x[:, 1, :h, :w]
 
         return pred, boxes
+
 
     def detect(self, image, max_pool_ks=7, min_score=0.2, max_det=15):
         heatmap, boxes = self(image[None])  

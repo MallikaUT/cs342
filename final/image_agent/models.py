@@ -160,7 +160,7 @@ class Detector(torch.nn.Module):
         heatmap = torch.sigmoid(heatmap.squeeze(0).squeeze(0)) 
         print("Shape of heatmap after sigmoid:", heatmap.shape) 
         sizes = boxes.squeeze(0)
-        return [(peak[0], peak[1], peak[2], (sizes[peak[2], peak[1]]).item())
+        return [(peak[0], peak[1], peak[2], sizes[peak[2]][peak[1]].item())
                 for peak in extract_peak(heatmap, max_pool_ks, min_score, max_det)]
 
 def save_model(model, name: str = 'detector.pt'):

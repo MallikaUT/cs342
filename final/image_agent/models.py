@@ -145,6 +145,7 @@ class Detector(torch.nn.Module):
                 print(f"After net_upconv layer {i}:", x.shape)  # Print sizes after net_upconv layers
                 skip = self.skip_connections
 
+
         pred = x[:, 0, :h, :w]
         boxes = x[:, 1, :h, :w]
 

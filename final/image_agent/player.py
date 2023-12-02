@@ -93,8 +93,7 @@ class Team:
 
     # Assuming self.model is an instance of Detector
 
-    def calculate_goal_parameters(team, loc, dir):
-        # Calculate angle and distance to own goal
+    def calculate_goal_parameters(self, team, loc, dir):
         own_goal = torch.tensor(GOALS[team - 1])
         goal_dir = own_goal - loc
         dist_own_goal = torch.norm(goal_dir)
@@ -153,11 +152,11 @@ class Team:
         dir = dir / torch.norm(dir)
 
         # calculate angle and distance to own goal
-        dist_own_goal, signed_goal_angle = calculate_goal_parameters(self.team, loc, dir)
+        dist_own_goal, signed_goal_angle = self.calculate_goal_parameters(self.team, loc, dir)
 
         # calculate angle and distance to opp goal
         goal_dir = torch.tensor(GOALS[self.team]) - loc
-        dist_opp_goal, signed_opp_goal_angle = calculate_goal_parameters(self.team + 1, loc, dir)
+        dist_opp_goal, signed_opp_goal_angle = self.calculate_goal_parameters(self.team + 1, loc, dir)
 
         # restrict dist between [1,2] so we can use a weight function
         goal_dist = ((torch.clamp(dist_opp_goal, 10, 100) - 10) / 90) + 1
@@ -217,7 +216,7 @@ class Team:
         player_info = player_state[1]
         image = player_image[1]
 
-        img = self.transform(Image.fromarray(image)).to(device)
+        img = F.to_tensor(Image.fromarray(image)).to(device)
         pred = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
         front = torch.tensor(np.float32(player_info['kart']['front'])[[0, 2]])
@@ -246,7 +245,7 @@ class Team:
         dir = dir / torch.norm(dir)
 
         # calculate angle and distance to own goal for player 2
-        dist_own_goal, signed_own_goal_deg = calculate_goal_parameters(self.team + 1, loc, dir)
+        dist_own_goal, signed_own_goal_deg = self.calculate_goal_parameters(self.team + 1, loc, dir)
 
         # calculate angle and distance to opp goal for player 2
         goal_dir = torch.tensor(GOALS[self.team]) - loc
@@ -302,4 +301,3 @@ class Team:
 
         # Return both player actions
         return p1, p2
-

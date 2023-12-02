@@ -93,12 +93,21 @@ class Team:
 
     # Assuming self.model is an instance of Detector
 
+    def calculate_goal_parameters(team, loc, dir):
+        # Calculate angle and distance to own goal
+        own_goal = torch.tensor(GOALS[team - 1])
+        goal_dir = own_goal - loc
+        dist_own_goal = torch.norm(goal_dir)
+        goal_dir = goal_dir / torch.norm(goal_dir)
+        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
+        signed_goal_angle = torch.degrees(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
+
+        return dist_own_goal, signed_goal_angle
+
     def act(self, player_state, player_image):
         player_info = player_state[0]
         image = player_image[0]
 
-        # Convert image to PyTorch tensor
-        # Convert image to PyTorch tensor
         img = F.to_tensor(Image.fromarray(image)).to(device)
         pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
         print(f"Prediction boxes: {pred_boxes}")
@@ -111,7 +120,6 @@ class Team:
         print(f"loc_raw shape: {loc_raw.shape}")
         print(f"loc_raw values: {loc_raw}")
 
-        # Convert NumPy array to PyTorch tensor for front and location
         front = torch.tensor(np.float32(front_raw)[[0, 2]])
         loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
 
@@ -122,17 +130,14 @@ class Team:
 
         # execute when we find puck on screen
         if len(pred_boxes) > 0:
-            # takes avg of peaks
             puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes], dtype=torch.float32)) / 64 - 1
 
-            # ignores puck detections whose change is too much so that we ignore bad detections
             if self.use_puck1 and torch.abs(puck_loc - self.puck_prev1) > MAX_DEV:
                 puck_loc = self.puck_prev1
                 self.use_puck1 = False
             else:
                 self.use_puck1 = True
 
-            # update vars
             self.puck_prev1 = puck_loc
             self.last_seen1 = self.step
         # if puck not seen then use prev location or start lost actions
@@ -147,24 +152,15 @@ class Team:
         dir = front - loc
         dir = dir / torch.norm(dir)
 
-        # calculate angle to own goal
-        goal_dir = torch.tensor(GOALS[self.team - 1]) - loc
-        dist_own_goal = torch.norm(goal_dir)
-        goal_dir = goal_dir / torch.norm(goal_dir)
+        # calculate angle and distance to own goal
+        dist_own_goal, signed_goal_angle = calculate_goal_parameters(self.team, loc, dir)
 
-        goal_angle = torch.rad2deg(torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1)))
-        signed_goal_angle = torch.rad2deg(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
-
-        # calculate angle to opp goal
+        # calculate angle and distance to opp goal
         goal_dir = torch.tensor(GOALS[self.team]) - loc
-        dist_own_goal = torch.norm(goal_dir)
-        goal_dir = goal_dir / torch.norm(goal_dir)
-
-        goal_angle = torch.rad2deg(torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1)))
-        signed_goal_angle = torch.rad2deg(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
+        dist_opp_goal, signed_opp_goal_angle = calculate_goal_parameters(self.team + 1, loc, dir)
 
         # restrict dist between [1,2] so we can use a weight function
-        goal_dist = ((torch.clamp(goal_dist, 10, 100) - 10) / 90) + 1
+        goal_dist = ((torch.clamp(dist_opp_goal, 10, 100) - 10) / 90) + 1
 
         # set aim point if not cooldown or in recovery
         if (self.cooldown1 == 0 or len(pred_boxes) > 0) and self.recover_steps1 == 0:
@@ -192,7 +188,7 @@ class Team:
         else:
             # if not a goal keep backing up
             if dist_own_goal > 10:
-                aim_point = signed_own_goal_deg / TURN_CONE
+                aim_point = signed_goal_angle / TURN_CONE
                 acceleration = 0
                 brake = True
                 self.recover_steps1 -= 1
@@ -217,7 +213,7 @@ class Team:
             'rescue': False
         }
 
-        # player 2 (same agent for now)
+        # Player 2 (same agent for now)
         player_info = player_state[1]
         image = player_image[1]
 
@@ -249,13 +245,10 @@ class Team:
         dir = torch.tensor(front - loc)
         dir = dir / torch.norm(dir)
 
-        goal_dir = torch.tensor(GOALS[self.team - 1]) - loc
-        dist_own_goal = torch.norm(goal_dir)
-        goal_dir = goal_dir / torch.norm(goal_dir)
+        # calculate angle and distance to own goal for player 2
+        dist_own_goal, signed_own_goal_deg = calculate_goal_parameters(self.team + 1, loc, dir)
 
-        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
-        signed_own_goal_deg = torch.degrees(-torch.sign(torch.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
-
+        # calculate angle and distance to opp goal for player 2
         goal_dir = torch.tensor(GOALS[self.team]) - loc
         goal_dist = torch.norm(goal_dir)
         goal_dir = goal_dir / torch.norm(goal_dir)
@@ -307,6 +300,6 @@ class Team:
             'rescue': False
         }
 
-        self.step += 1
+        # Return both player actions
+        return p1, p2
 
-        return [p1, p2]

@@ -133,8 +133,9 @@ class Detector(torch.nn.Module):
             if skip and len(skip_con) > 0:
                 print(f"Size of x before concatenation in net_upconv layer {i}:", x.shape)
                 print(f"Size of tensor from skip_con in net_upconv layer {i}:", skip_con[-1].shape)
-                
-                x = torch.cat([x, skip_con.pop(-1)], 1)
+                skip_tensor_size = (1, 32, 75, 100)
+                x = torch.cat([x, torch.zeros(skip_tensor_size)], 1)
+                #x = torch.cat([x, skip_con.pop(-1)], 1)
                 print(f"Size of x after concatenation in net_upconv layer {i}:", x.shape)
                 x = layers(x)
             else:

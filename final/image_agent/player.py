@@ -172,7 +172,8 @@ class Team:
 
         # restrict dist between [1,2] so we can use a weight function
         goal_dist = (
-            (np.clip(goal_dist, 10, 100) - 10) / 90) + 1
+            (torch.clamp(goal_dist, 10, 100) - torch.tensor(10, dtype=torch.float32)) / 90) + 1
+
 
         # set aim point if not cooldown or in recovery
         if (self.cooldown1 == 0 or puck_found) and self.recover_steps1 == 0:

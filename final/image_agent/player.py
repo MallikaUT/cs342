@@ -160,7 +160,7 @@ class Team:
         dist_own_goal = torch.norm(goal_dir)
         goal_dir = goal_dir / torch.norm(goal_dir)
 
-        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
+        goal_angle = torch.rad2deg(torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1)))
         signed_goal_angle = torch.degrees(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
 
         # restrict dist between [1,2] so we can use a weight function

@@ -58,7 +58,6 @@ class Detector(torch.nn.Module):
             else:
                 return self.net(x)
 
-
     class BlockConv(torch.nn.Module):
         def __init__(self, c_in, c_out, kernel_size=3, stride=1, residual: bool = True):
             super().__init__()

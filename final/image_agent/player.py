@@ -153,7 +153,7 @@ class Team:
         goal_dir = goal_dir / torch.norm(goal_dir)
 
         goal_angle = torch.rad2deg(torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1)))
-        signed_goal_angle = torch.degrees(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
+        signed_goal_angle = torch.rad2deg(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
 
         # calculate angle to opp goal
         goal_dir = torch.tensor(GOALS[self.team]) - loc
@@ -161,7 +161,7 @@ class Team:
         goal_dir = goal_dir / torch.norm(goal_dir)
 
         goal_angle = torch.rad2deg(torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1)))
-        signed_goal_angle = torch.degrees(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
+        signed_goal_angle = torch.rad2deg(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
 
         # restrict dist between [1,2] so we can use a weight function
         goal_dist = ((torch.clamp(goal_dist, 10, 100) - 10) / 90) + 1

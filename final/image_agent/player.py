@@ -125,10 +125,10 @@ class Team:
         front = torch.tensor(np.float32(front_raw)[[0, 2]])
         loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
 
-        print(f"front_raw shape: {front_raw.shape}")
-        print(f"front_raw values: {front_raw}")
-        print(f"loc_raw shape: {loc_raw.shape}")
-        print(f"loc_raw values: {loc_raw}")
+        print(f"front shape: {front.shape}")
+        print(f"front values: {front}")
+        print(f"loc shape: {loc.shape}")
+        print(f"loc values: {loc}")
         
         print(f"img shape: {img.shape}")
         # execute when we find puck on screen

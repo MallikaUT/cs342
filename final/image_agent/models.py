@@ -14,6 +14,7 @@ def extract_peak(heatmap, max_pool_ks=7, min_score=-5, max_det=100):
     """
     max_cls = F.max_pool2d(heatmap[None, None], kernel_size=max_pool_ks, padding=max_pool_ks // 2, stride=1)[0, 0]
     possible_det = heatmap - (max_cls > heatmap).float() * 1e5
+    print("Shape of possible_det:", possible_det.shape)
     if max_det > possible_det.numel():
         max_det = possible_det.numel()
     score, loc = torch.topk(possible_det.view(-1), max_det)
@@ -127,6 +128,7 @@ class Detector(torch.nn.Module):
         skip_con = []
         for layers in self.net_conv:
             x = layers(x)
+            print("After net_upconv layer:", x.shape)  # Add this line
             skip_con.append(x)
         skip_con.pop(-1)
         skip = False
@@ -136,6 +138,7 @@ class Detector(torch.nn.Module):
                 x = layers(x)
             else:
                 x = layers(x)
+                print("After net_upconv layer:", x.shape)  # Add this line
                 skip = self.skip_connections
 
         pred = x[:, 0, :h, :w]
@@ -146,6 +149,7 @@ class Detector(torch.nn.Module):
     def detect(self, image, max_pool_ks=7, min_score=0.2, max_det=15):
         heatmap, boxes = self(image[None])  
         heatmap = torch.sigmoid(heatmap.squeeze(0).squeeze(0)) 
+        print("Shape of heatmap after sigmoid:", heatmap.shape) 
         sizes = boxes.squeeze(0)
         return [(peak[0], peak[1], peak[2], (sizes[peak[2], peak[1]]).item())
                 for peak in extract_peak(heatmap, max_pool_ks, min_score, max_det)]

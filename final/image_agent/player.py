@@ -90,22 +90,17 @@ class Team:
         self.use_puck2 = True
         self.cooldown2 = 0
 
+    # Assuming self.model is an instance of Detector
+
     def act(self, player_state, player_image):
         player_info = player_state[0]
         image = player_image[0]
 
-        # Assuming self.model is an instance of Detector
-        img = self.transform(Image.fromarray(image)).to(device)
+        # Convert image to PyTorch tensor
+        img = F.to_tensor(Image.fromarray(image)).to(device)
         pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
-
-
-        #pred_boxes = self.model.detect(image, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
-        puck_found = len(pred_boxes) > 0
-
         # Convert NumPy array to PyTorch tensor for velocity
-
-
         velocity_numpy = player_info['kart']['velocity']
         velocity_torch = torch.tensor(velocity_numpy)
 
@@ -119,17 +114,16 @@ class Team:
             self.timer1 = 0
 
         # get location in game and direct of kart
-        front = torch.tensor(np.float32(player_info['kart']['front'])[[0, 2]])
-        loc = torch.tensor(np.float32(player_info['kart']['location'])[[0, 2]])
-        #pred = []
+        front = torch.tensor(player_info['kart']['front'][[0, 2]], dtype=torch.float32)
+        loc = torch.tensor(player_info['kart']['location'][[0, 2]], dtype=torch.float32)
+
         # execute when we find puck on screen
-        if puck_found:
+        if len(pred_boxes) > 0:
             # takes avg of peaks
-            puck_loc = np.mean([cx[1] for cx in pred_boxes])
-            puck_loc = puck_loc / 64 - 1
+            puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes])) / 64 - 1
 
             # ignores puck detections whose change is too much so that we ignore bad detections
-            if self.use_puck1 and np.abs(puck_loc - self.puck_prev1) > MAX_DEV:
+            if self.use_puck1 and torch.abs(puck_loc - self.puck_prev1) > MAX_DEV:
                 puck_loc = self.puck_prev1
                 self.use_puck1 = False
             else:
@@ -146,51 +140,42 @@ class Team:
             puck_loc = None
             self.recover_steps1 = LOST_STATUS_STEPS
 
-        # calcualate direction vector
+        # calculate direction vector
         dir = front - loc
-        dir = dir / norm(dir)
+        dir = dir / torch.norm(dir)
 
         # calculate angle to own goal
         goal_dir = torch.tensor(GOALS[self.team - 1]) - loc
-        dist_own_goal = torch.norm(torch.tensor(goal_dir, dtype=torch.float32))
-        goal_dir = goal_dir / torch.norm(torch.tensor(goal_dir, dtype=torch.float32))
+        dist_own_goal = torch.norm(goal_dir)
+        goal_dir = goal_dir / torch.norm(goal_dir)
 
-
-        goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
-        signed_own_goal_deg = np.degrees(
-            -np.sign(np.cross(dir, goal_dir)) * goal_angle)
+        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
+        signed_own_goal_deg = torch.degrees(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
 
         # calculate angle to opp goal
-        goal_dir = GOALS[self.team] - loc
-        dist_own_goal = torch.norm(torch.tensor(goal_dir, dtype=torch.float32))
-        goal_dir = goal_dir / torch.norm(torch.tensor(goal_dir, dtype=torch.float32))
+        goal_dir = torch.tensor(GOALS[self.team]) - loc
+        dist_own_goal = torch.norm(goal_dir)
+        goal_dir = goal_dir / torch.norm(goal_dir)
 
-
-        goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
-        signed_goal_angle = np.degrees(
-            -np.sign(np.cross(dir, goal_dir)) * goal_angle)
+        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
+        signed_goal_angle = torch.degrees(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
 
         # restrict dist between [1,2] so we can use a weight function
-        goal_dist = (
-            (torch.clamp(goal_dist, 10, 100) - torch.tensor(10, dtype=torch.float32)) / 90) + 1
-
+        goal_dist = ((torch.clamp(goal_dist, 10, 100) - 10) / 90) + 1
 
         # set aim point if not cooldown or in recovery
-        if (self.cooldown1 == 0 or puck_found) and self.recover_steps1 == 0:
+        if (self.cooldown1 == 0 or len(pred_boxes) > 0) and self.recover_steps1 == 0:
             # if angle isn't extreme then weight our attack angle by dist
-            if MIN_ANGLE < np.abs(signed_goal_angle) < MAX_ANGLE:
+            if MIN_ANGLE < torch.abs(signed_goal_angle) < MAX_ANGLE:
                 distW = 1 / goal_dist ** 3
-                aim_point = puck_loc + \
-                    np.sign(puck_loc - signed_goal_angle /
-                            TURN_CONE) * 0.3 * distW
+                aim_point = puck_loc + torch.sign(puck_loc - signed_goal_angle / TURN_CONE) * 0.3 * distW
             # if two tight then just chase puck
             else:
                 aim_point = puck_loc
             # sets the speed as const if found
             if self.last_seen1 == self.step:
                 brake = False
-                acceleration = 0.75 if norm(
-                    player_info['kart']['velocity']) < TARGET_SPEED else 0
+                acceleration = 0.75 if torch.norm(player_info['kart']['velocity']) < TARGET_SPEED else 0
             else:
                 brake = False
                 acceleration = 0
@@ -217,36 +202,33 @@ class Team:
                 self.recover_steps1 = 0
 
         # set steering/drift
-        steer = np.clip(aim_point * STEER_YIELD, -1, 1)
-        drift = np.abs(aim_point) > DRIFT_THRESH
+        steer = torch.clamp(aim_point * STEER_YIELD, -1, 1)
+        drift = torch.abs(aim_point) > DRIFT_THRESH
 
         p1 = {
-            'steer': signed_goal_angle if self.step < START_STEPS else steer,
-            'acceleration': 1 if self.step < START_STEPS else acceleration,
+            'steer': signed_goal_angle if self.step < START_STEPS else steer.item(),
+            'acceleration': 1 if self.step < START_STEPS else acceleration.item(),
             'brake': brake,
             'drift': drift,
-            'nitro': False, 
+            'nitro': False,
             'rescue': False
         }
 
         # player 2 (same agent for now)
-
         player_info = player_state[1]
         image = player_image[1]
 
         img = self.transform(Image.fromarray(image)).to(device)
-        pred = self.model.detect(
-            img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
+        pred = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
-        front = np.float32(player_info['kart']['front'])[[0, 2]]
-        loc = np.float32(player_info['kart']['location'])[[0, 2]]
+        front = torch.tensor(np.float32(player_info['kart']['front'])[[0, 2]])
+        loc = torch.tensor(np.float32(player_info['kart']['location'])[[0, 2]])
 
         puck_found = len(pred) > 0
         if puck_found:
-            puck_loc = np.mean([cx[1] for cx in pred])
-            puck_loc = puck_loc / 64 - 1
+            puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred])) / 64 - 1
 
-            if self.use_puck2 and np.abs(puck_loc - self.puck_prev2) > MAX_DEV:
+            if self.use_puck2 and torch.abs(puck_loc - self.puck_prev2) > MAX_DEV:
                 puck_loc = self.puck_prev2
                 self.use_puck2 = False
             else:
@@ -254,7 +236,6 @@ class Team:
 
             self.puck_prev2 = puck_loc
             self.last_seen2 = self.step
-
         elif self.step - self.last_seen2 < LAST_PUCK_DURATION:
             self.use_puck2 = False
             puck_loc = self.puck_prev2
@@ -269,32 +250,27 @@ class Team:
         dist_own_goal = torch.norm(goal_dir)
         goal_dir = goal_dir / torch.norm(goal_dir)
 
-        goal_angle = np.arccos(np.clip(torch.dot(dir, goal_dir).item(), -1, 1))
-        signed_own_goal_deg = np.degrees(
-            -np.sign(np.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
+        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
+        signed_own_goal_deg = torch.degrees(-torch.sign(torch.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
 
         goal_dir = torch.tensor(GOALS[self.team]) - loc
         goal_dist = torch.norm(goal_dir)
         goal_dir = goal_dir / torch.norm(goal_dir)
 
-        goal_angle = np.arccos(np.clip(torch.dot(dir, goal_dir).item(), -1, 1))
-        signed_goal_angle = np.degrees(
-            -np.sign(np.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
+        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
+        signed_goal_angle = torch.degrees(-torch.sign(torch.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
 
-        goal_dist = (
-            (torch.clamp(goal_dist, 10, 100) - torch.tensor(10, dtype=torch.float32)) / 90) + 1
+        goal_dist = ((torch.clamp(goal_dist, 10, 100) - 10) / 90) + 1
+
         if self.recover_steps2 == 0 and (self.cooldown2 == 0 or puck_found):
-            if MIN_ANGLE < np.abs(signed_goal_angle) < MAX_ANGLE:
+            if MIN_ANGLE < torch.abs(signed_goal_angle) < MAX_ANGLE:
                 distW = 1 / goal_dist ** 3
-                aim_point = puck_loc + \
-                    np.sign(puck_loc - signed_goal_angle /
-                            TURN_CONE) * 0.3 * distW
+                aim_point = puck_loc + torch.sign(puck_loc - signed_goal_angle / TURN_CONE) * 0.3 * distW
             else:
                 aim_point = puck_loc
             if self.last_seen2 == self.step:
                 brake = False
-                acceleration = 0.75 if norm(
-                    player_info['kart']['velocity']) < TARGET_SPEED else 0
+                acceleration = 0.75 if torch.norm(player_info['kart']['velocity']) < TARGET_SPEED else 0
             else:
                 acceleration = 0
                 brake = False
@@ -316,15 +292,15 @@ class Team:
                 acceleration = 0.5
                 brake = False
 
-        steer = np.clip(aim_point * STEER_YIELD, -1, 1)
-        drift = np.abs(aim_point) > DRIFT_THRESH
+        steer = torch.clamp(aim_point * STEER_YIELD, -1, 1)
+        drift = torch.abs(aim_point) > DRIFT_THRESH
 
         p2 = {
-            'steer': signed_goal_angle if self.step < START_STEPS else steer,
-            'acceleration': 1 if self.step < START_STEPS else acceleration,
+            'steer': signed_goal_angle if self.step < START_STEPS else steer.item(),
+            'acceleration': 1 if self.step < START_STEPS else acceleration.item(),
             'brake': brake,
             'drift': drift,
-            'nitro': False, 
+            'nitro': False,
             'rescue': False
         }
 

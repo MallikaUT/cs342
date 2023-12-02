@@ -281,7 +281,7 @@ class Team:
             -np.sign(np.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
 
         goal_dist = (
-            (torch.clamp(goal_dist, 10, 100) - 10) / 90) + 1
+            (torch.clamp(goal_dist, 10, 100) - torch.tensor(10, dtype=torch.float32)) / 90) + 1
         if self.recover_steps2 == 0 and (self.cooldown2 == 0 or puck_found):
             if MIN_ANGLE < np.abs(signed_goal_angle) < MAX_ANGLE:
                 distW = 1 / goal_dist ** 3

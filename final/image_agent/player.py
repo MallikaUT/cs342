@@ -109,7 +109,7 @@ class Team:
 
         img = F.to_tensor(Image.fromarray(image)).to(device)
         print(f"img shape: {img.shape}")
-        print(f"front shape: {front.shape}")
+        #print(f"front shape: {front.shape}")
         print(f"loc shape: {loc.shape}")
         pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
         print(f"Prediction boxes: {pred_boxes}")

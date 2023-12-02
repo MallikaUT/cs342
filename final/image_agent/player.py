@@ -152,8 +152,9 @@ class Team:
 
         # calculate angle to own goal
         goal_dir = torch.tensor(GOALS[self.team - 1]) - loc
-        dist_own_goal = torch.norm(torch.tensor(goal_dir))
-        goal_dir = goal_dir / torch.norm(torch.tensor(goal_dir))
+        dist_own_goal = torch.norm(torch.tensor(goal_dir, dtype=torch.float32))
+        goal_dir = goal_dir / torch.norm(torch.tensor(goal_dir, dtype=torch.float32))
+
 
         goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
         signed_own_goal_deg = np.degrees(
@@ -161,8 +162,9 @@ class Team:
 
         # calculate angle to opp goal
         goal_dir = GOALS[self.team] - loc
-        goal_dist = torch.norm(torch.from_numpy(goal_dir))
-        goal_dir = goal_dir / torch.norm(torch.from_numpy(goal_dir))
+        dist_own_goal = torch.norm(torch.tensor(goal_dir, dtype=torch.float32))
+        goal_dir = goal_dir / torch.norm(torch.tensor(goal_dir, dtype=torch.float32))
+
 
         goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
         signed_goal_angle = np.degrees(

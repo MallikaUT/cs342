@@ -162,13 +162,21 @@ class Detector(torch.nn.Module):
         print("Shape of heatmap after sigmoid:", heatmap.shape) 
         sizes = boxes.squeeze(0)
         
-        # Convert indices to integers
-        sizes_indices = [(int(peak[2]), int(peak[1])) for peak in extract_peak(heatmap, max_pool_ks, min_score, max_det)]
+        # Extract peaks
+        peaks = extract_peak(heatmap, max_pool_ks, min_score, max_det)
         
-        return [
-            (peak[0], peak[1], peak[2], sizes[sizes_indices[idx]].item())
-            for idx, peak in enumerate(extract_peak(heatmap, max_pool_ks, min_score, max_det))
+        # Convert indices to integers and extract sizes
+        sizes_indices = [(int(peak[2]), int(peak[1])) for peak in peaks]
+        sizes_values = [sizes[idx[0], idx[1]].item() for idx in sizes_indices]
+        
+        # Create prediction boxes
+        prediction_boxes = [
+            (peak[0], peak[1], peak[2], size)
+            for peak, size in zip(peaks, sizes_values)
         ]
+        
+        return prediction_boxes
+
 
 
 def save_model(model, name: str = 'detector.pt'):

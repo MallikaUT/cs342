@@ -107,7 +107,12 @@ class Team:
         player_info = player_state[0]
         image = player_image[0]
 
+        # Convert image to PyTorch tensor
         img = F.to_tensor(Image.fromarray(image)).to(device)
+
+        # Ensure the input tensor has the correct dimensions
+        if len(img.shape) != 3:
+            img = img.unsqueeze(0)  # Add batch dimension if not present
 
         pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
         print(f"Prediction boxes: {pred_boxes}")
@@ -120,6 +125,7 @@ class Team:
         print(f"loc_raw shape: {loc_raw.shape}")
         print(f"loc_raw values: {loc_raw}")
 
+        # Convert NumPy array to PyTorch tensor for front and location
         front = torch.tensor(np.float32(front_raw)[[0, 2]])
         loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
 
@@ -127,8 +133,10 @@ class Team:
         print(f"front values: {front}")
         print(f"loc shape: {loc.shape}")
         print(f"loc values: {loc}")
-        
+
+        # Add this print statement
         print(f"img shape before detection: {img.shape}")
+
         # execute when we find puck on screen
         if len(pred_boxes) > 0:
             print("Puck seen")

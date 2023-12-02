@@ -94,8 +94,8 @@ class Team:
     # Assuming self.model is an instance of Detector
 
     def act(self, player_state, player_image):
-        print(f"player_state shape: {player_state.shape}")
-        print(f"player_image shape: {player_image.shape}")
+        print(player_state)
+        print(player_image)
         player_info = player_state[0]
         image = player_image[0]
 

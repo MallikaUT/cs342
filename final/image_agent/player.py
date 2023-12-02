@@ -121,11 +121,11 @@ class Team:
         # get location in game and direct of kart
         front = torch.tensor(np.float32(player_info['kart']['front'])[[0, 2]])
         loc = torch.tensor(np.float32(player_info['kart']['location'])[[0, 2]])
-
+        #pred = []
         # execute when we find puck on screen
         if puck_found:
             # takes avg of peaks
-            puck_loc = np.mean([cx[1] for cx in pred])
+            puck_loc = np.mean([cx[1] for cx in pred_boxes])
             puck_loc = puck_loc / 64 - 1
 
             # ignores puck detections whose change is too much so that we ignore bad detections

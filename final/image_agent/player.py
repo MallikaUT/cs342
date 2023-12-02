@@ -98,26 +98,27 @@ class Team:
         image = player_image[0]
 
         # Convert image to PyTorch tensor
+        # Convert image to PyTorch tensor
         img = F.to_tensor(Image.fromarray(image)).to(device)
         pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
         print(f"Prediction boxes: {pred_boxes}")
 
-        # Convert NumPy array to PyTorch tensor for velocity
-        velocity_numpy = player_info['kart']['velocity']
-        velocity_torch = torch.tensor(velocity_numpy)
+        front_raw = player_info['kart']['front']
+        loc_raw = player_info['kart']['location']
 
-        # try and detect if goal scored so we can reset (only needs to be done for one of the players)
-        if torch.norm(velocity_torch) < 1:
-            if self.timer1 == 0:
-                self.timer1 = self.step
-            elif self.step - self.timer1 > 20:
-                self.initialize_vars()
-        else:
-            self.timer1 = 0
+        print(f"front_raw shape: {front_raw.shape}")
+        print(f"front_raw values: {front_raw}")
+        print(f"loc_raw shape: {loc_raw.shape}")
+        print(f"loc_raw values: {loc_raw}")
 
-        # get location in game and direct of kart
-        front = torch.tensor(player_info['kart']['front'][[0, 2]], dtype=torch.float32)
-        loc = torch.tensor(player_info['kart']['location'][[0, 2]], dtype=torch.float32)
+        # Convert NumPy array to PyTorch tensor for front and location
+        front = torch.tensor(np.float32(front_raw)[[0, 2]])
+        loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
+
+        print(f"front shape: {front.shape}")
+        print(f"front values: {front}")
+        print(f"loc shape: {loc.shape}")
+        print(f"loc values: {loc}")
 
         # execute when we find puck on screen
         if len(pred_boxes) > 0:

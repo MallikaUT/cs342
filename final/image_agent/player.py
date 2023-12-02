@@ -111,7 +111,9 @@ class Team:
         img = F.to_tensor(Image.fromarray(image)).to(device)
 
         # Ensure the input tensor has the correct dimensions
-        if len(img.shape) != 3:
+        if len(img.shape) == 2:
+            img = img.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions if not present
+        elif len(img.shape) == 3:
             img = img.unsqueeze(0)  # Add batch dimension if not present
 
         print(f"img shape before detection: {img.shape}")
@@ -138,6 +140,9 @@ class Team:
         print(f"front values: {front}")
         print(f"loc shape: {loc.shape}")
         print(f"loc values: {loc}")
+
+        # Rest of your code...
+
         # execute when we find puck on screen
         if len(pred_boxes) > 0:
             print("Puck seen")

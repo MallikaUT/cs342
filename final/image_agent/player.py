@@ -129,9 +129,13 @@ class Team:
         print(f"front_raw values: {front_raw}")
         print(f"loc_raw shape: {loc_raw.shape}")
         print(f"loc_raw values: {loc_raw}")
-
+        
+        print(f"img shape: {img.shape}")
         # execute when we find puck on screen
         if len(pred_boxes) > 0:
+            print("Puck seen")
+            print(f"front shape: {front.shape}")
+            print(f"loc shape: {loc.shape}")
             puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes], dtype=torch.float32)) / 64 - 1
 
             if self.use_puck1 and torch.abs(puck_loc - self.puck_prev1) > MAX_DEV:
@@ -149,7 +153,7 @@ class Team:
         else:
             puck_loc = None
             self.recover_steps1 = LOST_STATUS_STEPS
-
+            print("Puck not seen")
         # calculate direction vector
         dir = front - loc
         dir = dir / torch.norm(dir)

@@ -128,7 +128,7 @@ class Team:
         print(f"loc shape: {loc.shape}")
         print(f"loc values: {loc}")
         
-        #print(f"img shape before detection: {img.shape}")
+        print(f"img shape before detection: {img.shape}")
         # execute when we find puck on screen
         if len(pred_boxes) > 0:
             print("Puck seen")

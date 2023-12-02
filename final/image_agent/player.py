@@ -5,6 +5,7 @@ import torchvision
 import time
 from PIL import Image
 from os import path
+from torchvision.transforms import functional as F
 
 from image_agent.models import load_model, Detector
 

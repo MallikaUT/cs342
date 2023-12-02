@@ -23,76 +23,66 @@ def extract_peak(heatmap, max_pool_ks=7, min_score=-5, max_det=100):
             
 class Detector(torch.nn.Module):
 
-    class BlockUpConv(torch.nn.Module):
-        def __init__(self, c_in, c_out, stride=1, residual: bool = True):
+    class BlockConv(torch.nn.Module):
+        def __init__(self, n_input, n_output, kernel_size=3, stride=1, residual: bool = True):
             super().__init__()
-
-            self.residual = residual
-            self.upsample = None
-            if stride != 1 or c_in != c_out:
-                # Use nn.Upsample for resizing
-                self.upsample = torch.nn.Sequential(
-                    torch.nn.Upsample(scale_factor=stride, mode='bilinear', align_corners=False),
-                    torch.nn.Conv2d(c_in, c_out, kernel_size=1, stride=1, padding=0, bias=False),
-                    torch.nn.BatchNorm2d(c_out)
-                )
-
             self.net = torch.nn.Sequential(
-                torch.nn.ConvTranspose2d(c_in, c_out, kernel_size=3, padding=1, stride=1, bias=False),
-                torch.nn.BatchNorm2d(c_out),
+                torch.nn.Conv2d(n_input, n_output, kernel_size=kernel_size, padding=(kernel_size // 2), stride=1,
+                                bias=False),
+                torch.nn.BatchNorm2d(n_output),
                 torch.nn.ReLU(),
-                torch.nn.ConvTranspose2d(c_out, c_out, kernel_size=3, padding=1, stride=stride, output_padding=1, bias=False),
-                torch.nn.BatchNorm2d(c_out),
+                torch.nn.Conv2d(n_output, n_output, kernel_size=kernel_size, padding=(kernel_size // 2), stride=stride,
+                                bias=False),
+                torch.nn.BatchNorm2d(n_output),
                 torch.nn.ReLU(),
-                torch.nn.ConvTranspose2d(c_out, c_out, kernel_size=3, padding=1, stride=1, bias=False),
-                torch.nn.BatchNorm2d(c_out),
+                torch.nn.Conv2d(n_output, n_output, kernel_size=kernel_size, padding=(kernel_size // 2), stride=1,
+                                bias=False),
+                torch.nn.BatchNorm2d(n_output),
                 torch.nn.ReLU()
             )
+            self.residual = residual
+            self.downsample = None
+            if stride != 1 or n_input != n_output:
+                self.downsample = torch.nn.Sequential(
+                    torch.nn.Conv2d(n_input, n_output, kernel_size=1, stride=stride, bias=False),
+                    torch.nn.BatchNorm2d(n_output)
+                )
 
         def forward(self, x):
             if self.residual:
-                identity = x if self.upsample is None else self.upsample(x)
-                print("Size before upsample:", x.shape)
-                x = self.net(x) + identity
-                print("Size after upsample:", x.shape)
-                return x
+                identity = x if self.downsample is None else self.downsample(x)
+                return self.net(x) + identity
             else:
                 return self.net(x)
 
 
-
-    class BlockConv(torch.nn.Module):
-        def __init__(self, c_in, c_out, kernel_size=3, stride=1, residual: bool = True):
+    class BlockUpConv(torch.nn.Module):
+        def __init__(self, n_input, n_output, stride=1, residual: bool = True):
             super().__init__()
-            
-            self.residual = residual
-            self.downsample = None
-            if stride != 1 or c_in != c_out:
-                self.downsample = torch.nn.Sequential(
-                    torch.nn.Conv2d(c_in, c_out, kernel_size=1, stride=stride, bias=False),
-                    torch.nn.BatchNorm2d(c_out)
-                )
-
             self.net = torch.nn.Sequential(
-                torch.nn.Conv2d(c_in, c_out, kernel_size=kernel_size, padding=(kernel_size // 2), stride=1,
-                                bias=False),
-                torch.nn.BatchNorm2d(c_out),
+                torch.nn.ConvTranspose2d(n_input, n_output, kernel_size=3, padding=1, stride=1, bias=False),
+                torch.nn.BatchNorm2d(n_output),
                 torch.nn.ReLU(),
-                torch.nn.Conv2d(c_out, c_out, kernel_size=kernel_size, padding=(kernel_size // 2), stride=stride,
-                                bias=False),
-                torch.nn.BatchNorm2d(c_out),
+                torch.nn.ConvTranspose2d(n_output, n_output, kernel_size=3, padding=1, stride=stride, output_padding=1,
+                                        bias=False),
+                torch.nn.BatchNorm2d(n_output),
                 torch.nn.ReLU(),
-                torch.nn.Conv2d(c_out, c_out, kernel_size=kernel_size, padding=(kernel_size // 2), stride=1,
-                                bias=False),
-                torch.nn.BatchNorm2d(c_out),
+                torch.nn.ConvTranspose2d(n_output, n_output, kernel_size=3, padding=1, stride=1, bias=False),
+                torch.nn.BatchNorm2d(n_output),
                 torch.nn.ReLU()
             )
+            self.residual = residual
+            self.upsample = None
+            if stride != 1 or n_input != n_output:
+                self.upsample = torch.nn.Sequential(
+                    torch.nn.ConvTranspose2d(n_input, n_output, kernel_size=1, stride=stride, output_padding=1,
+                                            bias=False),
+                    torch.nn.BatchNorm2d(n_output)
+                )
 
         def forward(self, x):
             if self.residual:
-                print("Size before downsample:", x.shape)
-                identity = x if self.downsample is None else self.downsample(x)
-                print("Size after downsample:", x.shape)
+                identity = x if self.upsample is None else self.upsample(x)
                 return self.net(x) + identity
             else:
                 return self.net(x)

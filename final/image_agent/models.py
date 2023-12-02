@@ -30,8 +30,9 @@ class Detector(torch.nn.Module):
             self.residual = residual
             self.upsample = None
             if stride != 1 or c_in != c_out:
+                # Adjust padding to ensure consistent dimensions
                 self.upsample = torch.nn.Sequential(
-                    torch.nn.ConvTranspose2d(c_in, c_out, kernel_size=1, stride=stride, output_padding=1, bias=False),
+                    torch.nn.ConvTranspose2d(c_in, c_out, kernel_size=3, stride=stride, padding=1, output_padding=1, bias=False),
                     torch.nn.BatchNorm2d(c_out)
                 )
 
@@ -39,8 +40,7 @@ class Detector(torch.nn.Module):
                 torch.nn.ConvTranspose2d(c_in, c_out, kernel_size=3, padding=1, stride=1, bias=False),
                 torch.nn.BatchNorm2d(c_out),
                 torch.nn.ReLU(),
-                torch.nn.ConvTranspose2d(c_out, c_out, kernel_size=3, padding=1, stride=stride, output_padding=1,
-                                        bias=False),
+                torch.nn.ConvTranspose2d(c_out, c_out, kernel_size=3, padding=1, stride=stride, output_padding=1, bias=False),
                 torch.nn.BatchNorm2d(c_out),
                 torch.nn.ReLU(),
                 torch.nn.ConvTranspose2d(c_out, c_out, kernel_size=3, padding=1, stride=1, bias=False),
@@ -57,6 +57,7 @@ class Detector(torch.nn.Module):
                 return x
             else:
                 return self.net(x)
+
 
     class BlockConv(torch.nn.Module):
         def __init__(self, c_in, c_out, kernel_size=3, stride=1, residual: bool = True):

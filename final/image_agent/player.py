@@ -95,7 +95,12 @@ class Team:
         image = player_image[0]
 
         # Assuming self.model is an instance of Detector
-        pred_boxes = self.model.detect(image, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
+        img = self.transform(Image.fromarray(image)).to(device)
+        pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
+
+
+
+        #pred_boxes = self.model.detect(image, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
         puck_found = len(pred_boxes) > 0
 
         # Convert NumPy array to PyTorch tensor for velocity

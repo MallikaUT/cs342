@@ -120,7 +120,7 @@ class Team:
 
         try:
             pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
-            print(f"Prediction boxes: {pred_boxes}")
+            #print(f"Prediction boxes: {pred_boxes}")
         except Exception as e:
             print(f"Error during detection: {e}")
 

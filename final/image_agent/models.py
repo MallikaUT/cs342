@@ -126,14 +126,12 @@ class Detector(torch.nn.Module):
         skip_con = []
         for i, layers in enumerate(self.net_conv):
             x = layers(x)
-            print(f"After net_conv layer {i}:", x.shape)  # Print sizes after net_conv layers
+            
             skip_con.append(x)
         skip_con.pop(-1)
         skip = False
         for i, layers in enumerate(self.net_upconv):
             if skip and len(skip_con) > 0:
-                print(f"Size of x before concatenation in net_upconv layer {i}:", x.shape)
-                print(f"Size of tensor from skip_con in net_upconv layer {i}:", skip_con[-1].shape)
 
                 # Resize skip_con[-1] to match the size of x along dimension 2
                 skip_con[-1] = F.interpolate(skip_con[-1], size=(x.size(2), x.size(3)), mode='bilinear', align_corners=False)
@@ -142,11 +140,10 @@ class Detector(torch.nn.Module):
                     raise ValueError(f"Sizes of tensors must match except in dimension 2. Got {x.size(2)} and {skip_con[-1].size(2)}")
 
                 x = torch.cat([x, skip_con.pop(-1)], 1)
-                print(f"Size of x after concatenation in net_upconv layer {i}:", x.shape)
+                
                 x = layers(x)
             else:
                 x = layers(x)
-                print(f"After net_upconv layer {i}:", x.shape)  # Print sizes after net_upconv layers
                 skip = self.skip_connections
 
 
@@ -158,8 +155,7 @@ class Detector(torch.nn.Module):
 
     def detect(self, image, max_pool_ks=7, min_score=0.2, max_det=15):
         heatmap, boxes = self(image[None])  
-        heatmap = torch.sigmoid(heatmap.squeeze(0).squeeze(0)) 
-        print("Shape of heatmap after sigmoid:", heatmap.shape) 
+        heatmap = torch.sigmoid(heatmap.squeeze(0).squeeze(0))  
         sizes = boxes.squeeze(0)
         
         # Extract peaks

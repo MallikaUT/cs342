@@ -123,7 +123,7 @@ class Team:
         # execute when we find puck on screen
         if len(pred_boxes) > 0:
             # takes avg of peaks
-            puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes])) / 64 - 1
+            puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes], dtype=torch.float32)) / 64 - 1
 
             # ignores puck detections whose change is too much so that we ignore bad detections
             if self.use_puck1 and torch.abs(puck_loc - self.puck_prev1) > MAX_DEV:

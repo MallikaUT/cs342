@@ -111,16 +111,15 @@ class Team:
         img = F.to_tensor(Image.fromarray(image)).to(device)
 
         # Ensure the input tensor has the correct dimensions
-        if len(img.shape) == 2:
-            img = img.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions if not present
-        elif len(img.shape) == 3:
-            img = img.unsqueeze(0)  # Add batch dimension if not present
+        img = img.unsqueeze(0)  # Add batch dimension
 
         print(f"img shape before detection: {img.shape}")
 
         try:
+            # Adjust input shape for detection model
+            img = img.permute(0, 2, 3, 1)  # Change the order of dimensions
             pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
-            #print(f"Prediction boxes: {pred_boxes}")
+            print(f"Prediction boxes: {pred_boxes}")
         except Exception as e:
             print(f"Error during detection: {e}")
 

@@ -157,19 +157,19 @@ class Detector(torch.nn.Module):
 
 
     def detect(self, image, max_pool_ks=7, min_score=0.2, max_det=15):
-        heatmap, boxes = self(image[None])
-        heatmap = torch.sigmoid(heatmap.squeeze(0).squeeze(0))
-        print("Shape of heatmap after sigmoid:", heatmap.shape)
+        heatmap, boxes = self(image[None])  
+        heatmap = torch.sigmoid(heatmap.squeeze(0).squeeze(0)) 
+        print("Shape of heatmap after sigmoid:", heatmap.shape) 
         sizes = boxes.squeeze(0)
         
-        peaks = extract_peak(heatmap, max_pool_ks, min_score, max_det)
-        print("Shape of possible_det:", heatmap.shape)
-        print("Peaks:", peaks)
-
+        # Convert indices to integers
+        sizes_indices = [(int(peak[2]), int(peak[1])) for peak in extract_peak(heatmap, max_pool_ks, min_score, max_det)]
+        
         return [
-            (peak[0], peak[1], peak[2], sizes[peak[2]][peak[1]].item())
-            for peak in peaks
+            (peak[0], peak[1], peak[2], sizes[sizes_indices[idx]].item())
+            for idx, peak in enumerate(extract_peak(heatmap, max_pool_ks, min_score, max_det))
         ]
+
 
 def save_model(model, name: str = 'detector.pt'):
     torch.save({'model_state_dict': model.state_dict()}, path.join(path.dirname(path.abspath(__file__)), name))

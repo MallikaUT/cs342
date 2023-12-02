@@ -29,7 +29,7 @@ device = torch.device(
 
 
 def norm(vector):
-    return np.linalg.norm(vector)
+    return torch.norm(torch.tensor(vector))
 
 
 class Team:
@@ -101,6 +101,7 @@ class Team:
         # Convert NumPy array to PyTorch tensor for velocity
         velocity_numpy = player_info['kart']['velocity']
         velocity_torch = torch.from_numpy(velocity_numpy)
+        velocity_torch = torch.tensor(velocity_numpy)
 
         # try and detect if goal scored so we can reset (only needs to be done for one of the players)
         if torch.norm(velocity_torch) < 1:
@@ -112,8 +113,8 @@ class Team:
             self.timer1 = 0
 
         # get location in game and direct of kart
-        front = np.float32(player_info['kart']['front'])[[0, 2]]
-        loc = np.float32(player_info['kart']['location'])[[0, 2]]
+        front = torch.tensor(np.float32(player_info['kart']['front'])[[0, 2]])
+        loc = torch.tensor(np.float32(player_info['kart']['location'])[[0, 2]])
 
         # execute when we find puck on screen
         if puck_found:
@@ -144,7 +145,7 @@ class Team:
         dir = dir / norm(dir)
 
         # calculate angle to own goal
-        goal_dir = GOALS[self.team - 1] - loc
+        goal_dir = torch.tensor(GOALS[self.team - 1]) - loc
         dist_own_goal = norm(goal_dir)
         goal_dir = goal_dir / norm(goal_dir)
 
@@ -154,8 +155,8 @@ class Team:
 
         # calculate angle to opp goal
         goal_dir = GOALS[self.team] - loc
-        goal_dist = norm(goal_dir)
-        goal_dir = goal_dir / np.linalg.norm(goal_dir)
+        goal_dist = torch.norm(torch.from_numpy(goal_dir))
+        goal_dir = goal_dir / torch.norm(torch.from_numpy(goal_dir))
 
         goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
         signed_goal_angle = np.degrees(

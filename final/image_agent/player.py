@@ -99,8 +99,9 @@ class Team:
         puck_found = len(pred_boxes) > 0
 
         # Convert NumPy array to PyTorch tensor for velocity
+
+
         velocity_numpy = player_info['kart']['velocity']
-        velocity_torch = torch.from_numpy(velocity_numpy)
         velocity_torch = torch.tensor(velocity_numpy)
 
         # try and detect if goal scored so we can reset (only needs to be done for one of the players)
@@ -146,8 +147,8 @@ class Team:
 
         # calculate angle to own goal
         goal_dir = torch.tensor(GOALS[self.team - 1]) - loc
-        dist_own_goal = norm(goal_dir)
-        goal_dir = goal_dir / norm(goal_dir)
+        dist_own_goal = torch.norm(torch.tensor(goal_dir))
+        goal_dir = goal_dir / torch.norm(torch.tensor(goal_dir))
 
         goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
         signed_own_goal_deg = np.degrees(
@@ -253,27 +254,27 @@ class Team:
             puck_loc = None
             self.recover_steps2 = LOST_STATUS_STEPS
 
-        dir = front - loc
-        dir = dir / norm(dir)
+        dir = torch.tensor(front - loc)
+        dir = dir / torch.norm(dir)
 
-        goal_dir = GOALS[self.team - 1] - loc
-        dist_own_goal = norm(goal_dir)
-        goal_dir = goal_dir / norm(goal_dir)
+        goal_dir = torch.tensor(GOALS[self.team - 1]) - loc
+        dist_own_goal = torch.norm(goal_dir)
+        goal_dir = goal_dir / torch.norm(goal_dir)
 
-        goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
+        goal_angle = np.arccos(np.clip(torch.dot(dir, goal_dir).item(), -1, 1))
         signed_own_goal_deg = np.degrees(
-            -np.sign(np.cross(dir, goal_dir)) * goal_angle)
+            -np.sign(np.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
 
-        goal_dir = GOALS[self.team] - loc
-        goal_dist = norm(goal_dir)
-        goal_dir = goal_dir / norm(goal_dir)
+        goal_dir = torch.tensor(GOALS[self.team]) - loc
+        goal_dist = torch.norm(goal_dir)
+        goal_dir = goal_dir / torch.norm(goal_dir)
 
-        goal_angle = np.arccos(np.clip(np.dot(dir, goal_dir), -1, 1))
+        goal_angle = np.arccos(np.clip(torch.dot(dir, goal_dir).item(), -1, 1))
         signed_goal_angle = np.degrees(
-            -np.sign(np.cross(dir, goal_dir)) * goal_angle)
+            -np.sign(np.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
 
         goal_dist = (
-            (np.clip(goal_dist, 10, 100) - 10) / 90) + 1
+            (torch.clamp(goal_dist, 10, 100) - 10) / 90) + 1
         if self.recover_steps2 == 0 and (self.cooldown2 == 0 or puck_found):
             if MIN_ANGLE < np.abs(signed_goal_angle) < MAX_ANGLE:
                 distW = 1 / goal_dist ** 3

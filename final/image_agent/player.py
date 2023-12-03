@@ -260,7 +260,8 @@ class Team:
 
         puck_found = len(pred_boxes) > 0
         if puck_found:
-            puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes])) / 64 - 1
+            print("Puck seen")
+            puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes], dtype=torch.float32)) / 64 - 1
 
 
             if self.use_puck2 and torch.abs(puck_loc - self.puck_prev2) > MAX_DEV:
@@ -278,7 +279,7 @@ class Team:
             puck_loc = None
             self.recover_steps2 = LOST_STATUS_STEPS
 
-        dir = torch.tensor(front - loc)
+        dir = front - loc
         dir = dir / torch.norm(dir)
 
         # calculate angle and distance to own goal for player 2

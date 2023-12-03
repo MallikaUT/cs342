@@ -246,6 +246,8 @@ class Team:
 
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
+                print(f"Shape of pred_boxes tensor: {pred_boxes.shape}")
+
         except Exception as e:
             print(f"Error during detection: {e}")
             pred_boxes = None

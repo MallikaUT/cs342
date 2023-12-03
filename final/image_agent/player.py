@@ -131,22 +131,9 @@ class Team:
             front_raw = np.array(player_info['kart']['front'])
             loc_raw = np.array(player_info['kart']['location'])
 
-            print(f"front_raw shape: {front_raw.shape}")
-            print(f"front_raw values: {front_raw}")
-            print(f"loc_raw shape: {loc_raw.shape}")
-            print(f"loc_raw values: {loc_raw}")
-
             # Convert NumPy array to PyTorch tensor for front and location
             front = torch.tensor(np.float32(front_raw)[[0, 2]])
             loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
-
-            print(f"front shape: {front.shape}")
-            print(f"front values: {front}")
-            print(f"loc shape: {loc.shape}")
-            print(f"loc values: {loc}")
-
-        # Rest of your code...
-
 
         # execute when we find puck on screen
         if len(pred_boxes) > 0:

@@ -103,10 +103,8 @@ class Team:
                 img = F.to_tensor(Image.fromarray(image)).unsqueeze(0).to(device)
 
                 # Ensure the input tensor has the correct dimensions
-                img = img[:, :3]  # Keep only the first 3 channels if there are more
+                img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
 
-                # Reshape the input tensor for detection model
-                img = img.view(1, 3, 300, 400)  # Adjust dimensions to match the expected input
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
             print(f"Prediction boxes: {pred_boxes}")
         except Exception as e:

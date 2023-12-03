@@ -5,13 +5,10 @@ from os import path
 def extract_peak(heatmap, max_pool_ks=7, min_score=-5, max_det=100):
     max_cls = F.max_pool2d(heatmap[None, None], kernel_size=max_pool_ks, padding=max_pool_ks // 2, stride=1)[0, 0]
     possible_det = heatmap - (max_cls > heatmap).float() * 1e5
-    print("Shape of possible_det:", possible_det.shape)
     
     if max_det > possible_det.numel():
         max_det = possible_det.numel()
     score, loc = torch.topk(possible_det.view(-1), max_det)
-    print("Score shape:", score.shape)
-    print("Loc shape:", loc.shape)
     
     peaks = [
         (float(s), int(l) % heatmap.size(1), int(l) // heatmap.size(1))
@@ -19,7 +16,6 @@ def extract_peak(heatmap, max_pool_ks=7, min_score=-5, max_det=100):
         if s > min_score
     ]
     
-    print("Peaks:", peaks)
     return peaks
            
 class Detector(torch.nn.Module):

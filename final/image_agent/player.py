@@ -258,15 +258,6 @@ class Team:
         front = torch.tensor(np.float32(front_raw)[[0, 2]])
         loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
 
-        print(f"front shape: {front.shape}")
-        print(f"front values: {front}")
-        print(f"loc shape: {loc.shape}")
-        print(f"loc values: {loc}")
-
-        # Rest of the code remains unchanged...
-
-
-
         puck_found = len(pred_boxes) > 0
         if puck_found:
             

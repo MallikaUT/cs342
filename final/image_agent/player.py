@@ -255,8 +255,19 @@ class Team:
 
         pred = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
-        front = torch.tensor(np.float32(player_info['kart']['front'])[[0, 2]])
-        loc = torch.tensor(np.float32(player_info['kart']['location'])[[0, 2]])
+        print(f"front_raw shape: {front_raw.shape}")
+        print(f"front_raw values: {front_raw}")
+        print(f"loc_raw shape: {loc_raw.shape}")
+        print(f"loc_raw values: {loc_raw}")
+
+        # Convert NumPy array to PyTorch tensor for front and location
+        front = torch.tensor(np.float32(front_raw)[[0, 2]])
+        loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
+
+        print(f"front shape: {front.shape}")
+        print(f"front values: {front}")
+        print(f"loc shape: {loc.shape}")
+        print(f"loc values: {loc}")
 
         puck_found = len(pred) > 0
         if puck_found:

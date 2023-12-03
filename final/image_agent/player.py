@@ -99,23 +99,20 @@ class Team:
 
         try:
             with torch.no_grad():
-                # Convert image to PyTorch tensor and add batch dimension
-               # img = F.to_tensor(Image.fromarray(image)).unsqueeze(0).to(device)
                 img = F.to_tensor(Image.fromarray(image)).unsqueeze(0).to(device)
                 img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
 
-                # Ensure img is a 4D tensor
                 if img.dim() == 3:
                     img = img.unsqueeze(0)
 
-                # Ensure the input tensor has the correct dimensions
-               # img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
-
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
+
             print(f"Prediction boxes: {pred_boxes}")
+
         except Exception as e:
             print(f"Error during detection: {e}")
             pred_boxes = None
+
 
         if pred_boxes is not None and len(pred_boxes) > 0:
             front_raw = np.array(player_info['kart']['front'])

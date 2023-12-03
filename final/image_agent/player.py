@@ -116,14 +116,15 @@ class Team:
 
             with torch.no_grad():
                 # Ensure that the input tensor has only 4 dimensions (B, C, H, W)
-                if img.dim() == 5:
-                    img = img.squeeze(0).squeeze(0)
+                while img.dim() > 4:
+                    img = img.squeeze(0)
 
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
             print(f"Prediction boxes: {pred_boxes}")
         except Exception as e:
             print(f"Error during detection: {e}")
             pred_boxes = None
+
 
         if pred_boxes is not None and len(pred_boxes) > 0:
             front_raw = np.array(player_info['kart']['front'])

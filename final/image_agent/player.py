@@ -225,6 +225,7 @@ class Team:
 
         
         # Player 2 (same agent for now)
+        # Player 2 (same agent for now)
         player_info = player_state[1]
         image = player_image[1]
 
@@ -254,11 +255,13 @@ class Team:
         print(f"loc shape: {loc.shape}")
         print(f"loc values: {loc}")
 
+        # Rest of the code remains unchanged...
+
 
 
         puck_found = len(pred_boxes) > 0
         if puck_found:
-            print("Puck seen")
+            
             puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes], dtype=torch.float32)) / 64 - 1
 
 

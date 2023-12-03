@@ -115,22 +115,23 @@ class Team:
             print(f"Error during detection: {e}")
             pred_boxes = None
 
-        front_raw = np.array(player_info['kart']['front'])
-        loc_raw = np.array(player_info['kart']['location'])
+        if pred_boxes is not None and len(pred_boxes) > 0:
+            front_raw = np.array(player_info['kart']['front'])
+            loc_raw = np.array(player_info['kart']['location'])
 
-        print(f"front_raw shape: {front_raw.shape}")
-        print(f"front_raw values: {front_raw}")
-        print(f"loc_raw shape: {loc_raw.shape}")
-        print(f"loc_raw values: {loc_raw}")
+            print(f"front_raw shape: {front_raw.shape}")
+            print(f"front_raw values: {front_raw}")
+            print(f"loc_raw shape: {loc_raw.shape}")
+            print(f"loc_raw values: {loc_raw}")
 
-        # Convert NumPy array to PyTorch tensor for front and location
-        front = torch.tensor(np.float32(front_raw)[[0, 2]])
-        loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
+            # Convert NumPy array to PyTorch tensor for front and location
+            front = torch.tensor(np.float32(front_raw)[[0, 2]])
+            loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
 
-        print(f"front shape: {front.shape}")
-        print(f"front values: {front}")
-        print(f"loc shape: {loc.shape}")
-        print(f"loc values: {loc}")
+            print(f"front shape: {front.shape}")
+            print(f"front values: {front}")
+            print(f"loc shape: {loc.shape}")
+            print(f"loc values: {loc}")
 
         # execute when we find puck on screen
         if len(pred_boxes) > 0:

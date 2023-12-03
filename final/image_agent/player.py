@@ -106,8 +106,14 @@ class Team:
         print(f"img shape before detection: {img.shape}")
 
         try:
-            # Reshape the input tensor for detection model
-            img = img.view(1, 3, 300, 400)  # Adjust dimensions to match the expected input
+            # Convert image to PyTorch tensor
+            img = F.to_tensor(Image.fromarray(image)).to(device)
+
+            # Add batch dimension
+            img = img.unsqueeze(0)
+
+            print(f"img shape before detection: {img.shape}")
+
             with torch.no_grad():
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
             print(f"Prediction boxes: {pred_boxes}")

@@ -224,6 +224,7 @@ class Team:
         }
 
         # Player 2 (same agent for now)
+        # Player 2 (same agent for now)
         player_info = player_state[1]
         image = player_image[1]
 
@@ -254,6 +255,8 @@ class Team:
         print(f"front values: {front}")
         print(f"loc shape: {loc.shape}")
         print(f"loc values: {loc}")
+
+
 
         puck_found = len(pred) > 0
         if puck_found:

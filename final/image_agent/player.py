@@ -97,18 +97,13 @@ class Team:
         player_info = player_state[0]
         image = player_image[0]
 
-        # Convert image to PyTorch tensor
-        img = F.to_tensor(Image.fromarray(image)).to(device)
-
-        # Ensure the input tensor has the correct dimensions
-        img = img.unsqueeze(0)  # Add batch dimension
-
-        print(f"img shape before detection: {img.shape}")
-
         try:
             with torch.no_grad():
-                # Ensure that the input tensor has only 4 dimensions (B, C, H, W)
-                img = img.squeeze(0)
+                # Convert image to PyTorch tensor and add batch dimension
+                img = F.to_tensor(Image.fromarray(image)).unsqueeze(0).to(device)
+
+                # Ensure the input tensor has the correct dimensions
+                img = img[:, :3]  # Keep only the first 3 channels if there are more
 
                 # Reshape the input tensor for detection model
                 img = img.view(1, 3, 300, 400)  # Adjust dimensions to match the expected input

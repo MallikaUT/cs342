@@ -235,24 +235,25 @@ class Team:
                 img = F.to_tensor(Image.fromarray(image)).to(device)
                 img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
 
-                print(f"Shape of input tensor before squeeze: {img.shape}")
+                print(f"Shape of input tensor before squeeze (Player 2): {img.shape}")
 
                 # Check if squeezing is necessary
                 if img.size(0) == 1:
                     img = img.squeeze(0)
 
-                print(f"Shape of input tensor after squeeze: {img.shape}")
+                print(f"Shape of input tensor after squeeze (Player 2): {img.shape}")
 
-                # Add this line to check the size of the input tensor before detection
-                print(f"Shape of input tensor before detection: {img.shape}")
+                # Add this line to check the size of the input tensor before detection (Player 2)
+                print(f"Shape of input tensor before detection (Player 2): {img.shape}")
 
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
-                print(f"Shape of pred_boxes tensor: {pred_boxes.shape}")
+                print(f"Shape of pred_boxes tensor (Player 2): {pred_boxes.shape}")
 
         except Exception as e:
-            print(f"Error during detection: {e}")
+            print(f"Error during detection (Player 2): {e}")
             pred_boxes = None
+
 
 
         front_raw = np.array(player_info['kart']['front'])

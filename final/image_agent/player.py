@@ -106,25 +106,14 @@ class Team:
         print(f"img shape before detection: {img.shape}")
 
         try:
-            # Convert image to PyTorch tensor
-            img = F.to_tensor(Image.fromarray(image)).to(device)
-
-            # Ensure the input tensor has the correct dimensions
-            img = img.unsqueeze(0)  # Add batch dimension
-
-            print(f"img shape before detection: {img.shape}")
-
             with torch.no_grad():
-                # Ensure that the input tensor has only 4 dimensions (B, C, H, W)
-                while img.dim() > 4:
-                    img = img.squeeze(0)
-
+                # Reshape the input tensor for detection model
+                img = img.view(1, 3, 300, 400)  # Adjust dimensions to match the expected input
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
             print(f"Prediction boxes: {pred_boxes}")
         except Exception as e:
             print(f"Error during detection: {e}")
             pred_boxes = None
-
 
         if pred_boxes is not None and len(pred_boxes) > 0:
             front_raw = np.array(player_info['kart']['front'])
@@ -143,6 +132,9 @@ class Team:
             print(f"front values: {front}")
             print(f"loc shape: {loc.shape}")
             print(f"loc values: {loc}")
+
+        # Rest of your code...
+
 
         # execute when we find puck on screen
         if len(pred_boxes) > 0:

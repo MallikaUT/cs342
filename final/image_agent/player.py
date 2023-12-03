@@ -100,7 +100,13 @@ class Team:
         try:
             with torch.no_grad():
                 # Convert image to PyTorch tensor and add batch dimension
+               # img = F.to_tensor(Image.fromarray(image)).unsqueeze(0).to(device)
                 img = F.to_tensor(Image.fromarray(image)).unsqueeze(0).to(device)
+                img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
+
+                # Ensure img is a 4D tensor
+                if img.dim() == 3:
+                    img = img.unsqueeze(0)
 
                 # Ensure the input tensor has the correct dimensions
                 img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
@@ -224,7 +230,13 @@ class Team:
         player_info = player_state[1]
         image = player_image[1]
 
+        #img = F.to_tensor(Image.fromarray(image)).to(device)
         img = F.to_tensor(Image.fromarray(image)).to(device)
+        img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
+
+        # Ensure img is a 4D tensor
+        if img.dim() == 3:
+            img = img.unsqueeze(0)
         pred = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
         front = torch.tensor(np.float32(player_info['kart']['front'])[[0, 2]])

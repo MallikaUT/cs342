@@ -240,13 +240,19 @@ class Team:
         player_info = player_state[1]
         image = player_image[1]
 
-        #img = F.to_tensor(Image.fromarray(image)).to(device)
+        # Ensure img is a 4D tensor
         img = F.to_tensor(Image.fromarray(image)).to(device)
         img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
+        img = img.unsqueeze(0)  # Add batch dimension
+
+        # Ensure img is a 4D tensor
+        if img.size(0) == 1:
+            img = img.squeeze(0)
 
         # Ensure img is a 4D tensor
         if img.dim() == 3:
             img = img.unsqueeze(0)
+
         pred = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
         front = torch.tensor(np.float32(player_info['kart']['front'])[[0, 2]])

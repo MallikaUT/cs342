@@ -223,7 +223,7 @@ class Team:
             'rescue': False
         }
 
-        # Player 2 (same agent for now)
+        
         # Player 2 (same agent for now)
         player_info = player_state[1]
         image = player_image[1]
@@ -258,9 +258,10 @@ class Team:
 
 
 
-        puck_found = len(pred) > 0
+        puck_found = len(pred_boxes) > 0
         if puck_found:
-            puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred])) / 64 - 1
+            puck_loc = torch.mean(torch.tensor([cx[1] for cx in pred_boxes])) / 64 - 1
+
 
             if self.use_puck2 and torch.abs(puck_loc - self.puck_prev2) > MAX_DEV:
                 puck_loc = self.puck_prev2

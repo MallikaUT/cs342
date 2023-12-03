@@ -233,8 +233,7 @@ class Team:
         try:
             with torch.no_grad():
                 img = F.to_tensor(Image.fromarray(image)).to(device)
-                img = img[:, :3, :, :]
-                img = img.unsqueeze(0)
+                img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
 
                 print(f"Shape of input tensor before squeeze: {img.shape}")
 
@@ -244,6 +243,9 @@ class Team:
 
                 print(f"Shape of input tensor after squeeze: {img.shape}")
 
+                # Add this line to check the size of the input tensor before detection
+                print(f"Shape of input tensor before detection: {img.shape}")
+
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
                 print(f"Shape of pred_boxes tensor: {pred_boxes.shape}")
@@ -251,6 +253,7 @@ class Team:
         except Exception as e:
             print(f"Error during detection: {e}")
             pred_boxes = None
+
 
         front_raw = np.array(player_info['kart']['front'])
         loc_raw = np.array(player_info['kart']['location'])

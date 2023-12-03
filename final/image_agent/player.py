@@ -228,6 +228,8 @@ class Team:
         player_info = player_state[1]
         image = player_image[1]
 
+        print("Now enter in Player2")
+
         try:
             with torch.no_grad():
                 img = F.to_tensor(Image.fromarray(image)).to(device)

@@ -109,15 +109,15 @@ class Team:
             # Convert image to PyTorch tensor
             img = F.to_tensor(Image.fromarray(image)).to(device)
 
-            # Add batch dimension by unsqueezing the first dimension
-            img = img.unsqueeze(0)
+            # Ensure the input tensor has the correct dimensions
+            img = img.unsqueeze(0)  # Add batch dimension
 
             print(f"img shape before detection: {img.shape}")
 
             with torch.no_grad():
                 # Ensure that the input tensor has only 4 dimensions (B, C, H, W)
                 if img.dim() == 5:
-                    img = img.squeeze(0)
+                    img = img.squeeze(0).squeeze(0)
 
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
             print(f"Prediction boxes: {pred_boxes}")

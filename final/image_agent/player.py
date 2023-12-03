@@ -225,7 +225,6 @@ class Team:
 
         
         # Player 2 (same agent for now)
-        # Player 2 (same agent for now)
         player_info = player_state[1]
         image = player_image[1]
 
@@ -237,6 +236,8 @@ class Team:
                 img = img[:, :3, :, :]
                 img = img.unsqueeze(0)
                 img = img.squeeze(0) if img.size(0) == 1 else img
+
+                print(f"Shape of input tensor: {img.shape}")
 
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 

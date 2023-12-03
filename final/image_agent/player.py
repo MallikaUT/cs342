@@ -92,6 +92,15 @@ class Team:
         self.cooldown2 = 0
 
     # Assuming self.model is an instance of Detector
+    def calculate_goal_parameters(self, team, loc, dir):
+        own_goal = torch.tensor(GOALS[team])
+        dist_own_goal = torch.norm(loc - own_goal)
+        goal_dir = own_goal - loc
+        goal_dist = torch.norm(goal_dir)
+        goal_dir = goal_dir / torch.norm(goal_dir)
+        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
+        signed_goal_angle = torch.degrees(-torch.sign(torch.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
+        return dist_own_goal, signed_goal_angle
 
     def act(self, player_state, player_image):
         player_info = player_state[0]

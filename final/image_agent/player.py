@@ -93,16 +93,6 @@ class Team:
 
     # Assuming self.model is an instance of Detector
 
-    def calculate_goal_parameters(self, team, loc, dir):
-        own_goal = torch.tensor(GOALS[team - 1])
-        goal_dir = own_goal - loc
-        dist_own_goal = torch.norm(goal_dir)
-        goal_dir = goal_dir / torch.norm(goal_dir)
-        goal_angle = torch.rad2deg(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
-        signed_goal_angle = torch.rad2deg(-torch.sign(torch.cross(dir, goal_dir)) * goal_angle)
-
-        return dist_own_goal, signed_goal_angle
-
     def act(self, player_state, player_image):
         player_info = player_state[0]
         image = player_image[0]
@@ -118,10 +108,12 @@ class Team:
         try:
             # Reshape the input tensor for detection model
             img = img.view(1, 3, 300, 400)  # Adjust dimensions to match the expected input
-            pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
+            with torch.no_grad():
+                pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
             print(f"Prediction boxes: {pred_boxes}")
         except Exception as e:
             print(f"Error during detection: {e}")
+            pred_boxes = None
 
         front_raw = np.array(player_info['kart']['front'])
         loc_raw = np.array(player_info['kart']['location'])

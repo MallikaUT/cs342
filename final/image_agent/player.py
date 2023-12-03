@@ -231,10 +231,8 @@ class Team:
         try:
             with torch.no_grad():
                 img = F.to_tensor(Image.fromarray(image)).to(device)
-                img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
-
-                # Ensure img is a 4D tensor
-                img = img.unsqueeze(0)  # Add batch dimension
+                img = img[:, :3, :, :]
+                img = img.unsqueeze(0)
                 img = img.squeeze(0) if img.size(0) == 1 else img
 
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
@@ -243,11 +241,9 @@ class Team:
             print(f"Error during detection: {e}")
             pred_boxes = None
 
-        # Initialize front_raw and loc_raw for player 2
         front_raw = np.array(player_info['kart']['front'])
         loc_raw = np.array(player_info['kart']['location'])
 
-        # Convert NumPy array to PyTorch tensor for front and location for player 2
         front = torch.tensor(np.float32(front_raw)[[0, 2]])
         loc = torch.tensor(np.float32(loc_raw)[[0, 2]])
 

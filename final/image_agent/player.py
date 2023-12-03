@@ -98,9 +98,12 @@ class Team:
         goal_dir = own_goal - loc
         goal_dist = torch.norm(goal_dir)
         goal_dir = goal_dir / torch.norm(goal_dir)
-        goal_angle = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
-        signed_goal_angle = torch.deg2rad(-torch.sign(torch.cross(dir.numpy(), goal_dir.numpy())) * goal_angle)
+        
+        goal_angle_rad = torch.acos(torch.clamp(torch.dot(dir, goal_dir), -1, 1))
+        signed_goal_angle = torch.deg2rad(torch.sign(torch.cross(torch.tensor(dir.numpy()), torch.tensor(goal_dir.numpy()))) * goal_angle_rad)
+        
         return dist_own_goal, signed_goal_angle
+
 
     def act(self, player_state, player_image):
         player_info = player_state[0]

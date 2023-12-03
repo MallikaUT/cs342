@@ -107,6 +107,9 @@ class Team:
 
         try:
             with torch.no_grad():
+                # Ensure that the input tensor has only 4 dimensions (B, C, H, W)
+                img = img.squeeze(0)
+
                 # Reshape the input tensor for detection model
                 img = img.view(1, 3, 300, 400)  # Adjust dimensions to match the expected input
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)

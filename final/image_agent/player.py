@@ -103,6 +103,9 @@ class Team:
                 img = img.unsqueeze(0)  # Add batch dimension
                 img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
 
+                # Ensure img is a 4D tensor
+                img = img.squeeze(0) if img.size(0) == 1 else img
+
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 
             print(f"Prediction boxes: {pred_boxes}")

@@ -109,7 +109,7 @@ class Team:
                     img = img.unsqueeze(0)
 
                 # Ensure the input tensor has the correct dimensions
-                img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
+               # img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
 
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
             print(f"Prediction boxes: {pred_boxes}")

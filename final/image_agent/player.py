@@ -99,11 +99,9 @@ class Team:
 
         try:
             with torch.no_grad():
-                img = F.to_tensor(Image.fromarray(image)).unsqueeze(0).to(device)
+                img = F.to_tensor(Image.fromarray(image)).to(device)
+                img = img.unsqueeze(0)  # Add batch dimension
                 img = img[:, :3, :, :]  # Keep only the first 3 channels if there are more
-
-                if img.dim() == 3:
-                    img = img.unsqueeze(0)
 
                 pred_boxes = self.model.detect(img, max_pool_ks=7, min_score=MIN_SCORE, max_det=MAX_DET)
 

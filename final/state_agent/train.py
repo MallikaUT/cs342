@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from .model import Model
+from .models import Model
 from .utils import load_recording
 from .player import extract_featuresV2
 

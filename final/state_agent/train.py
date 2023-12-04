@@ -32,7 +32,7 @@ def train(args):
     # set up the training data based on the given function. We were given this
     # path based on what the teacher said in the piazza post.
 
-    collectFromTeam1 = ['jurgen_vs_ai',
+    collectFromTeam1 = ['jurgen_agent',
     'jurgen_vs_geoffrey',
     'jurgen_vs_jurgen',
     'jurgen_vs_image_jurgen',

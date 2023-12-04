@@ -3,7 +3,7 @@ import numpy as np
 
 from .models import Model
 from .utils import load_recording
-from .player import extract_featuresV2
+#from .player import extract_featuresV2
 
 # from .models import Detector, save_model
 # from .utils import load_detection_data
